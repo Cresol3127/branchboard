@@ -1,13 +1,6 @@
 import type { Attachment, AttachmentKind, Board, NodeData, Snapshot } from './types';
 import type { ProviderId } from './providers';
-import {
-  allRecords,
-  deleteRecords,
-  getRecord,
-  putRecord,
-  openLocalDatabase,
-  requestResult,
-} from './localDb';
+import { deleteRecords, getRecord, putRecord, openLocalDatabase, requestResult } from './localDb';
 import { listVersions } from './versions';
 
 export const MAX_FILE_BYTES = 25 * 1024 * 1024;
@@ -53,10 +46,60 @@ const extensionMime: Record<string, string> = {
 };
 
 const codeExtensions = new Set([
-  'js','jsx','ts','tsx','mjs','cjs','py','go','rs','java','kt','kts','c','h','cc','cpp','hpp',
-  'cs','rb','php','swift','scala','sh','bash','zsh','fish','sql','graphql','gql','css','scss',
-  'sass','less','html','htm','vue','svelte','astro','dockerfile','makefile','gradle','lua','r',
-  'dart','ex','exs','erl','hs','clj','fs','vb','asm','s','proto',
+  'js',
+  'jsx',
+  'ts',
+  'tsx',
+  'mjs',
+  'cjs',
+  'py',
+  'go',
+  'rs',
+  'java',
+  'kt',
+  'kts',
+  'c',
+  'h',
+  'cc',
+  'cpp',
+  'hpp',
+  'cs',
+  'rb',
+  'php',
+  'swift',
+  'scala',
+  'sh',
+  'bash',
+  'zsh',
+  'fish',
+  'sql',
+  'graphql',
+  'gql',
+  'css',
+  'scss',
+  'sass',
+  'less',
+  'html',
+  'htm',
+  'vue',
+  'svelte',
+  'astro',
+  'dockerfile',
+  'makefile',
+  'gradle',
+  'lua',
+  'r',
+  'dart',
+  'ex',
+  'exs',
+  'erl',
+  'hs',
+  'clj',
+  'fs',
+  'vb',
+  'asm',
+  's',
+  'proto',
 ]);
 
 export type StoredAttachment = {
@@ -107,9 +150,15 @@ export function allowedMime(name: string, declared: string) {
   if (!declared || declared === 'application/octet-stream') return fromExtension;
   if (declared === fromExtension) return declared;
   // Browsers often report generic types for code and office files.
-  if (declared === 'text/plain' && (fromExtension.startsWith('text/') || fromExtension === 'application/json' || fromExtension === 'application/xml'))
+  if (
+    declared === 'text/plain' &&
+    (fromExtension.startsWith('text/') ||
+      fromExtension === 'application/json' ||
+      fromExtension === 'application/xml')
+  )
     return fromExtension;
-  if (declared === 'application/zip' && fromExtension.includes('openxmlformats')) return fromExtension;
+  if (declared === 'application/zip' && fromExtension.includes('openxmlformats'))
+    return fromExtension;
   return null;
 }
 
@@ -148,7 +197,10 @@ export async function validateFile(file: File) {
     throw new Error('This is not a valid JPEG image.');
   if (mime === 'image/gif' && !(await startsWith(file, [0x47, 0x49, 0x46, 0x38])))
     throw new Error('This is not a valid GIF image.');
-  if (mime === 'image/webp' && (!(await startsWith(file, [0x52, 0x49, 0x46, 0x46])) || (await ascii(file, 8, 4)) !== 'WEBP'))
+  if (
+    mime === 'image/webp' &&
+    (!(await startsWith(file, [0x52, 0x49, 0x46, 0x46])) || (await ascii(file, 8, 4)) !== 'WEBP')
+  )
     throw new Error('This is not a valid WebP image.');
   if (mime === 'image/avif' && (await ascii(file, 4, 4)) !== 'ftyp')
     throw new Error('This is not a valid AVIF image.');
@@ -207,22 +259,26 @@ async function extractZipText(file: File, mime: string) {
     throw new Error('The office document archive is unreadable or password-protected.');
   }
   const decoder = new TextDecoder();
-  const wanted =
-    mime.includes('wordprocessing')
-      ? ['word/document.xml']
-      : mime.includes('presentation')
-        ? Object.keys(entries).filter((key) => /^ppt\/slides\/slide\d+\.xml$/.test(key)).sort((a, b) => {
+  const wanted = mime.includes('wordprocessing')
+    ? ['word/document.xml']
+    : mime.includes('presentation')
+      ? Object.keys(entries)
+          .filter((key) => /^ppt\/slides\/slide\d+\.xml$/.test(key))
+          .sort((a, b) => {
             const number = (key: string) => Number(/(\d+)\.xml$/.exec(key)?.[1] || 0);
             return number(a) - number(b);
           })
-        : mime.includes('spreadsheet')
-          ? ['xl/sharedStrings.xml', 'xl/workbook.xml'].filter((key) => entries[key])
-          : mime.includes('opendocument') && mime.includes('text')
-            ? ['content.xml']
-            : [];
+      : mime.includes('spreadsheet')
+        ? ['xl/sharedStrings.xml', 'xl/workbook.xml'].filter((key) => entries[key])
+        : mime.includes('opendocument') && mime.includes('text')
+          ? ['content.xml']
+          : [];
   if (!wanted.length || wanted.some((key) => !entries[key]))
     throw new Error('This Office document does not contain readable text.');
-  const text = wanted.map((key) => stripXml(decoder.decode(entries[key]))).filter(Boolean).join('\n\n');
+  const text = wanted
+    .map((key) => stripXml(decoder.decode(entries[key])))
+    .filter(Boolean)
+    .join('\n\n');
   if (!text) throw new Error('No selectable text was found in this document.');
   return { text, engine: 'Office Open XML text extraction (local)' };
 }
@@ -234,30 +290,32 @@ async function extractPdf(file: File) {
     pdfjs.GlobalWorkerOptions.workerSrc = worker;
     const task = pdfjs.getDocument({
       data: new Uint8Array(await file.arrayBuffer()),
-      isEvalSupported: false,
       useSystemFonts: false,
     });
-    const document = await task.promise;
-    const pages: string[] = [];
-    for (let pageNumber = 1; pageNumber <= Math.min(document.numPages, 300); pageNumber++) {
-      const page = await document.getPage(pageNumber);
-      const content = await page.getTextContent();
-      pages.push(
-        content.items
-          .map((item) => ('str' in item ? item.str : ''))
-          .join(' ')
-          .replace(/\s+/g, ' ')
-          .trim(),
-      );
-      page.cleanup();
+    try {
+      const document = await task.promise;
+      const pages: string[] = [];
+      for (let pageNumber = 1; pageNumber <= Math.min(document.numPages, 300); pageNumber++) {
+        const page = await document.getPage(pageNumber);
+        const content = await page.getTextContent();
+        pages.push(
+          content.items
+            .map((item) => ('str' in item ? item.str : ''))
+            .join(' ')
+            .replace(/\s+/g, ' ')
+            .trim(),
+        );
+        page.cleanup();
+      }
+      const text = pages.join('\n\n');
+      if (!text.trim())
+        throw new Error(
+          'No selectable text was found. This PDF may be scanned; OCR is not included, so attach it only to providers that accept PDFs or add a text transcription.',
+        );
+      return { text, pages: pages.length, engine: 'PDF.js local text extraction' };
+    } finally {
+      await task.destroy();
     }
-    await document.destroy();
-    const text = pages.join('\n\n');
-    if (!text.trim())
-      throw new Error(
-        'No selectable text was found. This PDF may be scanned; OCR is not included, so attach it only to providers that accept PDFs or add a text transcription.',
-      );
-    return { text, pages: pages.length, engine: 'PDF.js local text extraction' };
   } catch (error) {
     throw new Error(
       error instanceof Error && error.message
@@ -330,7 +388,8 @@ export function attachmentIdsFromNode(data: NodeData) {
 
 export function uniqueAttachmentsFromNodes(nodes: { data: NodeData }[]) {
   const map = new Map<string, Attachment>();
-  for (const node of nodes) for (const attachment of node.data.attachments || []) map.set(attachment.id, attachment);
+  for (const node of nodes)
+    for (const attachment of node.data.attachments || []) map.set(attachment.id, attachment);
   return [...map.values()];
 }
 
@@ -342,7 +401,8 @@ export function reachableAttachmentIds(
 ) {
   const ids = new Set<string>();
   [...boards, ...snapshots.map((snapshot) => snapshot.board), ...templates, ...extraBoards].forEach(
-    (board) => board.nodes.forEach((node) => attachmentIdsFromNode(node.data).forEach((id) => ids.add(id))),
+    (board) =>
+      board.nodes.forEach((node) => attachmentIdsFromNode(node.data).forEach((id) => ids.add(id))),
   );
   return ids;
 }
@@ -385,7 +445,10 @@ export async function storeAttachment(file: File): Promise<Attachment> {
             characters: existing.text.length,
             engine: 'Previously extracted locally',
           }
-        : { status: 'unsupported', engine: 'Native media; no local text transcription is performed.' },
+        : {
+            status: 'unsupported',
+            engine: 'Native media; no local text transcription is performed.',
+          },
     };
   }
   const extraction = await extractAttachment(file, kind, mime);
@@ -471,7 +534,8 @@ export async function importAttachmentData(
       const blob = base64Blob(entry.data, mime);
       if (blob.size > MAX_FILE_BYTES) throw new Error(`Imported file ${entry.name} is too large.`);
       const hash = await digest(blob);
-      if (entry.hash !== hash) throw new Error(`Imported file ${entry.name} failed integrity validation.`);
+      if (entry.hash !== hash)
+        throw new Error(`Imported file ${entry.name} failed integrity validation.`);
       if (await getRecord('attachmentBlobs', entry.id))
         throw new Error(`Duplicate attachment ID ${entry.name}.`);
       const record: StoredAttachment = {
@@ -521,7 +585,12 @@ export async function cleanupUnusedAttachments(
   );
   const remove = records.map((record) => record.id).filter((id) => !keep.has(id));
   await deleteRecords('attachmentBlobs', remove);
-  return { removed: remove.length, bytes: records.filter((record) => remove.includes(record.id)).reduce((sum, record) => sum + record.bytes, 0) };
+  return {
+    removed: remove.length,
+    bytes: records
+      .filter((record) => remove.includes(record.id))
+      .reduce((sum, record) => sum + record.bytes, 0),
+  };
 }
 
 type Capabilities = {

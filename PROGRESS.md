@@ -1,5 +1,32 @@
 # Progress
 
+## Material workspace — 1.6.0 (2026-10-22)
+
+- Neutral Material surfaces now consume generated semantic roles; locally bundled
+  Roboto, softer sage containers, prominent header search, clear New canvas action,
+  quieter cards, tonal navigation, consistent rounded controls and dialogs.
+- System theme on fresh installs; saved choices preserved. Readable mobile first
+  conversation and a Focus conversation action; saved viewports remain untouched.
+- Port resets serialize safely through board/workspace backups and snapshots.
+  Branches retain their source provider/model. Unknown API routes return JSON 404.
+  Indexed topological auto-layout avoids repeated traversal of shared ancestors.
+- Fixed PDF.js type/lifecycle drift without enabling unfinished attachment work.
+  Production start uses a bundled Node server, not a development-only tsx dependency.
+  Unused SQLite groundwork is optional, so missing native build tools do not block
+  installing the current application.
+- Full production build passed; **141 unit/HTTP tests** and **78 Chromium tests** passed.
+  **90 screenshot views** and actual PNG/PDF exports completed with no browser errors;
+  all views inspected in contact sheets, with key desktop/mobile/dark views at full size.
+  Evidence: `/tmp/opencode/branchboard-material-qa/`.
+- Original releases backed up before edits and preserved. New 1.1.1–1.5.1 refreshes
+  are separately labeled, with minimal two-card starters in the earliest prototypes.
+  Per-edition checks and artifact hashes are recorded under `releases/`.
+- No paid AI request, workspace migration, automatic recovery timeline or attachment
+  integration was performed. Those experimental modules are still unfinished.
+
+The assessment below is historical; its earlier verification counts are not the
+current release's verification results.
+
 Codebase assessment against `SPEC.md` (2026-10-21). This is a local-first,
 single-user implementation; the full product specification is not complete.
 

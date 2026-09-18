@@ -1,6 +1,6 @@
 {
   "name": "branchboard",
-  "version": "1.0.0",
+  "version": "1.6.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -8,14 +8,15 @@
   },
   "scripts": {
     "dev": "concurrently -k -n api,web \"tsx watch server/index.ts\" \"vite --host 127.0.0.1\"",
-    "build": "tsc --noEmit && vite build",
-    "start": "tsx server/index.ts",
+    "build": "tsc --noEmit && vite build && esbuild server/index.ts --bundle --platform=node --format=esm --packages=external --outfile=dist-server/index.js",
+    "start": "node dist-server/index.js",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "screenshot": "node scripts/screenshot.mjs",
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@fontsource-variable/roboto": "^5.3.0",
     "@fontsource/dm-sans": "^5.2.0",
     "@fontsource/manrope": "^5.2.0",
     "@material/material-color-utilities": "^0.3.0",
@@ -27,7 +28,6 @@
     "@tiptap/react": "^3.32.0",
     "@tiptap/starter-kit": "^3.32.0",
     "@xyflow/react": "^12.10.0",
-    "better-sqlite3": "^13.0.3",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
     "fflate": "^0.8.3",
@@ -43,6 +43,9 @@
     "remark-gfm": "^4.0.1",
     "zustand": "^5.0.8"
   },
+  "optionalDependencies": {
+    "better-sqlite3": "^13.0.3"
+  },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
     "@types/better-sqlite3": "^9.6.0",
@@ -53,6 +56,7 @@
     "@vitejs/plugin-react": "^5.0.0",
     "axe-core": "^4.14.0",
     "concurrently": "^9.2.0",
+    "esbuild": "^0.28.2",
     "fake-indexeddb": "^6.2.6",
     "prettier": "^3.6.0",
     "tsx": "^4.20.0",

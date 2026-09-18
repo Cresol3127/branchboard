@@ -12,6 +12,18 @@ for (const viewport of [
     await page.setViewportSize(viewport);
     await page.goto('/');
     await expect(page.locator('.react-flow__node')).toHaveCount(3);
+    if (viewport.width === 390) {
+      await expect
+        .poll(async () =>
+          Number(
+            (
+              await page.getByRole('button', { name: 'Reset zoom', exact: true }).innerText()
+            ).replace('%', ''),
+          ),
+        )
+        .toBeGreaterThanOrEqual(75);
+      await page.getByRole('button', { name: 'Fit canvas', exact: true }).click();
+    }
     await expect
       .poll(() =>
         page.evaluate(() => {
@@ -38,6 +50,7 @@ for (const viewport of [
         }),
       )
       .toBe(true);
+    await command(page, 'Theme: dark');
     await page.getByRole('button', { name: 'Switch to light mode' }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
     await page.getByRole('button', { name: 'Switch to dark mode' }).click();

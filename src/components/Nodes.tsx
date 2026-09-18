@@ -68,9 +68,10 @@ function Ports({ id, data }: Pick<BoardNode, 'id' | 'data'>) {
     useStore.getState().checkpoint();
     const set = (point: { x: number; y: number } | undefined) => {
       const node = currentBoard(useStore.getState()).nodes.find((n) => n.id === id);
-      useStore
-        .getState()
-        .updateNode(id, { portPositions: { ...node?.data.portPositions, [kind]: point } });
+      const ports = { ...node?.data.portPositions };
+      if (point) ports[kind] = point;
+      else delete ports[kind];
+      useStore.getState().updateNode(id, { portPositions: ports });
     };
     const onMove = (event: globalThis.PointerEvent) => {
       const x = Math.min(1, Math.max(0, (event.clientX - rect.x) / rect.width));

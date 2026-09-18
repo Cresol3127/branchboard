@@ -42,6 +42,7 @@ import {
   ZoomIn,
   ZoomOut,
   MoreHorizontal,
+  Scan,
   Type,
   Unlink,
 } from 'lucide-react';
@@ -127,9 +128,10 @@ function Workspace() {
   const [readyBoardId, setReadyBoardId] = useState<string | null>(null);
   const [theme, setTheme] = useState<Theme>(() => {
     try {
-      return (localStorage.getItem('branchboard.theme') as Theme) || 'dark';
+      const saved = localStorage.getItem('branchboard.theme');
+      return saved === 'light' || saved === 'dark' ? saved : 'system';
     } catch {
-      return 'dark';
+      return 'system';
     }
   });
   const [dark, setDark] = useState(false);
@@ -227,7 +229,16 @@ function Workspace() {
       return;
     initiallyFitted.current.add(board.id);
     if (!board.viewport) {
-      if (board.annotations?.items.length) fit();
+      // On phones, start with one readable card rather than a miniature whole board.
+      if (window.matchMedia('(max-width: 700px)').matches && board.nodes.length) {
+        const first = board.nodes.find((n) => n.type === 'chat') || board.nodes[0];
+        void flow.fitView({
+          nodes: [{ id: first.id }],
+          padding: fitPadding(),
+          minZoom: 0.75,
+          maxZoom: 1,
+        });
+      } else if (board.annotations?.items.length) fit();
       else void flow.fitView({ padding: fitPadding(), maxZoom: 1 });
     }
   }, [
@@ -646,14 +657,21 @@ function Workspace() {
               branchboard<span className="brand-dot">.</span>
             </span>
           </a>
-          <span className="section-label workspace-label">WORKSPACE</span>
-          <button className="search-button" aria-label="Search" onClick={openPalette}>
-            <Search size={16} />
-            <span>Search</span>
-            <kbd>{shortcut}</kbd>
+          <button
+            className="board-link new-board"
+            aria-label="New board"
+            title="New canvas"
+            onClick={() => {
+              state.newBoard();
+              if (folders.some((f) => f.id === activeFolderFilter))
+                state.moveBoard(useStore.getState().currentId, activeFolderFilter);
+              setFavoritesOnly(false);
+            }}
+          >
+            <Plus size={24} />
+            <span>New canvas</span>
           </button>
           <div className="workspace-section">
-            <span className="section-label">PROJECTS</span>
             <div className="project-heading">
               <span className="project-icon">
                 <FolderOpen size={17} />
@@ -691,7 +709,7 @@ function Workspace() {
             </div>
           </div>
           <nav aria-label="Boards">
-            <p className="section-label">CANVASES</p>
+            <p className="section-label">Your canvases</p>
             {visibleBoards.map((b) => (
               <div className="board-row" key={b.id}>
                 <button
@@ -720,22 +738,8 @@ function Workspace() {
             {!visibleBoards.length && (
               <p className="muted empty-boards">No canvases match these filters.</p>
             )}
-            <button
-              className="board-link new-board"
-              aria-label="New board"
-              onClick={() => {
-                state.newBoard();
-                if (folders.some((f) => f.id === activeFolderFilter))
-                  state.moveBoard(useStore.getState().currentId, activeFolderFilter);
-                setFavoritesOnly(false);
-              }}
-            >
-              <Plus size={16} />
-              <span>New board</span>
-            </button>
           </nav>
           <div className="sidebar-bottom">
-            <span className="section-label">UTILITIES</span>
             <button
               aria-label="Workspace utilities"
               title="Workspace utilities"
@@ -745,7 +749,7 @@ function Workspace() {
               }}
             >
               <MoreHorizontal size={17} />
-              <span>Import, export & backups</span>
+              <span>Workspace tools</span>
             </button>
             <button
               aria-label="Tips & shortcuts"
@@ -779,8 +783,6 @@ function Workspace() {
               {sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
             </IconButton>
             <div className="breadcrumbs">
-              <span>Personal space</span>
-              <span>/</span>
               <input
                 aria-label="Canvas name"
                 value={board.name}
@@ -791,6 +793,11 @@ function Workspace() {
               />
             </div>
           </div>
+          <button className="search-button header-search" aria-label="Search" onClick={openPalette}>
+            <Search size={20} />
+            <span>Search your workspace</span>
+            <kbd>{shortcut}</kbd>
+          </button>
           <div className="header-right">
             <span className="saved">
               {!state.storageError && <Check size={13} />}
@@ -814,11 +821,11 @@ function Workspace() {
         </header>
         <section ref={canvas} className="canvas-area" aria-label="Infinite canvas">
           <div className="canvas-caption">
-            <h1>{board.name || 'Untitled canvas'}</h1>
+            <h1>{board.nodes.length ? 'Your ideas, connected.' : 'Make room for an idea.'}</h1>
             <p>
               {board.nodes.length
                 ? 'Connect nodes to share context.'
-                : 'Add a conversation or note to get started.'}
+                : 'Start with a conversation, or put a thought on a note.'}
             </p>
           </div>
           <div className="board-tools" role="toolbar" aria-label="Board tools">
@@ -1072,6 +1079,36 @@ function Workspace() {
               {(board.nodes.length > 0 || !!board.annotations?.items.length) && (
                 <IconButton label="Fit canvas" onClick={fit}>
                   <Maximize size={16} />
+                </IconButton>
+              )}
+              {board.nodes.some((n) => n.type !== 'group') && (
+                <IconButton
+                  label="Focus conversation"
+                  title="Bring one card into reading view"
+                  onClick={() => {
+                    const node =
+                      board.nodes.find((n) => n.selected && n.type !== 'group') ||
+                      board.nodes.find((n) => n.type === 'chat') ||
+                      board.nodes.find((n) => n.type !== 'group');
+                    if (node) {
+                      state.nodesChange(
+                        board.nodes.map((n) => ({
+                          type: 'select',
+                          id: n.id,
+                          selected: n.id === node.id,
+                        })),
+                      );
+                      void flow.fitView({
+                        nodes: [{ id: node.id }],
+                        padding: fitPadding(),
+                        minZoom: 0.75,
+                        maxZoom: 1,
+                        duration: 200,
+                      });
+                    }
+                  }}
+                >
+                  <Scan size={18} />
                 </IconButton>
               )}
             </div>

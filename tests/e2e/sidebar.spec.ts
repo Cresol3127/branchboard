@@ -16,7 +16,7 @@ for (const width of [1440, 390]) {
     await page.keyboard.press('Enter');
     await expect(sidebar).toBeVisible();
     await expect(page.locator('.sidebar-shell')).toHaveCSS('width', '64px');
-    await expect(sidebar.getByRole('button', { name: 'Search', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Search', exact: true })).toBeVisible();
     const expand = page.getByRole('button', { name: 'Expand sidebar', exact: true });
     await expect(expand).toBeFocused();
     await expect(expand).toHaveAttribute('aria-expanded', 'false');

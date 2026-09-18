@@ -141,7 +141,9 @@ export function validateBoard(input: unknown): Board {
       if (
         typeof ports !== 'object' ||
         Object.values(ports).some(
-          (p) => !p || !finite(p.x) || !finite(p.y) || p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1,
+          (p) =>
+            p !== undefined &&
+            (!p || !finite(p.x) || !finite(p.y) || p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1),
         )
       )
         throw new Error('Invalid port positions.');
@@ -171,7 +173,13 @@ export function validateBoard(input: unknown): Board {
           finite(n.data.expandedHeight) && n.data.expandedHeight >= 100
             ? n.data.expandedHeight
             : undefined,
-        ...(ports ? { portPositions: structuredClone(ports) } : {}),
+        ...(ports
+          ? {
+              portPositions: Object.fromEntries(
+                Object.entries(ports).filter(([, p]) => p !== undefined),
+              ),
+            }
+          : {}),
         ...(n.data.contextInclude ? { contextInclude: [...n.data.contextInclude] } : {}),
         ...(n.data.contextExclude ? { contextExclude: [...n.data.contextExclude] } : {}),
         ...(n.data.contextTokenLimit !== undefined
@@ -596,6 +604,10 @@ export const useStore = create<State>((set, get) => {
       },
     );
     child.data.color = parent.data.color;
+    if (parent.data.provider && parent.data.model) {
+      child.data.provider = parent.data.provider;
+      child.data.model = parent.data.model;
+    }
     if (messageId !== undefined) child.data.title = `Branch · ${parent.data.title}`;
     child.selected = true;
     mutate((b) => ({

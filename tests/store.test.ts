@@ -40,6 +40,27 @@ const selected = () =>
   store.currentBoard(store.useStore.getState()).nodes.filter((n) => n.selected);
 const board = () => store.currentBoard(store.useStore.getState());
 describe('canvas clipboard and drag persistence', () => {
+  it('normalizes reset ports across validation, backup and snapshots', () => {
+    const s = store.useStore.getState();
+    const id = s.addNode('chat', { x: 0, y: 0 });
+    s.updateNode(id, { portPositions: { source: undefined, target: { x: 0, y: 0.5 } } });
+    const validated = store.validateBoard(board());
+    expect(validated.nodes[0].data.portPositions).toEqual({ target: { x: 0, y: 0.5 } });
+    expect(() => store.workspaceBackup()).not.toThrow();
+    s.createSnapshot('Reset ports');
+    expect(store.useStore.getState().snapshots).toHaveLength(1);
+    expect(store.useStore.getState().snapshotError).toBe('');
+  });
+  it('inherits an explicitly chosen provider and model when branching', () => {
+    const s = store.useStore.getState();
+    const id = s.addNode('chat', { x: 0, y: 0 });
+    s.updateNode(id, { provider: 'ollama', model: 'qwen3:8b' });
+    const child = s.branch(id);
+    expect(board().nodes.find((n) => n.id === child)?.data).toMatchObject({
+      provider: 'ollama',
+      model: 'qwen3:8b',
+    });
+  });
   it('copies an induced graph across canvases, remaps references, and pastes in one undo step', () => {
     const s = store.useStore.getState();
     const a = s.addNode('note', { x: 0, y: 0 });

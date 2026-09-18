@@ -207,28 +207,44 @@ export function resolveNodeCollisions(nodes: BoardNode[], ids: string[], gap = 2
 export function layoutNodes(nodes: BoardNode[], edges: Edge[]) {
   const roots = nodes.filter((n) => !n.parentId);
   const levels = new Map<string, number>();
-  const depth = (id: string, seen = new Set<string>()): number => {
-    if (seen.has(id)) return 0;
-    seen.add(id);
-    return Math.max(
-      0,
-      ...edges.filter((e) => e.target === id).map((e) => depth(e.source, new Set(seen)) + 1),
-    );
-  };
-  roots.forEach((n) => levels.set(n.id, depth(n.id)));
+  const incoming = new Map(nodes.map((n) => [n.id, 0]));
+  const outgoing = new Map<string, string[]>();
+  for (const n of nodes) levels.set(n.id, 0);
+  for (const e of edges) {
+    if (!incoming.has(e.source) || !incoming.has(e.target)) continue;
+    incoming.set(e.target, incoming.get(e.target)! + 1);
+    const targets = outgoing.get(e.source) || [];
+    targets.push(e.target);
+    outgoing.set(e.source, targets);
+  }
+  const queue = nodes.filter((n) => incoming.get(n.id) === 0).map((n) => n.id);
+  // Each edge is visited once, including shared ancestors in deeply merged graphs.
+  for (let i = 0; i < queue.length; i++) {
+    const id = queue[i];
+    for (const target of outgoing.get(id) || []) {
+      levels.set(target, Math.max(levels.get(target)!, levels.get(id)! + 1));
+      incoming.set(target, incoming.get(target)! - 1);
+      if (incoming.get(target) === 0) queue.push(target);
+    }
+  }
   const widths = new Map<number, number>();
   roots.forEach((n) => {
     const level = levels.get(n.id)!;
     widths.set(level, Math.max(widths.get(level) || 0, Number(n.style?.width) || 360));
   });
   const rows = new Map<number, number>();
+  const columns = new Map<number, number>();
+  const maximum = Math.max(0, ...levels.values());
+  let x = 80;
+  for (let i = 0; i <= maximum; i++) {
+    columns.set(i, x);
+    x += (widths.get(i) || 360) + 100;
+  }
   return nodes.map((n) => {
     if (n.parentId) return n;
     const level = levels.get(n.id)!;
-    let x = 80;
-    for (let i = 0; i < level; i++) x += (widths.get(i) || 360) + 100;
     const y = rows.get(level) || 80;
     rows.set(level, y + (Number(n.style?.height) || 330) + 70);
-    return { ...n, position: { x, y } };
+    return { ...n, position: { x: columns.get(level)!, y } };
   });
 }

@@ -1,6 +1,30 @@
 # Visual and interaction QA
 
-## Current forest workspace
+## Material workspace — 1.6.0 (2026-10-22)
+
+Current design: neutral Workspace-like surfaces, sage tonal accents, locally bundled
+Roboto, header search, clear creation/navigation hierarchy, quieter cards and a
+Gemini-inspired fixed composer. It retains BranchBoard's identity, without Google
+branding, remote fonts, new AI behavior or a workspace migration.
+
+- **141 unit/HTTP tests**, **78 Chromium interactions**, and the full production
+  frontend/server build passed. A first heavily concurrent browser run timed out;
+  the complete two-worker rerun passed without increasing timeouts or skipping tests.
+- Screenshot script: **90 captures**, actual PNG/PDF exports and `browser-errors.json: []`.
+  Artifacts: `/tmp/opencode/branchboard-material-qa/`. Reviewed all 90 in six contact
+  sheets plus full-size desktop light/dark and mobile-first-open views.
+- Review softened overly saturated accent fills before the final screenshot run.
+  Mobile now starts with a readable conversation rather than a miniature whole graph;
+  Fit canvas still intentionally zooms out for overview, while Focus conversation
+  returns to a reading view. No saved viewport is silently replaced.
+- Search remains accessible when the sidebar collapses. Message controls reveal on
+  hover/focus (always visible on touch); reduced motion and native text selection remain.
+- Historical refreshed editions have their own production smoke screenshots and
+  verification records; their inherited full browser suites are not claimed as rerun.
+
+Everything below records earlier iterations, not the current design.
+
+## Earlier forest workspace (historical)
 
 The current design uses a charcoal canvas in an inset rounded workspace, sage
 accents, neutral cards, a compact sidebar that collapses to a usable icon rail,

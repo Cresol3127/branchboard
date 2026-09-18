@@ -6,9 +6,9 @@ test('conventional workspace stays visible and follows light, dark and system th
 }) => {
   await page.emulateMedia({ colorScheme: 'light' });
   await page.goto('/');
-  await expect(page.locator('.canvas-area')).toHaveCSS('background-color', 'rgb(12, 16, 13)');
+  await expect(page.locator('.canvas-area')).toHaveCSS('background-color', 'rgb(241, 244, 249)');
   await expect(page.locator('.react-flow__background')).toHaveCount(0);
-  await expect(page.locator('.board-node').first()).toHaveCSS('border-radius', '14px');
+  await expect(page.locator('.board-node').first()).toHaveCSS('border-radius', '16px');
   await expect(page.getByRole('complementary', { name: 'Projects and boards' })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Boards' })).toBeVisible();
   await expect(page.getByRole('toolbar', { name: 'Board tools' }).getByRole('button')).toHaveCount(
@@ -20,16 +20,16 @@ test('conventional workspace stays visible and follows light, dark and system th
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'New board', exact: true }).click();
   await expect(page.getByRole('navigation', { name: 'Boards' }).locator('.board-link')).toHaveCount(
-    3,
+    2,
   );
   await page.getByRole('navigation', { name: 'Boards' }).locator('.board-link').nth(1).click();
   await expect(
     page.getByRole('navigation', { name: 'Boards' }).locator('.board-link').nth(1),
   ).toHaveAttribute('aria-current', 'page');
   await command(page, 'Theme: light');
-  await expect(page.locator('.canvas-area')).toHaveCSS('background-color', 'rgb(246, 248, 245)');
+  await expect(page.locator('.canvas-area')).toHaveCSS('background-color', 'rgb(241, 244, 249)');
   await command(page, 'Theme: dark');
-  await expect(page.locator('.canvas-area')).toHaveCSS('background-color', 'rgb(12, 16, 13)');
+  await expect(page.locator('.canvas-area')).toHaveCSS('background-color', 'rgb(27, 27, 30)');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await command(page, 'Theme: system');
@@ -91,20 +91,23 @@ for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 960 });
     await page.goto('/');
     const frame = page.locator('.workspace');
-    await expect(frame).toHaveCSS('border-radius', width === 390 ? '16px' : '24px');
+    await expect(frame).toHaveCSS('border-radius', '0px');
     await expect(frame).toHaveCSS('overflow', 'hidden');
-    await expect(page.locator('.workspace-main')).toHaveCSS('border-radius', '0px');
-    await expect(page.locator('.board-tools')).toHaveCSS('border-radius', '14px');
-    await expect(page.locator('.view-controls')).toHaveCSS('border-radius', '12px');
+    await expect(page.locator('.canvas-area')).toHaveCSS(
+      'border-top-left-radius',
+      width === 390 ? '20px' : '24px',
+    );
+    await expect(page.locator('.board-tools')).toHaveCSS('border-radius', '28px');
+    await expect(page.locator('.view-controls')).toHaveCSS('border-radius', '28px');
     await page.getByRole('button', { name: 'Toggle minimap', exact: true }).click();
-    await expect(page.locator('.react-flow__minimap')).toHaveCSS('border-radius', '14px');
+    await expect(page.locator('.react-flow__minimap')).toHaveCSS('border-radius', '16px');
     await expect(page.locator('.react-flow__minimap')).toHaveCSS('overflow', 'hidden');
     await page.getByRole('button', { name: 'Toggle minimap', exact: true }).click();
     await command(page, 'New canvas');
     await page.getByRole('button', { name: 'Add conversation', exact: true }).click();
     await expect(page.locator('.message-bar')).toHaveCSS(
       'border-radius',
-      width === 390 ? '18px' : '20px',
+      width === 390 ? '24px' : '28px',
     );
     // Round the visible card without clipping the connection ports outside its border.
     const card = page.locator('.board-node');
@@ -123,11 +126,11 @@ for (const width of [1440, 390]) {
       )
       .toBe(true);
     await command(page, 'Theme: light');
-    await expect(card).toHaveCSS('border-radius', '14px');
+    await expect(card).toHaveCSS('border-radius', '16px');
     await command(page, 'Settings');
     await expect(page.getByRole('dialog', { name: 'Settings', exact: true })).toHaveCSS(
       'border-radius',
-      '24px',
+      '28px',
     );
     await expect(page.getByLabel('API key', { exact: true })).toHaveCSS('border-radius', '12px');
     await page.keyboard.press('Escape');
@@ -135,7 +138,7 @@ for (const width of [1440, 390]) {
       await page.evaluate(() => {
         const frame = document.querySelector('.workspace')!.getBoundingClientRect();
         return (
-          frame.left > 0 &&
+          frame.left === 0 &&
           frame.right === innerWidth - frame.left &&
           frame.top === frame.left &&
           frame.bottom === innerHeight - frame.top &&

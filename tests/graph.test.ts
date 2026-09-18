@@ -23,6 +23,16 @@ function node(id: string, options: Partial<BoardNode> = {}): BoardNode {
 }
 const edge = (source: string, target: string): Edge => ({ id: source + target, source, target });
 describe('graph connections', () => {
+  it('lays out deep and heavily merged DAGs without recursive path expansion', () => {
+    const nodes = Array.from({ length: 2000 }, (_, i) => node(String(i)));
+    const edges = nodes
+      .slice(1)
+      .flatMap((n, i) => [edge(String(i), n.id), ...(i > 0 ? [edge(String(i - 1), n.id)] : [])]);
+    const result = layoutNodes(nodes, edges);
+    expect(result[0].position).toEqual({ x: 80, y: 80 });
+    expect(result.at(-1)!.position.x).toBe(80 + 1999 * 460);
+    expect(nodes[0].position).toEqual({ x: 0, y: 0 });
+  });
   it('unions historical turns on merged paths, keeps order, and lets full/manual paths include full history', () => {
     const a = node('a');
     a.data.messages = ['1', '2', '3'].map((id) => ({ id, role: 'user', content: id }));

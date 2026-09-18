@@ -28,11 +28,20 @@ const post = (url: string, body: unknown) =>
     body: JSON.stringify(body),
   });
 describe('local AI API', () => {
+  it('returns JSON 404s for unknown API paths instead of the SPA document', async () => {
+    const url = await listen(createServer(createApp()));
+    const response = await fetch(`${url}/api/unknown`);
+    expect(response.status).toBe(404);
+    expect(response.headers.get('content-type')).toContain('application/json');
+    expect(await response.json()).toEqual({ error: 'API endpoint not found.' });
+  });
   it('requires credentials, validates settings and never returns the key', async () => {
     const url = await listen(createServer(createApp()));
     expect((await post(`${url}/api/chat`, chatBody)).status).toBe(401);
     expect((await post(`${url}/api/config`, { apiKey: '' })).status).toBe(400);
-    expect(await (await post(`${url}/api/config`, { apiKey: 'sk-private-test' })).json()).toMatchObject({
+    expect(
+      await (await post(`${url}/api/config`, { apiKey: 'sk-private-test' })).json(),
+    ).toMatchObject({
       configured: true,
       model: 'gpt-4o-mini',
     });

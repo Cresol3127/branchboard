@@ -1,13 +1,20 @@
-# Branchboard
+# BranchBoard 1.6.0
 
 A local-first thinking space: an infinite canvas of connected AI conversations and sticky notes.
+
+The Material workspace brings neutral surfaces, sage accents, locally bundled Roboto,
+prominent search, simpler navigation and a fixed, Gemini-inspired composer—without
+Google branding or changing where your data lives. New installations follow the
+system theme; existing theme and canvas preferences are retained. On a fresh mobile
+canvas, the first conversation opens at a readable zoom. **Focus conversation**
+returns to a readable card view; **Fit canvas** shows the entire graph.
 
 ## Run
 
 Requires **Node.js 22.12+** and npm.
 
 ```sh
-npm install
+npm ci
 npm run dev
 ```
 
@@ -47,11 +54,16 @@ All providers stream real responses through the local server. Provider charges a
 - Workspace: multiple canvases, rename/delete, search, undo/redo (50 steps per current canvas), auto-arrange, JSON backup/import, and Markdown export.
 - Local persistence: browser autosave, reload restoration, storage failure warnings, and import validation. Fonts are bundled locally.
 
-Double-click or right-click empty canvas space for quick creation at that location. Use **Tips & shortcuts** for the keyboard reference, or **Ctrl/Command K** for commands, canvases, nodes and saved-content search. Import/export/backups are in **Utilities**. Press **G** for the grid and snapping; use **Toggle minimap** in the command palette or the map icon in the board tools. Delete or Backspace removes selected nodes/connections, with confirmation for groups or five selected nodes. Shift-click selects multiple nodes; Shift-drag on empty space selects a rectangle. **Ctrl/Command C/V** copies and pastes nodes within Branchboard, including across canvases; it does not use the operating-system clipboard. Alt-drag a connection dot to reposition it; a short Alt-drag resets it.
+Double-click or right-click empty canvas space for quick creation at that location. Use **Tips & shortcuts** for the keyboard reference, or **Ctrl/Command K** for commands, canvases, nodes and saved-content search. Import/export/backups are in **Workspace tools**. Press **G** for the grid and snapping; use **Toggle minimap** in the command palette or the map icon in the board tools. Delete or Backspace removes selected nodes/connections, with confirmation for groups or five selected nodes. Shift-click selects multiple nodes; Shift-drag on empty space selects a rectangle. **Ctrl/Command C/V** copies and pastes nodes within BranchBoard, including across canvases; it does not use the operating-system clipboard. Alt-drag a connection dot to reposition it; a short Alt-drag resets it.
 
 ## Data and privacy
 
 Boards and histories live in **this browser’s localStorage**, under `branchboard.workspace.v1`; they are not synced across browsers or devices. Clearing site data deletes them. Export a JSON backup for durable, portable storage; Markdown is a readable export, not an import format. Large histories can exceed browser storage limits; the UI warns and offers backup instead of silently discarding changes.
+
+Browser storage is tied to the exact origin (scheme, hostname and port). `localhost:3000`,
+`127.0.0.1:3000` and production port 3001 do not share storage. Export/import a workspace
+backup when switching origins. Use separate profiles/origins to compare old editions;
+do not let different versions or tabs edit the same stored workspace concurrently.
 
 Only the selected conversation and its connected upstream context are sent to the configured AI provider when you send or regenerate a message. Unconnected nodes are not sent. Responses stopped midway are retained. Regenerating replaces the last assistant reply. Undo/redo is disabled while any response is streaming to avoid corrupting an active conversation. Deleting a group deletes its children; **Ungroup** retains them.
 
@@ -60,7 +72,7 @@ This is a **single-user local app**, not a hosted multi-user service: the API bi
 ## Build and verify
 
 ```sh
-npm run build       # strict TypeScript check + production Vite build
+npm run build       # strict TypeScript + Vite frontend + bundled Node server
 npm start           # local API + built app at http://127.0.0.1:3001
 npm test            # graph, persistence, streaming, and HTTP/API tests
 npx playwright install chromium
@@ -74,4 +86,20 @@ The screenshot script uses isolated browser storage and actual UI interactions, 
 
 `PORT` changes the local API port (default 3001); Vite’s proxy follows it. `HOST` changes the API bind address. `npm start` requires a successful build first. The larger product ideas in `SPEC.md` (agents, files, collaboration, and more) are outside this implementation.
 
-See `AGENTS.md` for architecture, conventions, and maintenance notes. Existing `data/` and `releases/` are not used or modified.
+## Release history and limits
+
+See [releases/README.md](releases/README.md) for preserved originals, explicitly labeled
+prototype refreshes, checksums and verification. No original release or protected `data/`
+payload was overwritten. The refreshed 1.1.1–1.3.1 editions intentionally begin with two
+cards and a smaller feature surface; 1.4.1–1.5.1 retain their progressively richer tools.
+
+Automatic recovery timelines, attachments, token billing, RAG and workflows remain
+unfinished groundwork—not enabled product features. This release does not migrate
+workspace storage. No project distribution license has yet been selected; private
+release packages are not a grant to redistribute the application.
+
+The unused native SQLite dependency is optional groundwork. Its absence does not
+affect the current app, which stores boards in the browser; developing future SQLite
+features may require the platform's native compiler/build tools.
+
+See `AGENTS.md` for architecture, conventions, and maintenance notes.
