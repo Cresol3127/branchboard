@@ -1,0 +1,54 @@
+{
+  "version": "1.3.1",
+  "date": "2026-10-22",
+  "build": "passed",
+  "unitAndHttp": {
+    "status": "passed",
+    "tests": 78,
+    "files": 7
+  },
+  "browser": {
+    "status": "passed",
+    "scope": "production Chromium smoke: startup, API 404/origin rejection, starter cards, light/dark, mobile bounds, real settings, creation, editing, reload and JSON backup",
+    "screenshots": 4,
+    "screenshotsInspected": true,
+    "pageErrors": [],
+    "historicalFullSuite": "not rerun against refreshed layouts"
+  },
+  "paidProviderRequests": false,
+  "cleanInstall": {
+    "status": "passed",
+    "node": "v24.19.0",
+    "platform": "linux",
+    "source": {
+      "status": "passed",
+      "commands": [
+        "npm ci",
+        "npm run build",
+        "npm test"
+      ],
+      "tests": 78,
+      "extractedInventory": "matched manifest"
+    },
+    "runtime": {
+      "status": "passed",
+      "commands": [
+        "npm ci --omit=dev",
+        "npm start"
+      ],
+      "developmentDependenciesAbsent": true,
+      "extractedInventory": "matched manifest",
+      "http": [
+        "frontend",
+        "public config",
+        "JSON API 404",
+        "origin rejection"
+      ],
+      "chromium": "rendered starter canvas, local assets/fonts and working settings dialog",
+      "pageErrors": [],
+      "unavailableProviders": [
+        "Ollama model discovery: local service unavailable (HTTP 502)"
+      ]
+    }
+  }
+}
