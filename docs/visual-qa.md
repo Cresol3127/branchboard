@@ -1,5 +1,17 @@
 # Visual and interaction QA
 
+## Settings origin fix — 1.7.0 development (2026-10-23)
+
+- Production build, **154 unit/HTTP tests** and **11 focused Chromium tests** passed.
+  Real proxy regressions accept both local browser hosts and reject foreign origins.
+- A separate real-browser check saved, reloaded and removed an isolated test key on
+  both hosts without changing user settings. Reviewed all four desktop/mobile captures
+  at `/tmp/opencode/branchboard-origin-browser-oJBWvZ/`; keys are not displayed or
+  stored in browser storage. No paid provider request was used.
+- Full screenshot script: **93 captures** plus PNG/PDF downloads, with
+  `browser-errors.json: []`, at `/tmp/opencode/branchboard-origin-fix-qa/`.
+  Inspected all captures in six contact sheets; no visual changes were needed.
+
 ## Keyless model catalogs — 1.7.0 development (2026-10-23)
 
 - Full production build, **151 unit/HTTP tests** and **79 Chromium tests** passed.

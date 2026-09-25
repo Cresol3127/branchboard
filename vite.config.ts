@@ -23,7 +23,13 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       strictPort: true,
-      proxy: { '/api': `http://127.0.0.1:${process.env.PORT || env.PORT || 3001}` },
+      proxy: {
+        '/api': {
+          target: `http://127.0.0.1:${process.env.PORT || env.PORT || 3001}`,
+          // Keep the browser's Host aligned with Origin for the API's same-origin guard.
+          changeOrigin: false,
+        },
+      },
     },
     build: {
       rollupOptions: {

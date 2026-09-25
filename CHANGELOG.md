@@ -12,6 +12,8 @@
 ### Fixed
 
 - Both canvas top corners are rounded and clipped on desktop and mobile.
+- API-key settings saves incorrectly rejected as cross-origin in development; the
+  Vite proxy now preserves the browser's host while the API keeps its origin checks.
 
 ### Compatibility
 

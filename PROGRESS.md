@@ -1,5 +1,20 @@
 # Progress
 
+## Settings origin fix — 1.7.0 development (2026-10-23)
+
+- Fixed legitimate API-key saves being rejected by the development proxy. It now
+  preserves the browser's Host; the server's same-origin protection is unchanged.
+- Real Vite-proxy regressions cover `localhost` and `127.0.0.1`: save, private server
+  persistence, reload and removal. Foreign hosts and ports still return 403 without
+  writing settings. The two legitimate-origin tests failed before the fix and pass now.
+- Production build and **154 unit/HTTP tests across 17 files** passed, as did the
+  **11 focused provider/appearance Chromium tests**. An additional isolated browser
+  check saved, reloaded and removed a test key through the real proxy on both hosts;
+  no existing user settings or canvases were modified, and no paid request was made.
+- Screenshot script: **93 inspected captures**, PNG/PDF downloads and no browser
+  errors at `/tmp/opencode/branchboard-origin-fix-qa/`. Four additional desktop/mobile
+  settings-save captures were inspected. Existing release artifacts remain unchanged.
+
 ## Keyless model catalogs — 1.7.0 development (2026-10-23)
 
 - Public cloud model selections update automatically without saved API keys, using
