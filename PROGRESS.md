@@ -7,8 +7,8 @@
 - Real Vite-proxy regressions cover `localhost` and `127.0.0.1`: save, private server
   persistence, reload and removal. Foreign hosts and ports still return 403 without
   writing settings. The two legitimate-origin tests failed before the fix and pass now.
-- Production build and **154 unit/HTTP tests across 17 files** passed, as did the
-  **11 focused provider/appearance Chromium tests**. An additional isolated browser
+- Production build and **154 unit/HTTP tests across 17 files** passed, as did all
+  **79 Chromium tests** (two workers, plus an earlier 11-test focused pass). An isolated browser
   check saved, reloaded and removed a test key through the real proxy on both hosts;
   no existing user settings or canvases were modified, and no paid request was made.
 - Screenshot script: **93 inspected captures**, PNG/PDF downloads and no browser

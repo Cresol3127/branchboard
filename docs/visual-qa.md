@@ -2,7 +2,7 @@
 
 ## Settings origin fix — 1.7.0 development (2026-10-23)
 
-- Production build, **154 unit/HTTP tests** and **11 focused Chromium tests** passed.
+- Production build, **154 unit/HTTP tests** and all **79 Chromium tests** passed.
   Real proxy regressions accept both local browser hosts and reject foreign origins.
 - A separate real-browser check saved, reloaded and removed an isolated test key on
   both hosts without changing user settings. Reviewed all four desktop/mobile captures
