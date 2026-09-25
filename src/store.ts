@@ -35,6 +35,12 @@ import { validateAnnotations } from './annotations';
 import { composerTarget, draftKey } from './composer';
 import { isProviderId, type AIConfig, type ProviderId, type PublicProvider } from './providers';
 import type { ModelDiscoveryState } from './modelDiscovery';
+import {
+  loadModelCatalog,
+  MODEL_CATALOG_STORAGE_KEY,
+  validateModelCatalog,
+  type ModelCatalogState,
+} from './modelCatalog';
 
 const uid = () => crypto.randomUUID();
 const blankBoard = (name = 'Untitled canvas'): Board => ({
@@ -334,6 +340,8 @@ type State = {
   model: string;
   providers: PublicProvider[];
   modelDiscovery: ModelDiscoveryState;
+  modelCatalog: ModelCatalogState;
+  refreshModelCatalog: (force?: boolean, signal?: AbortSignal) => Promise<void>;
   applyConfig: (config: AIConfig, changedProvider?: ProviderId) => void;
   refreshModels: (id?: ProviderId, signal?: AbortSignal) => Promise<void>;
   settingsOpen: boolean;
@@ -537,6 +545,7 @@ const descendants = (nodes: BoardNode[], ids: Set<string>) => {
 
 export const useStore = create<State>((set, get) => {
   const modelRequests = new Map<ProviderId, { controller: AbortController; task: Promise<void> }>();
+  let catalogRequest: { controller: AbortController; task: Promise<void> } | undefined;
   const organize = (fn: (o: WorkspaceOrganization) => WorkspaceOrganization) => {
     const organization = fn(get().organization);
     validateOrganization(organization, get().boards, validateBoard);
@@ -774,6 +783,70 @@ export const useStore = create<State>((set, get) => {
     model: 'gpt-4o-mini',
     providers: [],
     modelDiscovery: {},
+    modelCatalog: loadModelCatalog(),
+    refreshModelCatalog: async (force = false, signal) => {
+      if (catalogRequest && !catalogRequest.controller.signal.aborted) return catalogRequest.task;
+      if (signal?.aborted) return;
+      const controller = new AbortController();
+      const abort = () => controller.abort();
+      signal?.addEventListener('abort', abort, { once: true });
+      let timedOut = false;
+      const timeout = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, 20_000);
+      const request = { controller, task: Promise.resolve() };
+      catalogRequest = request;
+      set((s) => ({
+        modelCatalog: { ...s.modelCatalog, loading: true, error: undefined, cacheError: undefined },
+      }));
+      request.task = (async () => {
+        try {
+          const response = await fetch(`/api/models/catalog${force ? '?refresh=1' : ''}`, {
+            signal: controller.signal,
+          });
+          if (!response.ok) throw new Error('Public model catalog is unavailable.');
+          const result = validateModelCatalog(await response.json());
+          if (controller.signal.aborted || catalogRequest !== request) return;
+          const providers = { ...get().modelCatalog.providers, ...result.providers };
+          set({ modelCatalog: { ...result, providers, loading: false, checkedAt: Date.now() } });
+          try {
+            localStorage.setItem(
+              MODEL_CATALOG_STORAGE_KEY,
+              JSON.stringify({ version: 1, providers }),
+            );
+          } catch {
+            set((s) => ({
+              modelCatalog: {
+                ...s.modelCatalog,
+                cacheError: 'Catalog updated, but its offline cache could not be saved.',
+              },
+            }));
+          }
+        } catch (error) {
+          if (catalogRequest !== request) return;
+          const cancelled = controller.signal.aborted && !timedOut;
+          const message = timedOut
+            ? 'Public catalog check timed out.'
+            : error instanceof Error
+              ? error.message
+              : 'Public catalog check failed.';
+          set((s) => ({
+            modelCatalog: {
+              ...s.modelCatalog,
+              loading: false,
+              ...(cancelled ? {} : { checkedAt: Date.now(), error: message }),
+            },
+          }));
+          if (!cancelled) throw new Error(message);
+        } finally {
+          clearTimeout(timeout);
+          signal?.removeEventListener('abort', abort);
+          if (catalogRequest === request) catalogRequest = undefined;
+        }
+      })();
+      return request.task;
+    },
     applyConfig: (config, changedProvider) => {
       const previous = get();
       const discovery = { ...previous.modelDiscovery };

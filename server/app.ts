@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isProviderId } from '../src/providers';
+import { publicModelCatalog, type CatalogOptions } from './modelCatalog';
 import {
   fetchModels,
   providerRegistry,
@@ -10,12 +11,13 @@ import {
   type ProviderOptions,
 } from './providers';
 
-export function createApp(options: ProviderOptions = {}) {
+export function createApp(options: ProviderOptions & { catalog?: CatalogOptions } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(express.json({ limit: '2mb' }));
   // This is a single-user local server. Never send credentials to the browser.
   const registry = providerRegistry(options);
+  const catalog = publicModelCatalog(options.catalog);
   app.use('/api', (req, res, next) => {
     res.setHeader('Cache-Control', 'no-store');
     const origin = req.get('origin');
@@ -26,6 +28,9 @@ export function createApp(options: ProviderOptions = {}) {
     next();
   });
   app.get('/api/config', (_req, res) => res.json(registry.publicConfig()));
+  app.get('/api/models/catalog', async (req, res) => {
+    res.json(await catalog.get(req.query.refresh === '1'));
+  });
   app.post('/api/config', async (req, res) => {
     // Accept the old OpenAI-only payload for existing local clients.
     const id = req.body?.provider ?? 'openai';

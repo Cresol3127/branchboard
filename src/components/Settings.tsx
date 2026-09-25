@@ -5,6 +5,12 @@ import { Modal } from './ui';
 import type { ProviderId, PublicProvider } from '../providers';
 import { ProviderSetup } from './ProviderSetup';
 import { modelDiscoveryLabel } from '../modelDiscovery';
+import {
+  catalogLabel,
+  catalogModelChoices,
+  catalogSources,
+  hasPublicCatalog,
+} from '../modelCatalog';
 
 export function Settings() {
   const providers = useStore((s) => s.providers);
@@ -51,6 +57,9 @@ export function Settings() {
 
 function ProviderSettings({ provider }: { provider: PublicProvider }) {
   const discovery = useStore((s) => s.modelDiscovery[provider.id]);
+  const catalog = useStore((s) => s.modelCatalog);
+  const publicCatalog = hasPublicCatalog(provider.id);
+  const choices = catalogModelChoices(provider, catalog, discovery);
   const [key, setKey] = useState('');
   const [baseURL, setBaseURL] = useState(provider.baseURL);
   const [model, setModel] = useState(provider.defaultModel);
@@ -86,7 +95,7 @@ function ProviderSettings({ provider }: { provider: PublicProvider }) {
       useStore.getState().applyConfig(result, provider.id);
       setKey('');
       setStatus(removeKey ? 'API key removed.' : 'Settings saved.');
-      if (!removeKey) {
+      if (!removeKey && local) {
         try {
           await useStore.getState().refreshModels(provider.id);
         } catch (err) {
@@ -162,7 +171,7 @@ function ProviderSettings({ provider }: { provider: PublicProvider }) {
         maxLength={512}
       />
       <datalist id={`provider-model-options-${provider.id}`}>
-        {provider.models.map((id) => (
+        {choices.map((id) => (
           <option key={id} value={id} />
         ))}
       </datalist>
@@ -175,10 +184,25 @@ function ProviderSettings({ provider }: { provider: PublicProvider }) {
         disabled={busy}
       />
       <p className="muted">
-        Lists update every 15 minutes while visible, and when you return to a stale list. Typed IDs
-        stay selectable; refreshing never changes your selection.
+        Public cloud catalogs update every 15 minutes while visible, without using API keys. Ollama
+        lists only installed local models. Typed IDs stay selectable; updates never change your
+        selection. A public listing does not guarantee API access or adapter compatibility.
       </p>
       <div className="provider-actions">
+        {publicCatalog && (
+          <button
+            type="button"
+            disabled={catalog.loading}
+            onClick={() =>
+              void useStore
+                .getState()
+                .refreshModelCatalog(true)
+                .catch(() => {})
+            }
+          >
+            {catalog.loading ? 'Checking…' : 'Check for updates'}
+          </button>
+        )}
         <button className="primary" disabled={busy}>
           {busy ? 'Working…' : 'Save settings'}
         </button>
@@ -238,19 +262,39 @@ function ProviderSettings({ provider }: { provider: PublicProvider }) {
               }
             }}
           >
-            Refresh models
+            {local ? 'Refresh models' : 'Fetch from saved API key'}
           </button>
         )}
       </div>
       {provider.configured && (
         <p className="connected">
           <CheckCircle2 size={16} /> {local ? 'Local endpoint configured' : 'API key saved'} ·{' '}
-          {provider.models.length} model(s)
+          {choices.length} model(s)
         </p>
+      )}
+      {publicCatalog && hasPublicCatalog(provider.id) && (
+        <div className="muted model-discovery-status">
+          <p>{catalogLabel(catalog, provider.id)}</p>
+          {catalog.providers[provider.id] && (
+            <a
+              href={catalogSources[catalog.providers[provider.id]!.source].url}
+              target="_blank"
+              rel="noreferrer"
+            >
+              View public source
+            </a>
+          )}
+          {(catalog.error || catalog.errors?.[provider.id]) && (
+            <p>{catalog.error || catalog.errors?.[provider.id]}</p>
+          )}
+          {catalog.cacheError && <p>{catalog.cacheError}</p>}
+        </div>
       )}
       {provider.configured && (
         <p className="muted model-discovery-status" title={discovery?.error}>
-          {modelDiscoveryLabel(discovery)}
+          {local || discovery?.checkedAt !== undefined
+            ? modelDiscoveryLabel(discovery)
+            : 'Saved-key listing is optional; public updates do not use your key.'}
           {discovery?.error && <> · {discovery.error}</>}
         </p>
       )}

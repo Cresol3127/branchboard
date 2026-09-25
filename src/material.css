@@ -177,9 +177,29 @@ h3 {
 }
 .canvas-area {
   border-radius: 24px 24px 0 0;
+  overflow: hidden;
 }
 .flow-viewport {
   border-radius: inherit;
+}
+.catalog-update {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-block: 10px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.catalog-update button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 18px;
+  background: var(--accent);
+  color: var(--on-accent);
 }
 .canvas-caption {
   top: 24px;
@@ -439,7 +459,7 @@ h3 {
     height: 8px;
   }
   .canvas-area {
-    border-radius: 20px 0 0 0;
+    border-radius: 20px 20px 0 0;
   }
   .board-tools {
     left: 12px;

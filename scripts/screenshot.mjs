@@ -831,10 +831,30 @@ try {
   await providerSettings.getByLabel('Provider', { exact: true }).selectOption('ollama');
   await providerSettings.locator('.model-discovery-status').scrollIntoViewIfNeeded();
   await capture('90-provider-model-settings.png');
+  await providerSettings.getByLabel('Provider', { exact: true }).selectOption('openai');
+  await providerSettings.getByRole('button', { name: 'Check for updates', exact: true }).click();
+  await expect(
+    providerSettings.getByRole('button', { name: 'Check for updates', exact: true }),
+  ).toBeEnabled();
+  await providerSettings.locator('.model-discovery-status').first().scrollIntoViewIfNeeded();
+  await capture('91-mobile-keyless-catalog-settings.png');
+  await page.keyboard.press('Escape');
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await command('Fit canvas');
+  await page.locator('.model-selector').first().click();
+  await expect(
+    modelPicker.getByRole('button', { name: 'Check for updates', exact: true }),
+  ).toBeVisible();
+  await capture('92-keyless-public-models.png');
+  await page.keyboard.press('Escape');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await command('Fit canvas');
+  await page.locator('.model-selector').first().click();
+  await capture('93-mobile-public-models.png');
   await writeFile(path.join(directory, 'browser-errors.json'), JSON.stringify(errors, null, 2));
   expect(errors).toEqual([]);
   console.log(
-    `Saved 90 desktop/mobile screenshots and PNG/PDF downloads to ${directory}; no browser errors.`,
+    `Saved 93 desktop/mobile screenshots and PNG/PDF downloads to ${directory}; no browser errors.`,
   );
 } catch (error) {
   await page.screenshot({ path: path.join(directory, 'failure.png'), fullPage: true });

@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.7.0 — Unreleased
+
+### Added
+
+- Automatic keyless public model-catalog updates from Models.dev and OpenRouter,
+  with manual checks before setup, source/update labels and an offline browser cache.
+- Public catalogs remain independent of credentials, workspace backups and selected
+  conversation models; authenticated listing is an explicit optional action.
+
+### Fixed
+
+- Both canvas top corners are rounded and clipped on desktop and mobile.
+
+### Compatibility
+
+- Existing saved/default/custom IDs, installed local Ollama discovery and workspace
+  formats are preserved. Public metadata is not an account-access guarantee.
+- Released 1.6.0 and refreshed historical editions are unchanged.
+
 ## 1.6.0 — 2026-10-22
 
 ### Changed

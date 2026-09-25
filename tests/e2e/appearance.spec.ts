@@ -97,6 +97,11 @@ for (const width of [1440, 390]) {
       'border-top-left-radius',
       width === 390 ? '20px' : '24px',
     );
+    await expect(page.locator('.canvas-area')).toHaveCSS(
+      'border-top-right-radius',
+      width === 390 ? '20px' : '24px',
+    );
+    await expect(page.locator('.canvas-area')).toHaveCSS('overflow', 'hidden');
     await expect(page.locator('.board-tools')).toHaveCSS('border-radius', '28px');
     await expect(page.locator('.view-controls')).toHaveCSS('border-radius', '28px');
     await page.getByRole('button', { name: 'Toggle minimap', exact: true }).click();

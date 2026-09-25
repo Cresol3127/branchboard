@@ -5,6 +5,7 @@ import { useStore } from '../store';
 import type { NodeData } from '../types';
 import { type ProviderId, providerDefinitions } from '../providers';
 import { modelDiscoveryLabel } from '../modelDiscovery';
+import { catalogLabel, catalogModelChoices, hasPublicCatalog } from '../modelCatalog';
 
 export function ModelSelector({
   id,
@@ -17,6 +18,7 @@ export function ModelSelector({
 }) {
   const providers = useStore((s) => s.providers);
   const discovery = useStore((s) => s.modelDiscovery);
+  const catalog = useStore((s) => s.modelCatalog);
   const boards = useStore((s) => s.boards);
   const defaultModel = useStore((s) => s.model);
   const [open, setOpen] = useState(false);
@@ -39,7 +41,11 @@ export function ModelSelector({
       ),
     );
     const allModels = [
-      ...new Set([...p.models, ...savedModels, ...(p.id === provider ? [model] : [])]),
+      ...new Set([
+        ...catalogModelChoices(p, catalog, discovery[p.id]),
+        ...savedModels,
+        ...(p.id === provider ? [model] : []),
+      ]),
     ];
     const models = allModels.filter((m) =>
       `${p.name} ${m}`.toLowerCase().includes(query.toLowerCase()),
@@ -65,7 +71,7 @@ export function ModelSelector({
   }, []);
   useLayoutEffect(() => {
     if (open) positionMenu();
-  }, [open, query, providers, discovery, positionMenu]);
+  }, [open, query, providers, discovery, catalog, positionMenu]);
   useEffect(() => {
     if (!open) return;
     menu.current?.querySelector('input')?.focus();
@@ -191,6 +197,22 @@ export function ModelSelector({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
+            <div className="catalog-update">
+              <span>Public catalogs · No API key needed</span>
+              <button
+                type="button"
+                disabled={catalog.loading}
+                onClick={() =>
+                  void useStore
+                    .getState()
+                    .refreshModelCatalog(true)
+                    .catch(() => {})
+                }
+              >
+                <RefreshCw size={12} aria-hidden="true" />{' '}
+                {catalog.loading ? 'Checking…' : 'Check for updates'}
+              </button>
+            </div>
             {query && (
               <div className="custom-model-entry">
                 <label htmlFor={`custom-provider-${id}`}>Exact ID for</label>
@@ -227,14 +249,31 @@ export function ModelSelector({
                       {p.name}
                       <span>{!p.configured ? 'Setup required' : ''}</span>
                     </strong>
+                    {hasPublicCatalog(p.id) && (
+                      <div className="model-discovery-row">
+                        <span className="model-discovery-status">
+                          {catalogLabel(catalog, p.id)}
+                        </span>
+                        {(catalog.error || catalog.errors?.[p.id]) && (
+                          <small>{catalog.error || catalog.errors?.[p.id]}</small>
+                        )}
+                      </div>
+                    )}
                     {p.configured && (
                       <div className="model-discovery-row">
                         <span className="model-discovery-status" title={discovery[p.id]?.error}>
-                          {modelDiscoveryLabel(discovery[p.id])}
+                          {p.id !== 'ollama' && discovery[p.id]?.checkedAt === undefined
+                            ? 'Optional saved-key listing'
+                            : modelDiscoveryLabel(discovery[p.id])}
                         </span>
                         <button
                           type="button"
                           aria-label={`Refresh ${p.name} models`}
+                          title={
+                            p.id === 'ollama'
+                              ? 'List models installed on your local Ollama endpoint'
+                              : 'Explicitly list models using the saved provider credentials'
+                          }
                           disabled={discovery[p.id]?.loading}
                           onClick={() =>
                             void useStore
@@ -243,7 +282,8 @@ export function ModelSelector({
                               .catch(() => {})
                           }
                         >
-                          <RefreshCw size={12} aria-hidden="true" /> Refresh
+                          <RefreshCw size={12} aria-hidden="true" />{' '}
+                          {p.id === 'ollama' ? 'Refresh installed' : 'Check saved key'}
                         </button>
                         {discovery[p.id]?.error && <small>{discovery[p.id]?.error}</small>}
                       </div>
@@ -294,7 +334,9 @@ export function ModelSelector({
               })}
             </div>
             <p className="model-list-note">
-              Saved/default IDs are also shown. The provider decides availability when sending.
+              Public listings are not an access or compatibility guarantee. Saved/default IDs stay
+              selectable; access is checked when sending.
+              {catalog.cacheError && <> {catalog.cacheError}</>}
             </p>
             <button
               type="button"

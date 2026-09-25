@@ -1,8 +1,25 @@
 # Visual and interaction QA
 
+## Keyless model catalogs — 1.7.0 development (2026-10-23)
+
+- Full production build, **151 unit/HTTP tests** and **79 Chromium tests** passed.
+  Browser coverage includes updates before entering a key, periodic refresh, manual
+  checks, offline cache, preserved exact selections and no automatic cloud-key listing.
+- Screenshot script: **93 captures**, actual PNG/PDF exports and
+  `browser-errors.json: []`. Artifacts: `/tmp/opencode/branchboard-public-catalog-final/`.
+  Reviewed all captures in six contact sheets and the three new catalog views at
+  full size: mobile Settings, desktop picker and mobile picker.
+- Public-source labels, update controls and setup guidance remain visible without
+  keys. Mobile dialogs and the portaled model picker stay within the viewport.
+  Both canvas top corners visibly clip content; existing port/gesture tests still pass.
+- Live public-catalog fetch succeeded without credentials. Catalog entries are not
+  an API-access or adapter-compatibility guarantee. Paid generation was not tested.
+- A server restart interrupted an earlier run; the complete final rerun passed.
+  No historical release artifact was changed or newly published.
+
 ## Material workspace — 1.6.0 (2026-10-22)
 
-Current design: neutral Workspace-like surfaces, sage tonal accents, locally bundled
+Design baseline: neutral Workspace-like surfaces, sage tonal accents, locally bundled
 Roboto, header search, clear creation/navigation hierarchy, quieter cards and a
 Gemini-inspired fixed composer. It retains BranchBoard's identity, without Google
 branding, remote fonts, new AI behavior or a workspace migration.

@@ -1,6 +1,21 @@
 import { expect, test, type Page } from '@playwright/test';
 import { providerDefinitions, providerIds, type PublicProvider } from '../../src/providers';
 import { command } from './helpers';
+import { catalogProviderIds } from '../../src/modelCatalog';
+
+const publicCatalog = (openaiModels?: string[]) => ({
+  version: 1,
+  providers: Object.fromEntries(
+    catalogProviderIds.map((id) => [
+      id,
+      {
+        models: id === 'openai' && openaiModels ? openaiModels : providerDefinitions[id].models,
+        source: id === 'openrouter' ? 'openrouter' : 'models.dev',
+        updatedAt: Date.now(),
+      },
+    ]),
+  ),
+});
 
 async function setup(page: Page) {
   const providers: PublicProvider[] = providerIds.map((id) => ({
@@ -15,6 +30,7 @@ async function setup(page: Page) {
   }));
   const changes: Record<string, unknown>[] = [];
   const calls: { provider: string; model: string; messages: unknown[] }[] = [];
+  await page.route('**/api/models/catalog*', (route) => route.fulfill({ json: publicCatalog() }));
   await page.route('**/api/config', async (route) => {
     if (route.request().method() === 'POST') {
       const patch = route.request().postDataJSON();
@@ -208,7 +224,7 @@ test('selects an exact model ID from text, preserves it through refresh, and rou
   ).toHaveCount(2);
 });
 
-test('automatically refreshes stale provider lists, reports independent errors and retains the last successful models', async ({
+test('automatically refreshes keyless public catalogs, keeps offline choices and leaves local installed models independent', async ({
   page,
 }) => {
   await page.clock.install();
@@ -218,15 +234,19 @@ test('automatically refreshes stale provider lists, reports independent errors a
   const selector = page.getByRole('dialog', { name: 'Model selector', exact: true });
   const openai = selector.getByRole('group', { name: 'OpenAI', exact: true });
   await expect(openai).toContainText('Updated');
-  let openaiCalls = 0;
+  let publicCalls = 0;
+  let keyCalls = 0;
   let ollamaCalls = 0;
   let fail = false;
-  await page.route('**/api/providers/openai/models', (route) => {
-    openaiCalls++;
+  page.on('request', (request) => {
+    if (request.url().includes('/api/providers/openai/models')) keyCalls++;
+  });
+  await page.route('**/api/models/catalog*', (route) => {
+    publicCalls++;
     return route.fulfill(
       fail
-        ? { status: 502, json: { error: 'Provider temporarily unavailable' } }
-        : { json: { models: ['auto-latest-model'] } },
+        ? { status: 502, json: { error: 'Public catalog temporarily unavailable' } }
+        : { json: publicCatalog(['auto-latest-model']) },
     );
   });
   await page.route('**/api/providers/ollama/models', (route) => {
@@ -239,32 +259,105 @@ test('automatically refreshes stale provider lists, reports independent errors a
   ).toBeVisible();
   await expect.poll(() => ollamaCalls).toBe(1);
   await expect(chat.locator('.model-selector')).toContainText('gpt-4o-mini');
-  expect(openaiCalls).toBe(1);
+  expect(publicCalls).toBe(1);
+  expect(keyCalls).toBe(0);
   fail = true;
   await page.clock.fastForward(16 * 60 * 1000);
-  await expect(openai).toContainText('Refresh failed — previous list kept');
-  await expect(openai).toContainText('Provider temporarily unavailable');
+  await expect(openai).toContainText('Update failed — cached / suggested list kept');
+  await expect(openai).toContainText('Public model catalog is unavailable');
   await expect(
     openai.getByRole('option', { name: 'auto-latest-model', exact: true }),
   ).toBeVisible();
   await expect(selector.getByRole('group', { name: 'Ollama', exact: true })).not.toContainText(
     'Refresh failed',
   );
-  const count = openaiCalls;
+  const count = publicCalls;
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
-  expect(openaiCalls).toBe(count);
+  expect(publicCalls).toBe(count);
   await page.evaluate(() =>
     Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' }),
   );
   await page.clock.fastForward(16 * 60 * 1000);
-  expect(openaiCalls).toBe(count);
+  expect(publicCalls).toBe(count);
   fail = false;
   await page.evaluate(() => {
     Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
     window.dispatchEvent(new Event('focus'));
   });
   await expect(openai).toContainText('Updated');
-  await expect(openai).not.toContainText('Refresh failed');
+  await expect(openai).not.toContainText('Update failed');
+  expect(keyCalls).toBe(0);
+});
+
+test('offers new public models and manual updates before any API key is saved, retaining offline cache and exact selections', async ({
+  page,
+}) => {
+  const providers = providerIds.map((id) => ({
+    id,
+    name: providerDefinitions[id].name,
+    baseURL: providerDefinitions[id].baseURL,
+    configured: false,
+    hasKey: false,
+    models: [...providerDefinitions[id].models],
+    extraModels: ['custom-kept'],
+    defaultModel: providerDefinitions[id].models[0] || '',
+  }));
+  let publicCalls = 0;
+  let keyCalls = 0;
+  let unavailable = false;
+  page.on('request', (request) => {
+    if (request.url().includes('/api/providers/')) keyCalls++;
+  });
+  await page.route('**/api/config', (route) =>
+    route.fulfill({ json: { configured: false, model: 'gpt-4o-mini', providers } }),
+  );
+  await page.route('**/api/models/catalog*', (route) => {
+    publicCalls++;
+    return route.fulfill(
+      unavailable
+        ? { status: 502, json: { error: 'Offline' } }
+        : { json: publicCatalog(['new-keyless-model']) },
+    );
+  });
+  await page.goto('/');
+  await command(page, 'New canvas');
+  await page.getByRole('button', { name: 'Add conversation', exact: true }).click();
+  const trigger = page.locator('.model-selector');
+  await trigger.click();
+  const selector = page.getByRole('dialog', { name: 'Model selector', exact: true });
+  await expect(
+    selector.getByRole('option', { name: 'new-keyless-model', exact: true }),
+  ).toBeVisible();
+  await expect(
+    selector.getByRole('option', { name: 'custom-kept', exact: true }).first(),
+  ).toBeVisible();
+  expect(publicCalls).toBe(1);
+  expect(keyCalls).toBe(0);
+  await selector.getByRole('option', { name: 'new-keyless-model', exact: true }).click();
+  const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+  await expect(settings).toBeVisible();
+  await expect(settings.getByLabel('API key', { exact: true })).toHaveValue('');
+  await settings.getByRole('button', { name: 'Check for updates', exact: true }).click();
+  await expect.poll(() => publicCalls).toBe(2);
+  await expect(settings.locator('.model-discovery-status')).toContainText('No key needed');
+  await page.keyboard.press('Escape');
+  await expect(trigger).toContainText('new-keyless-model');
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem('branchboard.workspace.v1')))
+    .toContain('new-keyless-model');
+  await page.reload();
+  await trigger.click();
+  await expect(
+    selector.getByRole('option', { name: 'new-keyless-model', exact: true }),
+  ).toHaveAttribute('aria-selected', 'true');
+  expect(publicCalls).toBe(2); // A fresh cache survives reload without another network check.
+  unavailable = true;
+  await selector.getByRole('button', { name: 'Check for updates', exact: true }).click();
+  await expect(selector).toContainText('Update failed — cached / suggested list kept');
+  await expect(
+    selector.getByRole('option', { name: 'new-keyless-model', exact: true }),
+  ).toHaveAttribute('aria-selected', 'true');
+  expect(keyCalls).toBe(0);
 });
 
 test('allows keyboard custom IDs on mobile and keeps provider lists usable when discovery is unsupported', async ({

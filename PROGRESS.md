@@ -1,5 +1,28 @@
 # Progress
 
+## Keyless model catalogs — 1.7.0 development (2026-10-23)
+
+- Public cloud model selections update automatically without saved API keys, using
+  Models.dev and OpenRouter's public catalog. Visible, online sessions check stale
+  catalogs every 15 minutes; Settings and the model picker also offer Check for updates.
+- Source/update labels, bounded public responses, request deduplication and a separate
+  disposable browser cache keep offline choices usable. Selected, default and custom
+  model IDs remain available; no workspace, history or backup format changed.
+- Cloud-key listing is explicit, not automatic. Local Ollama continues to list installed
+  models independently. Public metadata does not guarantee account access or adapter support.
+- Both canvas top corners are rounded and clipped on desktop and mobile; port dragging,
+  portal menus, mobile bounds and saved viewports retain their regression coverage.
+- Full production frontend/server build, **151 unit/HTTP tests across 16 files** and
+  **79 Chromium tests** passed. The screenshot script completed **93 captures** plus
+  actual PNG/PDF exports with no browser errors. All captures were inspected in six
+  contact sheets, with the new desktop/mobile catalog views also reviewed at full size.
+  Evidence: `/tmp/opencode/branchboard-public-catalog-final/`.
+- A real keyless catalog request returned all six supported cloud provider lists
+  without source errors. No paid generation request was made. Earlier interrupted
+  checks were rerun completely after the development server restarted.
+- This is an unreleased source increment; tagged 1.6.0 and all historical release
+  artifacts remain unchanged.
+
 ## Material workspace — 1.6.0 (2026-10-22)
 
 - Neutral Material surfaces now consume generated semantic roles; locally bundled
