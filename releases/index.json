@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "date": "2026-10-22",
-  "current": "1.6.0",
+  "date": "2026-10-23",
+  "current": "1.7.0",
   "policy": "private local artifacts; preserve originals; refreshed editions have new versions",
   "externalBackup": "../../branchboard-backups/20261022T133446Z-before-material-redesign/",
   "originals": [
@@ -102,6 +102,13 @@
       "path": "v1.6.0/",
       "manifest": "v1.6.0/manifest.json",
       "verification": "v1.6.0/verification.json"
+    },
+    {
+      "version": "1.7.0",
+      "title": "Design improvements",
+      "path": "v1.7.0/",
+      "manifest": "v1.7.0/manifest.json",
+      "verification": "v1.7.0/verification.json"
     }
   ]
 }

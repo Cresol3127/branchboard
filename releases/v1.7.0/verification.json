@@ -1,0 +1,78 @@
+{
+  "version": "1.7.0",
+  "title": "Design improvements",
+  "date": "2026-10-23",
+  "build": "passed",
+  "buildCommand": "npm run build",
+  "unitAndHttp": {
+    "status": "passed",
+    "tests": 163,
+    "files": 18,
+    "command": "npm test"
+  },
+  "browser": {
+    "status": "passed",
+    "tests": 88,
+    "workers": 2,
+    "engine": "Chromium",
+    "command": "npm run test:e2e -- --workers=2",
+    "scope": "Full interaction suite, including configured-provider model choices, persistent history, exact request routing, drafts, keyboard/mobile pickers, progressive dialogs, minimap spacing, unchanged graph viewport and width-aware composer sizing."
+  },
+  "screenshots": {
+    "status": "passed",
+    "captures": 104,
+    "inspected": true,
+    "path": "/tmp/opencode/branchboard-design-improvements-final/",
+    "downloads": [
+      "PNG",
+      "PDF"
+    ],
+    "browserErrors": [],
+    "review": "All captures reviewed in six contact sheets; new mobile/desktop design views also inspected at full size. Clipped wrapped draft text was fixed and the complete script rerun."
+  },
+  "cleanInstall": {
+    "status": "passed",
+    "node": "v24.19.0",
+    "platform": "linux",
+    "source": {
+      "status": "passed",
+      "artifactSha256": "14478ab38641817f6c18a1fd5b1b47bd970dd909b9deda522748ae47d927124c",
+      "commands": [
+        "npm ci",
+        "npm run build",
+        "npm test"
+      ],
+      "tests": 163,
+      "extractedInventory": "matched manifest"
+    },
+    "runtime": {
+      "status": "passed",
+      "artifactSha256": "04abee3163ba91a62b8a3063a977b2c59e7babe92bb71f8dcbd8b82bbcc583a7",
+      "commands": [
+        "npm ci --omit=dev",
+        "npm start"
+      ],
+      "developmentDependenciesAbsent": true,
+      "extractedInventory": "matched manifest",
+      "http": [
+        "frontend",
+        "public config",
+        "JSON API 404",
+        "origin rejection"
+      ],
+      "chromium": "rendered starter canvas, local assets/fonts and working settings dialog",
+      "pageErrors": [],
+      "unavailableProviders": [
+        "Ollama model discovery: local service unavailable (HTTP 502)"
+      ]
+    }
+  },
+  "paidProviderRequests": false,
+  "workspaceMigration": false,
+  "limitations": [
+    "Generation browser tests use deterministic fixtures; HTTP suites exercise real local provider/proxy servers, not paid accounts.",
+    "Public catalog membership does not guarantee account access or adapter compatibility.",
+    "The existing lazy RichNote chunk remains larger than Vite's 500 kB warning threshold.",
+    "Single-user local service, not authenticated public hosting. No distribution license selected."
+  ]
+}
