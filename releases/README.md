@@ -2,24 +2,29 @@
 
 ## Current and refreshed editions
 
-| Version   | Purpose                                                      | Preserved source        |
-| --------- | ------------------------------------------------------------ | ----------------------- |
-| **1.6.0** | Current Material workspace                                   | Maintained project root |
-| 1.1.1     | Minimal two-card conversation/note prototype                 | v1.1                    |
-| 1.2.1     | Prototype with inherited-context controls                    | v1.2                    |
-| 1.3.1     | Prototype with searchable, editable history                  | v1.3                    |
-| 1.4.1     | Rich notes, annotations, exports, organization and snapshots | v1.4                    |
-| 1.5.1     | Fixed composer, text selection and model discovery           | v1.5                    |
+| Version   | Purpose                                                        | Preserved source        |
+| --------- | -------------------------------------------------------------- | ----------------------- |
+| **1.7.0** | Design improvements: minimal picker, history and responsive UI | Maintained project root |
+| 1.6.0     | Original Material workspace release                            | Tag v1.6.0              |
+| 1.1.1     | Minimal two-card conversation/note prototype                   | v1.1                    |
+| 1.2.1     | Prototype with inherited-context controls                      | v1.2                    |
+| 1.3.1     | Prototype with searchable, editable history                    | v1.3                    |
+| 1.4.1     | Rich notes, annotations, exports, organization and snapshots   | v1.4                    |
+| 1.5.1     | Fixed composer, text selection and model discovery             | v1.5                    |
 
-These are **new editions created 2026-10-22**, not historical originals with silently
+The refreshed historical editions were **created 2026-10-22**, followed by
+**1.7.0 — Design improvements (2026-10-23)**. They are not historical originals with silently
 changed contents or invented dates. Every edition has matching package/lock versions,
 release notes, a manifest, checksums and a verification record. Source and runtime
 archives are separate: the runtime includes both the built frontend and Node server,
 but no node_modules. Use Node 22.12+, `npm ci --omit=dev`, then `npm start`.
 Source archives use `npm ci`, `npm run build`, then `npm start`.
 Each edition also has checked desktop, dark and mobile images in `previews/`.
-Current app previews: [desktop](v1.6.0/previews/desktop.png),
-[dark](v1.6.0/previews/dark.png), [mobile](v1.6.0/previews/mobile.png).
+Current app previews: [desktop](v1.7.0/previews/desktop.png),
+[dark](v1.7.0/previews/dark.png), [mobile](v1.7.0/previews/mobile.png).
+Design details: [model picker](v1.7.0/previews/models.png),
+[Settings](v1.7.0/previews/settings.png), [Help](v1.7.0/previews/help.png),
+[shortcuts](v1.7.0/previews/shortcuts.png), [mobile overlays](v1.7.0/previews/overlays.png).
 
 **Private local releases:** no project distribution license has been selected.
 Nothing has been published to a public registry, hosting service or Git remote.
@@ -60,15 +65,20 @@ changed originals; `scripts/verify-editions.mjs` exercises the refreshed apps.
 `scripts/verify-packages.mjs` checks extracted inventories, fresh source installs/builds/tests,
 and production-only installs with real HTTP and Chromium checks. A missing local Ollama
 service is recorded separately from application asset or browser failures.
-The current release uses tag `v1.6.0`; refreshed source paths use namespaced tags
+The current release uses tag `v1.7.0` with the title **Design improvements**;
+`v1.6.0` is preserved. Refreshed source paths use namespaced tags
 `editions/v1.1.1` through `editions/v1.5.1`, so they cannot be mistaken for older
 standalone root checkouts. Tagged archives are immutable.
 
-For future releases: back up first, update package/lock/changelog versions together,
-build and test, prepare packages, run the edition/package verification scripts,
-commit maintained sources, and run `python3 scripts/package-releases.py --finalize`.
-Then commit the catalog/evidence and tag. `--replace-unpublished` is only for local
-preparation; it refuses changes to archives once their version is tagged.
+For future releases: back up/checkpoint first, update package/lock/changelog versions
+together, build/test and inspect screenshots, then freeze maintained sources in Git.
+Use `python3 scripts/package-current-release.py` for **only the new current version**,
+which rejects source bytes that do not match the frozen Git checkpoint,
+then `node scripts/verify-packages.mjs VERSION` for fresh extracted source/runtime checks.
+Run `python3 scripts/package-current-release.py --finalize` to require matching verified
+archive hashes and append the catalog. Commit evidence and create the annotated version tag.
+`--replace-unpublished` is only for local preparation and refuses tagged versions.
+The older `package-releases.py` is the historical batch tool, not the updater for new releases.
 
 Back up your workspace before comparing versions. Use separate browser profiles or
 origins: browser storage is keyed by scheme/host/port, not application version.

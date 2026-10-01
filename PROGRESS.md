@@ -1,5 +1,37 @@
 # Progress
 
+## Design improvements — 1.7.0 (2026-10-23)
+
+- Minimal configured-provider model picker with five persistent recent choices,
+  search and progressive exact-ID entry. Connected local Ollama remains keyless;
+  disconnected providers are hidden without deleting their saved conversation IDs.
+  New conversations remember the last choice after reload. Model changes preserve
+  drafts, affect only the destination and never send requests or create empty chats.
+- Settings prioritizes connection/key/model and Save, with collapsed setup/advanced
+  details. Help separates a short guide from searchable, grouped shortcuts, using
+  24px titles, 18px sections and readable body text with keyboard/focus support.
+- Measured canvas overlays reserve composer/keyboard space. Controls descend without
+  the minimap and leave 24px above it when shown; short viewports visibly pause it.
+  Sidebar/composer/minimap changes do not auto-reset graph zoom or position.
+  Compact rail visuals retain 44px targets, and both top canvas curves are visible.
+- Visual inspection caught a draft-height bug after a desktop-to-phone resize.
+  The composer now remeasures width-dependent wrapping, keeps its existing height
+  cap and scroll behavior, and preserves the draft and graph viewport.
+- Includes the earlier keyless public catalogs, message-bar model control and real
+  development-proxy origin fix below. Workspace/backup schemas remain unchanged;
+  model history is a separate browser preference. No paid AI request or data migration.
+- New release tooling targets only the current version, requires exact archive-hash
+  fresh-install evidence before finalization, and refuses rewriting tagged versions.
+  Original snapshots and all 48 previous tagged-release checksum entries were rechecked unchanged.
+- Final production frontend/server build, **163 unit/HTTP tests across 18 files**
+  and all **88 Chromium tests** passed. The complete screenshot script produced
+  **104 inspected captures**, actual PNG/PDF downloads and no browser errors at
+  `/tmp/opencode/branchboard-design-improvements-final/`. The resize regression
+  reproduced the clipped draft before the fix and passed afterward.
+- Release source/runtime archives must independently pass extraction, fresh installs,
+  source build/tests and production-only browser/HTTP checks before catalog finalization.
+  Exact artifact hashes and results are recorded in the release's `verification.json`.
+
 ## Settings origin fix — 1.7.0 development (2026-10-23)
 
 - Fixed legitimate API-key saves being rejected by the development proxy. It now

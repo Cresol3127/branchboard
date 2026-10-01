@@ -1,26 +1,34 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown, RefreshCw } from 'lucide-react';
+import { Check, ChevronDown, RefreshCw } from 'lucide-react';
 import { useStore } from '../store';
 import type { NodeData } from '../types';
 import { type ProviderId, providerDefinitions } from '../providers';
-import { modelDiscoveryLabel } from '../modelDiscovery';
-import { catalogLabel, catalogModelChoices, hasPublicCatalog } from '../modelCatalog';
+import { catalogModelChoices, validModelId } from '../modelCatalog';
+import { selectableProviders } from '../modelPreferences';
 
 export function ModelSelector({
   id,
   data,
   streaming,
+  onSelect,
+  className = '',
+  label = 'Select model',
 }: {
   id: string;
-  data: NodeData;
+  data: Pick<NodeData, 'provider' | 'model' | 'error'>;
   streaming: boolean;
+  onSelect?: (provider: ProviderId, model: string) => boolean;
+  className?: string;
+  label?: string;
 }) {
   const providers = useStore((s) => s.providers);
   const discovery = useStore((s) => s.modelDiscovery);
   const catalog = useStore((s) => s.modelCatalog);
   const boards = useStore((s) => s.boards);
   const defaultModel = useStore((s) => s.model);
+  const preferences = useStore((s) => s.modelPreferences);
+  const preferenceError = useStore((s) => s.modelPreferenceError);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [customProvider, setCustomProvider] = useState<ProviderId>(data.provider || 'openai');
@@ -30,8 +38,19 @@ export function ModelSelector({
   const model = data.model || defaultModel;
   const selected = providers.find((p) => p.id === provider);
   const exactId = query.trim();
-  const validId = Boolean(exactId && exactId.length <= 512 && !/[\r\n]/.test(exactId));
-  const groups = providers.flatMap((p) => {
+  const validId = validModelId(exactId);
+  const available = selectableProviders(providers, discovery);
+  const exactProvider = available.some((p) => p.id === customProvider)
+    ? customProvider
+    : available[0]?.id;
+  const recent = preferences.recent.filter(
+    (choice) =>
+      available.some((p) => p.id === choice.provider) &&
+      `${providerDefinitions[choice.provider].name} ${choice.model}`
+        .toLowerCase()
+        .includes(query.toLowerCase()),
+  );
+  const groups = available.flatMap((p) => {
     if (!open) return [];
     const savedModels = boards.flatMap((b) =>
       b.nodes.flatMap((n) =>
@@ -44,15 +63,16 @@ export function ModelSelector({
       ...new Set([
         ...catalogModelChoices(p, catalog, discovery[p.id]),
         ...savedModels,
+        ...preferences.recent.filter((c) => c.provider === p.id).map((c) => c.model),
         ...(p.id === provider ? [model] : []),
       ]),
     ];
-    const models = allModels.filter((m) =>
-      `${p.name} ${m}`.toLowerCase().includes(query.toLowerCase()),
+    const models = allModels.filter(
+      (m) =>
+        `${p.name} ${m}`.toLowerCase().includes(query.toLowerCase()) &&
+        !recent.some((c) => c.provider === p.id && c.model === m),
     );
-    return models.length || !query || p.name.toLowerCase().includes(query.toLowerCase())
-      ? [{ ...p, models }]
-      : [];
+    return models.length ? [{ ...p, models }] : [];
   });
   const positionMenu = useCallback(() => {
     if (!menu.current || !trigger.current) return;
@@ -71,7 +91,7 @@ export function ModelSelector({
   }, []);
   useLayoutEffect(() => {
     if (open) positionMenu();
-  }, [open, query, providers, discovery, catalog, positionMenu]);
+  }, [open, query, providers, discovery, catalog, preferences, positionMenu]);
   useEffect(() => {
     if (!open) return;
     menu.current?.querySelector('input')?.focus();
@@ -101,23 +121,45 @@ export function ModelSelector({
   const choose = (provider: ProviderId, model: string) => {
     const state = useStore.getState();
     // A refresh must never change routing, and neither may a stale, streaming popup.
-    if (
-      state.streaming[id] ||
-      !state.boards.find((b) => b.id === state.currentId)?.nodes.some((n) => n.id === id)
-    )
+    if (!selectableProviders(state.providers, state.modelDiscovery).some((p) => p.id === provider))
       return;
-    state.updateNode(id, { provider, model, error: undefined }, true);
+    if (onSelect) {
+      if (!onSelect(provider, model)) return;
+    } else {
+      if (
+        state.streaming[id] ||
+        !state.boards.find((b) => b.id === state.currentId)?.nodes.some((n) => n.id === id)
+      )
+        return;
+      state.updateNode(id, { provider, model, error: undefined }, true);
+      state.rememberModel({ provider, model });
+    }
     close();
-    if (!state.providers.find((p) => p.id === provider)?.configured)
-      useStore.setState({ settingsOpen: true, settingsProvider: provider });
   };
+  const option = (providerId: ProviderId, modelId: string, showProvider = false) => (
+    <button
+      key={`${providerId}:${modelId}`}
+      type="button"
+      role="option"
+      aria-label={modelId}
+      aria-selected={providerId === provider && modelId === model}
+      title={`${providerDefinitions[providerId].name} / ${modelId}`}
+      onClick={() => choose(providerId, modelId)}
+    >
+      <span className="model-option-label">
+        <span>{modelId}</span>
+        {showProvider && <small>{providerDefinitions[providerId].name}</small>}
+      </span>
+      {providerId === provider && modelId === model && <Check size={15} aria-hidden="true" />}
+    </button>
+  );
   return (
     <>
       <button
         ref={trigger}
         type="button"
-        className="model-selector nodrag nowheel"
-        aria-label={`Select model: ${selected?.name || provider} / ${model}`}
+        className={`model-selector nodrag nowheel ${className}`}
+        aria-label={`${label}: ${selected?.name || provider} / ${model}`}
         aria-haspopup="dialog"
         aria-expanded={open}
         disabled={streaming}
@@ -193,36 +235,20 @@ export function ModelSelector({
           >
             <input
               aria-label="Search models"
-              placeholder="Search models or enter an exact ID…"
+              placeholder={available.length ? 'Search models…' : 'No providers connected'}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
-            <div className="catalog-update">
-              <span>Public catalogs · No API key needed</span>
-              <button
-                type="button"
-                disabled={catalog.loading}
-                onClick={() =>
-                  void useStore
-                    .getState()
-                    .refreshModelCatalog(true)
-                    .catch(() => {})
-                }
-              >
-                <RefreshCw size={12} aria-hidden="true" />{' '}
-                {catalog.loading ? 'Checking…' : 'Check for updates'}
-              </button>
-            </div>
-            {query && (
+            {query && validId && exactProvider && !groups.length && !recent.length && (
               <div className="custom-model-entry">
                 <label htmlFor={`custom-provider-${id}`}>Exact ID for</label>
                 <select
                   id={`custom-provider-${id}`}
                   aria-label="Custom model provider"
-                  value={customProvider}
+                  value={exactProvider}
                   onChange={(e) => setCustomProvider(e.target.value as ProviderId)}
                 >
-                  {providers.map((p) => (
+                  {available.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
                     </option>
@@ -231,123 +257,67 @@ export function ModelSelector({
                 <button
                   type="button"
                   disabled={!validId || streaming}
-                  title={`Use ${exactId} with ${providerDefinitions[customProvider].name}; availability is checked when sending`}
-                  onClick={() => choose(customProvider, exactId)}
+                  title={`Use ${exactId} with ${providerDefinitions[exactProvider].name}; availability is checked when sending`}
+                  onClick={() => choose(exactProvider, exactId)}
                 >
                   Use custom model
                 </button>
-                <small>Uses the exact ID you typed, even if it is not listed.</small>
               </div>
             )}
             <div role="listbox" aria-label="Available models" className="model-options">
-              {!groups.length && <p role="status">No matching providers or models.</p>}
+              {!available.length && (
+                <p role="status">Connect a provider in Settings to choose a model.</p>
+              )}
+              {available.length > 0 && !groups.length && !recent.length && (
+                <p role="status">No matching models.</p>
+              )}
+              {recent.length > 0 && (
+                <div role="group" aria-label="Recent models">
+                  <strong>Recent</strong>
+                  {recent.map((choice) => option(choice.provider, choice.model, true))}
+                </div>
+              )}
               {groups.map((p) => {
                 const models = p.models;
                 return (
                   <div key={p.id} role="group" aria-label={p.name}>
-                    <strong>
-                      {p.name}
-                      <span>{!p.configured ? 'Setup required' : ''}</span>
-                    </strong>
-                    {hasPublicCatalog(p.id) && (
-                      <div className="model-discovery-row">
-                        <span className="model-discovery-status">
-                          {catalogLabel(catalog, p.id)}
-                        </span>
-                        {(catalog.error || catalog.errors?.[p.id]) && (
-                          <small>{catalog.error || catalog.errors?.[p.id]}</small>
-                        )}
-                      </div>
-                    )}
-                    {p.configured && (
-                      <div className="model-discovery-row">
-                        <span className="model-discovery-status" title={discovery[p.id]?.error}>
-                          {p.id !== 'ollama' && discovery[p.id]?.checkedAt === undefined
-                            ? 'Optional saved-key listing'
-                            : modelDiscoveryLabel(discovery[p.id])}
-                        </span>
-                        <button
-                          type="button"
-                          aria-label={`Refresh ${p.name} models`}
-                          title={
-                            p.id === 'ollama'
-                              ? 'List models installed on your local Ollama endpoint'
-                              : 'Explicitly list models using the saved provider credentials'
-                          }
-                          disabled={discovery[p.id]?.loading}
-                          onClick={() =>
-                            void useStore
-                              .getState()
-                              .refreshModels(p.id)
-                              .catch(() => {})
-                          }
-                        >
-                          <RefreshCw size={12} aria-hidden="true" />{' '}
-                          {p.id === 'ollama' ? 'Refresh installed' : 'Check saved key'}
-                        </button>
-                        {discovery[p.id]?.error && <small>{discovery[p.id]?.error}</small>}
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      className="model-setup-link"
-                      data-configure
-                      aria-label={`Setup guide for ${p.name} models`}
-                      onClick={() => {
-                        setOpen(false);
-                        useStore.setState({ settingsOpen: true, settingsProvider: p.id });
-                      }}
-                    >
-                      {p.id === 'ollama' ? 'Local setup instructions' : 'How to get an API key'}
-                    </button>
-                    {!models.length && (
-                      <button
-                        type="button"
-                        data-configure
-                        onClick={() => {
-                          setOpen(false);
-                          useStore.setState({ settingsOpen: true, settingsProvider: p.id });
-                        }}
-                      >
-                        Configure {p.name}
-                      </button>
-                    )}
-                    {models.map((m) => {
-                      const unavailable = !p.configured;
-                      return (
-                        <button
-                          key={m}
-                          type="button"
-                          role="option"
-                          aria-selected={p.id === provider && m === model}
-                          title={unavailable ? `Select ${m} and set up ${p.name}` : m}
-                          onClick={() => {
-                            choose(p.id, m);
-                          }}
-                        >
-                          {m}
-                        </button>
-                      );
-                    })}
+                    <strong>{p.name}</strong>
+                    {models.map((m) => option(p.id, m))}
                   </div>
                 );
               })}
             </div>
-            <p className="model-list-note">
-              Public listings are not an access or compatibility guarantee. Saved/default IDs stay
-              selectable; access is checked when sending.
-              {catalog.cacheError && <> {catalog.cacheError}</>}
-            </p>
-            <button
-              type="button"
-              className="text-button"
-              onClick={() => {
-                setOpen(false);
-                useStore.setState({ settingsOpen: true, settingsProvider: provider });
-              }}
-            >
-              Provider settings
-            </button>
+            {(preferenceError || catalog.error || catalog.cacheError) && (
+              <p className="model-list-note" role="status">
+                {preferenceError || catalog.error || catalog.cacheError}
+              </p>
+            )}
+            <div className="model-menu-footer">
+              <button
+                type="button"
+                aria-label="Check for updates"
+                title="Update public model catalogs without using API keys"
+                disabled={catalog.loading}
+                onClick={() =>
+                  void useStore
+                    .getState()
+                    .refreshModelCatalog(true)
+                    .catch(() => {})
+                }
+              >
+                <RefreshCw size={14} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="text-button"
+                onClick={() => {
+                  setOpen(false);
+                  useStore.setState({ settingsOpen: true, settingsProvider: provider });
+                }}
+              >
+                Manage providers
+              </button>
+            </div>
           </div>,
           document.body,
         )}

@@ -52,6 +52,7 @@ import { CanvasNode } from './components/Nodes';
 import { MessageBar } from './components/MessageBar';
 import { useModelDiscovery } from './components/useModelDiscovery';
 import { Help, Settings } from './components/Settings';
+import { useCanvasLayout } from './components/useCanvasLayout';
 import { IconButton, Menu, Modal } from './components/ui';
 import { colorTokens } from './theme';
 import type { BoardNode } from './types';
@@ -157,11 +158,12 @@ function Workspace() {
   const dragStart = useRef<XYPosition | null>(null);
   const file = useRef<HTMLInputElement>(null),
     canvas = useRef<HTMLElement>(null);
+  useCanvasLayout(canvas, minimap, board.id);
   const fitPadding = useCallback(
     () => ({
       top: '88px' as const,
       bottom:
-        `${(canvas.current?.querySelector<HTMLElement>('.message-bar')?.offsetHeight || 90) + 104}px` as `${number}px`,
+        `${Number.parseFloat(canvas.current?.style.getPropertyValue('--canvas-bottom-reserved') || '') || (canvas.current?.querySelector<HTMLElement>('.message-bar')?.offsetHeight || 90) + 104}px` as `${number}px`,
       left: '32px' as const,
       right: '32px' as const,
     }),
@@ -1035,6 +1037,11 @@ function Workspace() {
             </ReactFlow>
           </div>
           <div className="canvas-bottom">
+            {minimap && (
+              <span className="minimap-space-notice" role="status">
+                Minimap paused in this short viewport.
+              </span>
+            )}
             <span className="canvas-hint">
               <MousePointer2 size={13} />
               Drag to pan<span>·</span>Shift-drag to select<span>·</span>/ to write

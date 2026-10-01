@@ -8,7 +8,12 @@ import { chromium } from '@playwright/test';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const output = await mkdtemp('/tmp/opencode/branchboard-release-verify-');
-const versions = ['1.1.1', '1.2.1', '1.3.1', '1.4.1', '1.5.1', '1.6.0'];
+const requested = process.argv.slice(2);
+const versions = requested.length
+  ? requested
+  : ['1.1.1', '1.2.1', '1.3.1', '1.4.1', '1.5.1', '1.6.0'];
+if (versions.some((version) => !/^\d+\.\d+\.\d+$/.test(version)))
+  throw new Error('Pass explicit release versions, for example: 1.7.0');
 const browser = await chromium.launch();
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -79,6 +84,7 @@ assert actual == record['files'], 'Extracted inventory differs from manifest'
         if (!count) throw new Error(`Missing passing test summary for ${version}`);
         checks.source = {
           status: 'passed',
+          artifactSha256: artifact.sha256,
           commands: ['npm ci', 'npm run build', 'npm test'],
           tests: count,
           extractedInventory: 'matched manifest',
@@ -104,6 +110,7 @@ assert actual == record['files'], 'Extracted inventory differs from manifest'
         const context = await browser.newContext({
           viewport: { width: 1440, height: 960 },
           colorScheme: 'light',
+          reducedMotion: 'reduce',
         });
         try {
           let ready = false;
@@ -151,14 +158,18 @@ assert actual == record['files'], 'Extracted inventory differs from manifest'
           await page.locator('.react-flow__node').first().waitFor();
           await page.evaluate(() => document.fonts.ready);
           const nodeCount = await page.locator('.react-flow__node').count();
-          if (nodeCount !== (index < 3 ? 2 : 3))
+          if (nodeCount !== (['1.1.1', '1.2.1', '1.3.1'].includes(version) ? 2 : 3))
             throw new Error(`Unexpected starter nodes: ${nodeCount}`);
           await page.getByRole('button', { name: 'Settings', exact: true }).click();
           await page.getByRole('dialog').waitFor();
-          await page.screenshot({ path: path.join(output, `${version}-runtime.png`) });
+          await page.screenshot({
+            path: path.join(output, `${version}-runtime.png`),
+            animations: 'disabled',
+          });
           if (errors.length) throw new Error(`Production browser errors: ${errors.join('\n')}`);
           checks.runtime = {
             status: 'passed',
+            artifactSha256: artifact.sha256,
             commands: ['npm ci --omit=dev', 'npm start'],
             developmentDependenciesAbsent: true,
             extractedInventory: 'matched manifest',

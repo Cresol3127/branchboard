@@ -46,7 +46,7 @@ export function Modal({
     const focusables = () =>
       [
         ...el.querySelectorAll<HTMLElement>(
-          'button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), [tabindex="0"]',
+          'button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), summary, [tabindex="0"]',
         ),
       ].filter((e) => e.getClientRects().length);
     (el.querySelector<HTMLElement>('[data-autofocus]') || el).focus();
@@ -133,11 +133,29 @@ export function Menu({
   useLayoutEffect(() => {
     const menu = ref.current!;
     const previous = document.activeElement as HTMLElement | null;
-    const rect = menu.getBoundingClientRect();
-    menu.style.left = `${Math.max(8, Math.min(x, window.innerWidth - rect.width - 8))}px`;
-    menu.style.top = `${Math.max(8, Math.min(y, window.innerHeight - rect.height - 8))}px`;
+    const position = () => {
+      const viewport = window.visualViewport;
+      const left = (viewport?.offsetLeft || 0) + 8,
+        top = (viewport?.offsetTop || 0) + 8;
+      const width = viewport?.width || window.innerWidth,
+        height = viewport?.height || window.innerHeight;
+      menu.style.maxHeight = `${Math.max(80, height - 16)}px`;
+      menu.style.overflowY = 'auto';
+      const rect = menu.getBoundingClientRect();
+      menu.style.left = `${Math.max(left, Math.min(x, left + width - rect.width - 16))}px`;
+      menu.style.top = `${Math.max(top, Math.min(y, top + height - rect.height - 16))}px`;
+    };
+    position();
+    window.addEventListener('resize', position);
+    window.visualViewport?.addEventListener('resize', position);
+    window.visualViewport?.addEventListener('scroll', position);
     menu.querySelector<HTMLButtonElement>('button')?.focus();
-    return () => previous?.focus();
+    return () => {
+      window.removeEventListener('resize', position);
+      window.visualViewport?.removeEventListener('resize', position);
+      window.visualViewport?.removeEventListener('scroll', position);
+      previous?.focus();
+    };
   }, [x, y]);
   useEffect(() => {
     const dismiss = () => close.current();

@@ -152,10 +152,10 @@ test('mobile model search and menus stay bounded and handle no matches', async (
   expect(box!.y).toBeGreaterThanOrEqual(8);
   expect(box!.y + box!.height).toBeLessThanOrEqual(836);
   await selector.getByRole('textbox', { name: 'Search models' }).fill('no-such-model-qa');
-  await expect(selector.getByRole('status')).toHaveText('No matching providers or models.');
+  await expect(selector.getByRole('status')).toHaveText('No matching models.');
   await page.keyboard.press('Shift+Tab');
   await expect(
-    selector.getByRole('button', { name: 'Provider settings', exact: true }),
+    selector.getByRole('button', { name: 'Manage providers', exact: true }),
   ).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: /^Select model:/ })).toBeFocused();

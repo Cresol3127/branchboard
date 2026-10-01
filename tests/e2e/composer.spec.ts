@@ -2,8 +2,13 @@ import { expect, test, type Page } from '@playwright/test';
 import { command } from './helpers';
 
 async function setup(page: Page, configured = true) {
-  const calls: { messages: { role: string; content: string }[] }[] = [];
+  const calls: {
+    provider: string;
+    model: string;
+    messages: { role: string; content: string }[];
+  }[] = [];
   await page.addInitScript(() => {
+    if (localStorage.getItem('branchboard.workspace.v1')) return;
     localStorage.setItem(
       'branchboard.workspace.v1',
       JSON.stringify({
@@ -48,12 +53,38 @@ async function setup(page: Page, configured = true) {
             extraModels: [],
             defaultModel: 'gpt-4o-mini',
           },
+          {
+            id: 'ollama',
+            name: 'Ollama (local)',
+            configured,
+            hasKey: false,
+            baseURL: 'http://localhost:11434',
+            models: ['qwen3:8b'],
+            extraModels: [],
+            defaultModel: 'qwen3:8b',
+          },
         ],
       },
     }),
   );
   await page.route('**/api/providers/*/models', (route) =>
-    route.fulfill({ json: { models: ['gpt-4o-mini'] } }),
+    route.fulfill({
+      json: { models: route.request().url().includes('/ollama/') ? ['qwen3:8b'] : ['gpt-4o-mini'] },
+    }),
+  );
+  await page.route('**/api/models/catalog*', (route) =>
+    route.fulfill({
+      json: {
+        version: 1,
+        providers: {
+          openai: {
+            models: ['gpt-4o-mini', 'gpt-4.1-nano'],
+            source: 'models.dev',
+            updatedAt: Date.now(),
+          },
+        },
+      },
+    }),
   );
   await page.route('**/api/chat', (route) => {
     calls.push(route.request().postDataJSON());
@@ -66,6 +97,98 @@ async function setup(page: Page, configured = true) {
   await expect(page.locator('.model-selector').first()).toContainText('gpt-4o-mini');
   return calls;
 }
+
+for (const width of [1440, 390]) {
+  test(`message-bar model picker updates the selected conversation and actual request at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 960 });
+    const calls = await setup(page);
+    await page.getByLabel('Message destination', { exact: true }).selectOption('alpha');
+    const bar = page.getByRole('region', { name: 'Message bar' });
+    const picker = bar.getByRole('button', { name: /^Message model:/ });
+    const input = bar.getByRole('textbox', { name: 'Message', exact: true });
+    await input.fill('Use the model I chose here');
+    await expect(picker).toBeInViewport();
+    await picker.click();
+    const dialog = page.getByRole('dialog', { name: 'Model selector', exact: true });
+    await expect(dialog.getByRole('textbox', { name: 'Search models' })).toBeFocused();
+    const box = (await dialog.boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(8);
+    expect(box.x + box.width).toBeLessThanOrEqual(width - 8);
+    expect(box.y + box.height).toBeLessThanOrEqual(952);
+    await page.keyboard.press('Escape');
+    await expect(picker).toBeFocused();
+    await picker.click();
+    await dialog.getByRole('textbox', { name: 'Search models' }).fill('qwen3:8b');
+    await dialog.getByRole('option', { name: 'qwen3:8b', exact: true }).click();
+    await expect(picker).toContainText('Ollama (local) · qwen3:8b');
+    await expect(page.locator('[data-id="alpha"] .model-selector')).toContainText('qwen3:8b');
+    await expect(page.locator('[data-id="beta"] .model-selector')).toContainText('gpt-4o-mini');
+    await expect(input).toHaveValue('Use the model I chose here');
+    expect(calls).toHaveLength(0);
+    await input.press('Enter');
+    await expect(page.locator('[data-id="alpha"] .message.assistant')).toContainText(
+      'Composer test reply',
+    );
+    expect(calls[0]).toMatchObject({ provider: 'ollama', model: 'qwen3:8b' });
+    await page.reload();
+    await page.getByLabel('Message destination', { exact: true }).selectOption('alpha');
+    await expect(picker).toContainText('qwen3:8b');
+  });
+}
+
+test('new-conversation model choice creates no empty node and sends with the chosen provider/model', async ({
+  page,
+}) => {
+  const calls = await setup(page);
+  const destination = page.getByLabel('Message destination', { exact: true });
+  const picker = page.getByRole('button', { name: /^Message model:/ });
+  const input = page.getByRole('textbox', { name: 'Message', exact: true });
+  await input.fill('New chat, chosen model');
+  await picker.click();
+  await page
+    .getByRole('dialog', { name: 'Model selector', exact: true })
+    .getByRole('option', { name: 'qwen3:8b', exact: true })
+    .click();
+  await expect(page.locator('.react-flow__node-chat')).toHaveCount(2);
+  await expect(input).toHaveValue('New chat, chosen model');
+  await command(page, 'Switch canvas: Other board');
+  await expect(picker).toContainText('Ollama (local) · qwen3:8b');
+  await command(page, 'Switch canvas: Composer board');
+  await expect(picker).toContainText('qwen3:8b');
+  await expect(input).toHaveValue('New chat, chosen model');
+  await input.press('Enter');
+  await expect(page.locator('.react-flow__node-chat')).toHaveCount(3);
+  await expect(page.locator('.message.assistant')).toContainText('Composer test reply');
+  expect(calls).toHaveLength(1);
+  expect(calls[0]).toMatchObject({ provider: 'ollama', model: 'qwen3:8b' });
+  await command(page, 'Undo');
+  await expect(page.locator('.react-flow__node-chat')).toHaveCount(2);
+  await command(page, 'Redo');
+  await expect(page.locator('.react-flow__node-chat')).toHaveCount(3);
+  await destination.selectOption('');
+  await expect(picker).toContainText('qwen3:8b');
+});
+
+test('mobile message model hides unconfigured choices and opens setup without losing drafts or creating a node', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const calls = await setup(page, false);
+  const input = page.getByRole('textbox', { name: 'Message', exact: true });
+  await input.fill('Keep this until provider setup');
+  await page.getByRole('button', { name: /^Message model:/ }).click();
+  const dialog = page.getByRole('dialog', { name: 'Model selector', exact: true });
+  await expect(dialog.getByRole('group', { name: 'OpenAI', exact: true })).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Manage providers', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Settings', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Back to canvas', exact: true }).click();
+  await expect(page.getByRole('button', { name: /^Message model:/ })).toContainText('gpt-4o-mini');
+  await expect(input).toHaveValue('Keep this until provider setup');
+  await expect(page.locator('.react-flow__node-chat')).toHaveCount(2);
+  expect(calls).toHaveLength(0);
+});
 
 test('one unzoomed composer preserves per-node and per-board drafts and requires an explicit multi-selection destination', async ({
   page,
@@ -163,6 +286,7 @@ test('streaming stop follows the chosen destination across board switches and pr
     await input.fill('Start streaming');
     await input.press('Enter');
     await expect(page.getByRole('button', { name: 'Stop generating', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Message model:/ })).toBeDisabled();
     await input.fill('Next Alpha message');
     await destination.selectOption('beta');
     await expect(page.getByRole('button', { name: 'Stop generating', exact: true })).toHaveCount(0);

@@ -1,5 +1,29 @@
 # Visual and interaction QA
 
+## Design improvements — 1.7.0 (2026-10-23)
+
+- The picker is search-first, with five persistent recent choices and only configured
+  keyed providers or successfully discovered local Ollama. Existing selections and
+  drafts survive provider removal; no selection automatically sends a request.
+- Settings presents essential fields and Save before collapsed setup/advanced details.
+  Help separates a three-step guide from searchable, grouped shortcuts. Titles are
+  24px, section headings 18px and body text 14–15px, with keyboard focus support.
+- View controls descend without the minimap and maintain 24px above it when shown.
+  Measured composer/keyboard bounds avoid overlap without resetting the graph viewport.
+  Compact sidebar glyphs retain 44px targets; both canvas top curves remain visible.
+- Full-size mobile review exposed clipped wrapped draft text after narrowing the
+  window. Width-aware textarea sizing fixes it; a regression verifies both shrinking
+  and widening while preserving text and graph position.
+- Full production frontend/server build, **163 unit/HTTP tests in 18 files** and all
+  **88 Chromium tests** passed. Screenshot script: **104 inspected captures**, actual
+  PNG/PDF downloads and `browser-errors.json: []`, at
+  `/tmp/opencode/branchboard-design-improvements-final/`.
+- Reviewed all 104 in six contact sheets, with the mobile overlays, minimal Settings,
+  grouped shortcuts and desktop composer picker also inspected at full size. The
+  clipped draft was fixed and the entire script rerun before accepting this evidence.
+  Provider-generation tests use deterministic fixtures/local HTTP; no paid AI request
+  was made. Public-catalog updates were exercised without exposing or changing keys.
+
 ## Settings origin fix — 1.7.0 development (2026-10-23)
 
 - Production build, **154 unit/HTTP tests** and all **79 Chromium tests** passed.

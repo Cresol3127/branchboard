@@ -5,6 +5,7 @@ import { composerTarget, draftKey } from '../composer';
 import { contextFor, contextNodesFor, estimateTokens } from '../graph';
 import { currentBoard, useStore } from '../store';
 import { ContextInspector } from './ContextInspector';
+import { ModelSelector } from './ModelSelector';
 import { IconButton } from './ui';
 
 export function MessageBar({
@@ -22,7 +23,9 @@ export function MessageBar({
   const draft = ambiguous ? '' : state.composerDrafts[draftKey(board.id, node?.id || null)] || '';
   const streaming = Boolean(node && state.streaming[node.id]);
   const activeCount = board.nodes.filter((n) => state.streaming[n.id]).length;
-  const provider = state.providers.find((p) => p.id === (node?.data.provider || 'openai'));
+  const selection =
+    node?.data || state.composerModels[board.id] || state.modelPreferences.recent[0];
+  const provider = state.providers.find((p) => p.id === (selection?.provider || 'openai'));
   const messages = node ? contextFor(node.id, board.nodes, board.edges) : [];
   const inherited = node ? contextNodesFor(node.id, board.nodes, board.edges, false).length : 0;
   if (draft.trim()) messages.push({ id: 'draft', role: 'user', content: draft.trim() });
@@ -34,9 +37,21 @@ export function MessageBar({
   const input = useRef<HTMLTextAreaElement>(null);
   const bar = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
-    if (!input.current) return;
-    input.current.style.height = '0px';
-    input.current.style.height = `${Math.min(160, Math.max(32, input.current.scrollHeight))}px`;
+    const el = input.current;
+    if (!el) return;
+    const resize = () => {
+      el.style.height = '0px';
+      el.style.height = `${Math.min(160, Math.max(32, el.scrollHeight))}px`;
+    };
+    let width = el.clientWidth;
+    resize();
+    const observer = new ResizeObserver(() => {
+      if (el.clientWidth === width) return;
+      width = el.clientWidth;
+      resize();
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
   }, [draft, board.id, node?.id]);
   useLayoutEffect(() => {
     const el = bar.current;
@@ -106,9 +121,17 @@ export function MessageBar({
             </button>
           )}
           {!ambiguous && (
-            <span className="composer-model" title="Choose a per-conversation model in its node">
-              {provider?.name || 'OpenAI'} · {node?.data.model || state.model}
-            </span>
+            <ModelSelector
+              key={`${board.id}:${node?.id || 'new'}`}
+              id={`composer-${board.id}-${node?.id || 'new'}`}
+              data={selection || {}}
+              streaming={streaming}
+              className="composer-model"
+              label="Message model"
+              onSelect={(provider, model) =>
+                state.setComposerModel(board.id, node?.id || null, provider, model)
+              }
+            />
           )}
           {activeCount > 0 && <span className="composer-active">{activeCount} generating</span>}
         </div>

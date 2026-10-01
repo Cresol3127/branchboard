@@ -102,6 +102,29 @@ for (const width of [1440, 390]) {
       width === 390 ? '20px' : '24px',
     );
     await expect(page.locator('.canvas-area')).toHaveCSS('overflow', 'hidden');
+    for (const theme of ['light', 'dark']) {
+      await command(page, `Theme: ${theme}`);
+      const corners = await page.locator('.canvas-area').evaluate((canvas) => {
+        const { left, right, top } = canvas.getBoundingClientRect();
+        const surround = canvas.parentElement!;
+        return {
+          canvasColor: getComputedStyle(canvas).backgroundColor,
+          surroundColor: getComputedStyle(surround).backgroundColor,
+          headerColor: getComputedStyle(surround.querySelector('.workspace-header')!)
+            .backgroundColor,
+          leftCutout: document.elementFromPoint(left + 2, top + 2) === surround,
+          rightCutout: document.elementFromPoint(right - 2, top + 2) === surround,
+          insideCanvas:
+            document.elementFromPoint(left + 30, top + 4)?.closest('.canvas-area') === canvas,
+        };
+      });
+      // A radius alone is invisible if its cutouts reveal the same canvas-colored backing.
+      expect(corners.surroundColor).toBe(corners.headerColor);
+      expect(corners.canvasColor).not.toBe(corners.surroundColor);
+      expect(corners.leftCutout).toBe(true);
+      expect(corners.rightCutout).toBe(true);
+      expect(corners.insideCanvas).toBe(true);
+    }
     await expect(page.locator('.board-tools')).toHaveCSS('border-radius', '28px');
     await expect(page.locator('.view-controls')).toHaveCSS('border-radius', '28px');
     await page.getByRole('button', { name: 'Toggle minimap', exact: true }).click();

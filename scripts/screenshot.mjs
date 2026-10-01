@@ -810,15 +810,22 @@ try {
   await page.locator('.model-selector').first().click();
   const modelPicker = page.getByRole('dialog', { name: 'Model selector', exact: true });
   await expect(modelPicker).toBeVisible();
-  await modelPicker.getByRole('group', { name: 'Ollama', exact: true }).scrollIntoViewIfNeeded();
+  const firstModel = modelPicker.getByRole('option').first();
+  if (await firstModel.count()) {
+    await firstModel.click();
+    await page.locator('.react-flow__node-chat .model-selector').first().click();
+    await expect(
+      modelPicker.getByRole('group', { name: 'Recent models', exact: true }),
+    ).toBeVisible();
+  }
   await capture('87-provider-model-refresh-status.png');
   await modelPicker
     .getByRole('textbox', { name: 'Search models' })
     .fill('my-provider/exact-model-id');
-  await modelPicker.getByLabel('Custom model provider').selectOption('custom');
-  await expect(
-    modelPicker.getByRole('button', { name: 'Use custom model', exact: true }),
-  ).toBeEnabled();
+  if (await modelPicker.getByLabel('Custom model provider').count())
+    await expect(
+      modelPicker.getByRole('button', { name: 'Use custom model', exact: true }),
+    ).toBeEnabled();
   await capture('88-exact-model-id.png');
   await page.setViewportSize({ width: 390, height: 844 });
   await command('Fit canvas');
@@ -829,9 +836,11 @@ try {
   await page.getByRole('button', { name: 'AI provider settings', exact: true }).click();
   const providerSettings = page.getByRole('dialog', { name: 'Settings', exact: true });
   await providerSettings.getByLabel('Provider', { exact: true }).selectOption('ollama');
+  await providerSettings.getByText('Models & advanced options', { exact: true }).click();
   await providerSettings.locator('.model-discovery-status').scrollIntoViewIfNeeded();
   await capture('90-provider-model-settings.png');
   await providerSettings.getByLabel('Provider', { exact: true }).selectOption('openai');
+  await providerSettings.getByText('Models & advanced options', { exact: true }).click();
   await providerSettings.getByRole('button', { name: 'Check for updates', exact: true }).click();
   await expect(
     providerSettings.getByRole('button', { name: 'Check for updates', exact: true }),
@@ -851,10 +860,44 @@ try {
   await command('Fit canvas');
   await page.locator('.model-selector').first().click();
   await capture('93-mobile-public-models.png');
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: /^Message model:/ }).click();
+  await expect(page.getByRole('dialog', { name: 'Model selector', exact: true })).toBeVisible();
+  await capture('94-mobile-composer-models.png');
+  await page.keyboard.press('Escape');
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.getByRole('button', { name: /^Message model:/ }).click();
+  await capture('95-desktop-composer-models.png');
+  await page.keyboard.press('Escape');
+  if ((await page.locator('html').getAttribute('data-theme')) !== 'dark') {
+    await command('Theme: dark');
+  }
+  await capture('96-visible-canvas-corners-dark.png');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await capture('97-mobile-canvas-corners-dark.png');
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await command('Keyboard shortcuts & help');
+  await capture('98-help-getting-started.png');
+  await page.getByRole('tab', { name: 'Keyboard shortcuts', exact: true }).click();
+  await capture('99-grouped-keyboard-shortcuts.png');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await capture('100-mobile-keyboard-shortcuts.png');
+  await page.keyboard.press('Escape');
+  await page.setViewportSize({ width: 1440, height: 960 });
+  if (!(await page.locator('.react-flow__minimap').count()))
+    await page.getByRole('button', { name: 'Toggle minimap', exact: true }).click();
+  await capture('101-minimap-toolbar-spacing.png');
+  if (await page.getByRole('button', { name: 'Collapse sidebar', exact: true }).count())
+    await page.getByRole('button', { name: 'Collapse sidebar', exact: true }).click();
+  await capture('102-compact-icon-rail.png');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await capture('103-mobile-overlay-spacing.png');
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await capture('104-minimal-mobile-settings.png');
   await writeFile(path.join(directory, 'browser-errors.json'), JSON.stringify(errors, null, 2));
   expect(errors).toEqual([]);
   console.log(
-    `Saved 93 desktop/mobile screenshots and PNG/PDF downloads to ${directory}; no browser errors.`,
+    `Saved 104 desktop/mobile screenshots and PNG/PDF downloads to ${directory}; no browser errors.`,
   );
 } catch (error) {
   await page.screenshot({ path: path.join(directory, 'failure.png'), fullPage: true });

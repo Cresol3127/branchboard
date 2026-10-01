@@ -36,8 +36,17 @@ import { composerTarget, draftKey } from './composer';
 import { isProviderId, type AIConfig, type ProviderId, type PublicProvider } from './providers';
 import type { ModelDiscoveryState } from './modelDiscovery';
 import {
+  loadModelPreferences,
+  rememberModel,
+  saveModelPreferences,
+  selectableProviders,
+  type ModelChoice,
+  type ModelPreferences,
+} from './modelPreferences';
+import {
   loadModelCatalog,
   MODEL_CATALOG_STORAGE_KEY,
+  validModelId,
   validateModelCatalog,
   type ModelCatalogState,
 } from './modelCatalog';
@@ -348,7 +357,17 @@ type State = {
   settingsProvider: ProviderId;
   streaming: Record<string, boolean>;
   composerDrafts: Record<string, string>;
+  composerModels: Record<string, { provider: ProviderId; model: string }>;
+  modelPreferences: ModelPreferences;
+  modelPreferenceError: string;
+  rememberModel: (choice: ModelChoice) => void;
   setComposerDraft: (boardId: string, nodeId: string | null, text: string) => void;
+  setComposerModel: (
+    boardId: string,
+    nodeId: string | null,
+    provider: ProviderId,
+    model: string,
+  ) => boolean;
   sendComposerMessage: (
     boardId: string,
     nodeId: string | null,
@@ -643,6 +662,42 @@ export const useStore = create<State>((set, get) => {
   return {
     ...loadWorkspace(),
     composerDrafts: {},
+    composerModels: {},
+    ...loadModelPreferences(),
+    rememberModel: (choice) => {
+      if (!isProviderId(choice.provider) || !validModelId(choice.model)) return;
+      const modelPreferences = rememberModel(get().modelPreferences, {
+        provider: choice.provider,
+        model: choice.model.trim(),
+      });
+      const modelPreferenceError = saveModelPreferences(modelPreferences);
+      set({ modelPreferences, modelPreferenceError });
+    },
+    setComposerModel: (boardId, nodeId, provider, model) => {
+      const state = get();
+      const board = currentBoard(state);
+      const target = composerTarget(board);
+      if (
+        board.id !== boardId ||
+        target.kind === 'choose' ||
+        (target.kind === 'chat' ? target.node.id : null) !== nodeId ||
+        (nodeId !== null && state.streaming[nodeId]) ||
+        !isProviderId(provider) ||
+        !selectableProviders(state.providers, state.modelDiscovery).some(
+          (p) => p.id === provider,
+        ) ||
+        !validModelId(model)
+      )
+        return false;
+      if (nodeId !== null)
+        state.updateNode(nodeId, { provider, model: model.trim(), error: undefined }, true);
+      else
+        set((s) => ({
+          composerModels: { ...s.composerModels, [boardId]: { provider, model: model.trim() } },
+        }));
+      get().rememberModel({ provider, model });
+      return true;
+    },
     setComposerDraft: (boardId, nodeId, text) => {
       set((s) => {
         const composerDrafts = { ...s.composerDrafts };
@@ -666,7 +721,15 @@ export const useStore = create<State>((set, get) => {
         (nodeId !== null && state.streaming[nodeId])
       )
         return null;
-      const provider = target.kind === 'chat' ? target.node.data.provider || 'openai' : 'openai';
+      const selection = state.composerModels[boardId] || state.modelPreferences.recent[0];
+      const provider =
+        target.kind === 'chat'
+          ? target.node.data.provider || 'openai'
+          : selection?.provider || 'openai';
+      const model =
+        target.kind === 'chat'
+          ? target.node.data.model || state.model
+          : selection?.model || state.model;
       if (!state.providers.find((p) => p.id === provider)?.configured) {
         set({ settingsOpen: true, settingsProvider: provider });
         return null;
@@ -681,6 +744,7 @@ export const useStore = create<State>((set, get) => {
         }
       }
       const id = nodeId || state.addNode('chat', position);
+      if (nodeId === null) get().updateNode(id, { provider, model });
       void get().generate(id, text, nodeId !== null);
       get().setComposerDraft(boardId, nodeId, '');
       return id;
@@ -1074,6 +1138,8 @@ export const useStore = create<State>((set, get) => {
     addNode: (type, position) => {
       checkpoint();
       const node = { ...makeNode(type, position), selected: true };
+      const choice = get().composerModels[get().currentId] || get().modelPreferences.recent[0];
+      if (type === 'chat' && choice) Object.assign(node.data, choice);
       mutate((b) => ({ ...b, nodes: [...b.nodes.map((n) => ({ ...n, selected: false })), node] }));
       return node.id;
     },

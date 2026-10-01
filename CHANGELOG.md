@@ -1,6 +1,17 @@
 # Changelog
 
-## 1.7.0 — Unreleased
+## 1.7.0 — Design improvements — 2026-10-23
+
+### Changed
+
+- Minimal model picker: only configured/keyed providers and connected local Ollama;
+  recent choices first, search and progressive exact-ID entry, compact provider management.
+- Settings shows essential fields and Save first, with collapsed setup/advanced details.
+  Help separates a short guide from searchable, grouped keyboard shortcuts.
+- Canvas overlays coordinate measured composer, minimap, keyboard and sidebar bounds.
+  View controls move lower without the minimap and leave a 24px gap above it when shown.
+  Layout changes preserve the graph viewport; collapsed-sidebar visuals are smaller
+  while retaining 44px targets.
 
 ### Added
 
@@ -8,12 +19,20 @@
   with manual checks before setup, source/update labels and an offline browser cache.
 - Public catalogs remain independent of credentials, workspace backups and selected
   conversation models; authenticated listing is an explicit optional action.
+- The message bar now opens the shared model picker for both existing and new
+  conversations, including on mobile; drafts remain intact when changing models.
+- Five persistent recent provider/model choices, with the last choice used for new
+  conversations after reload. Existing conversations retain their own models.
 
 ### Fixed
 
 - Both canvas top corners are rounded and clipped on desktop and mobile.
+- Canvas corner cutouts now reveal the surrounding app surface rather than the
+  identical canvas background, making both curves visible in light and dark themes.
 - API-key settings saves incorrectly rejected as cross-origin in development; the
   Vite proxy now preserves the browser's host while the API keeps its origin checks.
+- Wrapped composer drafts resize when available width changes instead of clipping
+  extra lines; draft text and graph position remain unchanged.
 
 ### Compatibility
 

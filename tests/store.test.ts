@@ -20,6 +20,10 @@ beforeEach(() => {
     configured: true,
     streaming: {},
     composerDrafts: {},
+    composerModels: {},
+    modelPreferences: { version: 1, recent: [] },
+    modelPreferenceError: '',
+    modelDiscovery: { ollama: { loading: false, updatedAt: Date.now() } },
     settingsOpen: false,
     snapshots: [],
     snapshotError: '',
@@ -260,6 +264,116 @@ describe('unified message bar routing and drafts', () => {
     expect(board().nodes).toHaveLength(0);
     s.redo();
     expect(board().nodes[0].data.messages).toHaveLength(2);
+  });
+  it('keeps new-chat model choices per canvas and sends with the exact chosen provider/model in one undo step', async () => {
+    const s = store.useStore.getState();
+    const boardId = board().id;
+    s.setComposerDraft(boardId, null, 'Use my chosen model');
+    expect(s.setComposerModel(boardId, null, 'ollama', 'qwen3:8b')).toBe(true);
+    expect(board().nodes).toHaveLength(0);
+    expect(store.useStore.getState().past).toHaveLength(0);
+    s.newBoard();
+    expect(store.useStore.getState().composerModels[board().id]).toBeUndefined();
+    s.switchBoard(boardId);
+    expect(store.useStore.getState().composerModels[boardId]).toEqual({
+      provider: 'ollama',
+      model: 'qwen3:8b',
+    });
+    expect(store.useStore.getState().composerDrafts[draftKey(boardId, null)]).toBe(
+      'Use my chosen model',
+    );
+    expect(JSON.stringify(store.workspaceBackup())).not.toContain('composerModels');
+    store.saveWorkspace();
+    expect(JSON.parse(memory.get('branchboard.workspace.v1')!)).not.toHaveProperty(
+      'composerModels',
+    );
+    const id = s.sendComposerMessage(boardId, null, 'Use my chosen model', { x: 0, y: 0 });
+    await settled();
+    expect(board().nodes[0].data).toMatchObject({ provider: 'ollama', model: 'qwen3:8b' });
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0][1]!.body as string)).toMatchObject({
+      provider: 'ollama',
+      model: 'qwen3:8b',
+    });
+    expect(store.useStore.getState().past).toHaveLength(1);
+    s.undo();
+    expect(board().nodes).toHaveLength(0);
+    s.redo();
+    expect(board().nodes[0]).toMatchObject({ id, data: { provider: 'ollama', model: 'qwen3:8b' } });
+  });
+  it('changes only the selected conversation model, keeps its draft, and supports undo/redo', async () => {
+    const s = store.useStore.getState();
+    const first = s.addNode('chat', { x: 0, y: 0 });
+    const second = s.addNode('chat', { x: 450, y: 0 });
+    select(first);
+    s.setComposerDraft(board().id, first, 'Keep this draft');
+    expect(s.setComposerModel(board().id, first, 'ollama', 'exact-local-model')).toBe(true);
+    expect(board().nodes.find((n) => n.id === first)?.data).toMatchObject({
+      provider: 'ollama',
+      model: 'exact-local-model',
+    });
+    expect(board().nodes.find((n) => n.id === second)?.data.provider).toBeUndefined();
+    expect(store.useStore.getState().composerDrafts[draftKey(board().id, first)]).toBe(
+      'Keep this draft',
+    );
+    expect(fetch).not.toHaveBeenCalled();
+    s.undo();
+    expect(board().nodes.find((n) => n.id === first)?.data.provider).toBeUndefined();
+    s.redo();
+    expect(s.sendComposerMessage(board().id, first, 'Keep this draft', { x: 0, y: 0 })).toBe(first);
+    await settled();
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0][1]!.body as string)).toMatchObject({
+      provider: 'ollama',
+      model: 'exact-local-model',
+    });
+  });
+  it('rejects stale, ambiguous, streaming and invalid model changes without rerouting', () => {
+    const s = store.useStore.getState();
+    const first = s.addNode('chat', { x: 0, y: 0 });
+    const second = s.addNode('chat', { x: 450, y: 0 });
+    expect(s.setComposerModel(board().id, first, 'ollama', 'wrong-destination')).toBe(false);
+    expect(s.setComposerModel('old-canvas', second, 'ollama', 'wrong-canvas')).toBe(false);
+    expect(s.setComposerModel(board().id, null, 'ollama', 'not-a-new-chat')).toBe(false);
+    select(first, second);
+    expect(s.setComposerModel(board().id, first, 'ollama', 'ambiguous')).toBe(false);
+    select(first);
+    store.useStore.setState({ streaming: { [first]: true } });
+    expect(s.setComposerModel(board().id, first, 'ollama', 'streaming')).toBe(false);
+    store.useStore.setState({ streaming: {} });
+    for (const model of ['', '  ', 'x\ny', 'x'.repeat(513)])
+      expect(s.setComposerModel(board().id, first, 'ollama', model)).toBe(false);
+    expect(board().nodes.every((n) => n.data.provider === undefined)).toBe(true);
+    expect(store.useStore.getState().composerModels).toEqual({});
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it('retains a previously chosen model and draft if its provider becomes unconfigured before sending', () => {
+    const s = store.useStore.getState();
+    const boardId = board().id;
+    s.setComposerDraft(boardId, null, 'Wait for setup');
+    store.useStore.setState({
+      providers: s.providers.map((p) =>
+        p.id === 'anthropic' ? { ...p, configured: true, hasKey: true } : p,
+      ),
+    });
+    expect(s.setComposerModel(boardId, null, 'anthropic', 'claude-exact-id')).toBe(true);
+    store.useStore.setState({
+      providers: s.providers.map((p) =>
+        p.id === 'anthropic' ? { ...p, configured: false, hasKey: false } : p,
+      ),
+    });
+    expect(s.sendComposerMessage(boardId, null, 'Wait for setup', { x: 0, y: 0 })).toBeNull();
+    expect(store.useStore.getState()).toMatchObject({
+      settingsOpen: true,
+      settingsProvider: 'anthropic',
+    });
+    expect(store.useStore.getState().composerDrafts[draftKey(boardId, null)]).toBe(
+      'Wait for setup',
+    );
+    expect(store.useStore.getState().composerModels[boardId]).toEqual({
+      provider: 'anthropic',
+      model: 'claude-exact-id',
+    });
+    expect(board().nodes).toHaveLength(0);
+    expect(fetch).not.toHaveBeenCalled();
   });
   it('continues the selected branch using inherited context and its own provider/model', async () => {
     const s = store.useStore.getState();

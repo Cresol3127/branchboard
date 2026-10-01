@@ -96,6 +96,13 @@ def archive(target, version, files):
 
 
 def main():
+    # This one-off batch is historical. Refuse before writing even metadata when
+    # any edition is tagged; new releases use the append-only current packager.
+    for version in ['1.1.1', '1.2.1', '1.3.1', '1.4.1', '1.5.1', '1.6.0']:
+        for tag in [f'v{version}', f'editions/v{version}']:
+            if subprocess.run(['git', 'rev-parse', '--verify', f'refs/tags/{tag}'],
+                              cwd=ROOT, capture_output=True).returncode == 0:
+                raise ValueError('Historical batch is tagged; use package-current-release.py for new releases')
     source_commit = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, check=True, capture_output=True, text=True).stdout.strip()
     original_inventory = json.loads((BACKUP / 'inventory.json').read_text())['files']
     (RELEASES / 'inventories').mkdir(exist_ok=True)

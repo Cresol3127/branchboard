@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle2, KeyRound } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { useStore } from '../store';
 import { Modal } from './ui';
 import type { ProviderId, PublicProvider } from '../providers';
@@ -22,32 +22,27 @@ export function Settings() {
       className="settings-dialog"
       onClose={() => useStore.setState({ settingsOpen: false })}
     >
-      <div className="settings-intro">
-        <KeyRound size={24} />
-        <h3>Connect your AI provider</h3>
-        <p>
-          Use a cloud provider or local Ollama. Keys stay in branchboard.providers.json on this
-          server, never in your canvas or browser storage.
-        </p>
+      <div className="dialog-body">
+        <p className="dialog-subtitle">Choose your AI provider. Keys stay on this server.</p>
+        <label htmlFor="settings-provider">Provider</label>
+        <select
+          id="settings-provider"
+          value={provider}
+          onChange={(e) => useStore.setState({ settingsProvider: e.target.value as ProviderId })}
+        >
+          {providers.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+        {selected && <ProviderSettings key={provider} provider={selected} />}
+        {!selected && (
+          <p role="status">
+            Provider settings are unavailable. Check that the local API server is running.
+          </p>
+        )}
       </div>
-      <label htmlFor="settings-provider">Provider</label>
-      <select
-        id="settings-provider"
-        value={provider}
-        onChange={(e) => useStore.setState({ settingsProvider: e.target.value as ProviderId })}
-      >
-        {providers.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.name}
-          </option>
-        ))}
-      </select>
-      {selected && <ProviderSettings key={provider} provider={selected} />}
-      {!selected && (
-        <p role="status">
-          Provider settings are unavailable. Check that the local API server is running.
-        </p>
-      )}
       <button className="text-button" onClick={() => useStore.setState({ settingsOpen: false })}>
         Back to canvas
       </button>
@@ -119,12 +114,15 @@ function ProviderSettings({ provider }: { provider: PublicProvider }) {
         void save();
       }}
     >
-      <ProviderSetup id={provider.id} />
+      <p className="provider-state">
+        {provider.configured
+          ? local
+            ? 'Local endpoint configured'
+            : 'API key saved'
+          : 'Not connected'}
+      </p>
       {local ? (
-        <p className="muted">
-          No API key needed. Start Ollama and install a model with <code>ollama pull llama3.2</code>
-          .
-        </p>
+        <p className="muted">No API key needed. Use an installed local model.</p>
       ) : (
         <>
           <label htmlFor="api-key">API key</label>
@@ -175,34 +173,7 @@ function ProviderSettings({ provider }: { provider: PublicProvider }) {
           <option key={id} value={id} />
         ))}
       </datalist>
-      <label htmlFor="provider-models">Additional models (one per line)</label>
-      <textarea
-        id="provider-models"
-        rows={3}
-        value={models}
-        onChange={(e) => setModels(e.target.value)}
-        disabled={busy}
-      />
-      <p className="muted">
-        Public cloud catalogs update every 15 minutes while visible, without using API keys. Ollama
-        lists only installed local models. Typed IDs stay selectable; updates never change your
-        selection. A public listing does not guarantee API access or adapter compatibility.
-      </p>
-      <div className="provider-actions">
-        {publicCatalog && (
-          <button
-            type="button"
-            disabled={catalog.loading}
-            onClick={() =>
-              void useStore
-                .getState()
-                .refreshModelCatalog(true)
-                .catch(() => {})
-            }
-          >
-            {catalog.loading ? 'Checking…' : 'Check for updates'}
-          </button>
-        )}
+      <div className="provider-actions essential-actions">
         <button className="primary" disabled={busy}>
           {busy ? 'Working…' : 'Save settings'}
         </button>
@@ -211,140 +182,287 @@ function ProviderSettings({ provider }: { provider: PublicProvider }) {
             Remove API key
           </button>
         )}
-        {local && (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={async () => {
-              if (!baseURL.trim()) {
-                setError('Enter an Ollama base URL before testing the connection.');
-                return;
-              }
-              setBusy(true);
-              setError('');
-              setStatus('');
-              try {
-                const response = await fetch('/api/providers/ollama/test', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ baseURL }),
-                });
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.error);
-                setStatus(
-                  `Connected to Ollama. ${result.models.length} installed model(s). Save settings to use this URL.`,
-                );
-              } catch (err) {
-                report(err);
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            Test Connection
-          </button>
-        )}
-        {provider.configured && (
-          <button
-            type="button"
-            disabled={busy || discovery?.loading}
-            onClick={async () => {
-              setBusy(true);
-              setError('');
-              setStatus('');
-              try {
-                await useStore.getState().refreshModels(provider.id);
-                setStatus('Model list refreshed from saved provider settings.');
-              } catch (err) {
-                report(err);
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
-            {local ? 'Refresh models' : 'Fetch from saved API key'}
-          </button>
-        )}
       </div>
-      {provider.configured && (
-        <p className="connected">
-          <CheckCircle2 size={16} /> {local ? 'Local endpoint configured' : 'API key saved'} ·{' '}
-          {choices.length} model(s)
+      {status && (
+        <p role="status" className="settings-feedback">
+          {status}
         </p>
       )}
-      {publicCatalog && hasPublicCatalog(provider.id) && (
-        <div className="muted model-discovery-status">
-          <p>{catalogLabel(catalog, provider.id)}</p>
-          {catalog.providers[provider.id] && (
-            <a
-              href={catalogSources[catalog.providers[provider.id]!.source].url}
-              target="_blank"
-              rel="noreferrer"
-            >
-              View public source
-            </a>
-          )}
-          {(catalog.error || catalog.errors?.[provider.id]) && (
-            <p>{catalog.error || catalog.errors?.[provider.id]}</p>
-          )}
-          {catalog.cacheError && <p>{catalog.cacheError}</p>}
-        </div>
-      )}
-      {provider.configured && (
-        <p className="muted model-discovery-status" title={discovery?.error}>
-          {local || discovery?.checkedAt !== undefined
-            ? modelDiscoveryLabel(discovery)
-            : 'Saved-key listing is optional; public updates do not use your key.'}
-          {discovery?.error && <> · {discovery.error}</>}
-        </p>
-      )}
-      {status && <p role="status">{status}</p>}
       {error && (
-        <p role="alert" className="error">
+        <p role="alert" className="error settings-feedback">
           {error}
         </p>
       )}
+      <details className="settings-details">
+        <summary>Setup instructions</summary>
+        <ProviderSetup id={provider.id} />
+      </details>
+      <details className="settings-details">
+        <summary>Models & advanced options</summary>
+        <label htmlFor="provider-models">Additional models (one per line)</label>
+        <textarea
+          id="provider-models"
+          rows={3}
+          value={models}
+          onChange={(e) => setModels(e.target.value)}
+          disabled={busy}
+        />
+        <p className="muted">
+          Catalogs update every 15 minutes without using keys. Only connected providers appear in
+          the picker. Public listings do not guarantee account access or adapter compatibility.
+        </p>
+        <div className="provider-actions">
+          {publicCatalog && (
+            <button
+              type="button"
+              disabled={catalog.loading}
+              onClick={() =>
+                void useStore
+                  .getState()
+                  .refreshModelCatalog(true)
+                  .catch(() => {})
+              }
+            >
+              {catalog.loading ? 'Checking…' : 'Check for updates'}
+            </button>
+          )}
+          {local && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={async () => {
+                if (!baseURL.trim()) {
+                  setError('Enter an Ollama base URL before testing the connection.');
+                  return;
+                }
+                setBusy(true);
+                setError('');
+                setStatus('');
+                try {
+                  const response = await fetch('/api/providers/ollama/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ baseURL }),
+                  });
+                  const result = await response.json();
+                  if (!response.ok) throw new Error(result.error);
+                  setStatus(
+                    `Connected to Ollama. ${result.models.length} installed model(s). Save settings to use this URL.`,
+                  );
+                } catch (err) {
+                  report(err);
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              Test Connection
+            </button>
+          )}
+          {provider.configured && (
+            <button
+              type="button"
+              disabled={busy || discovery?.loading}
+              onClick={async () => {
+                setBusy(true);
+                setError('');
+                setStatus('');
+                try {
+                  await useStore.getState().refreshModels(provider.id);
+                  setStatus('Model list refreshed from saved provider settings.');
+                } catch (err) {
+                  report(err);
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              {local ? 'Refresh models' : 'Fetch from saved API key'}
+            </button>
+          )}
+        </div>
+        {provider.configured && (
+          <p className="connected">
+            <CheckCircle2 size={16} /> {local ? 'Local endpoint configured' : 'API key saved'} ·{' '}
+            {choices.length} model(s)
+          </p>
+        )}
+        {publicCatalog && hasPublicCatalog(provider.id) && (
+          <div className="muted model-discovery-status">
+            <p>{catalogLabel(catalog, provider.id)}</p>
+            {catalog.providers[provider.id] && (
+              <a
+                href={catalogSources[catalog.providers[provider.id]!.source].url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                View public source
+              </a>
+            )}
+            {(catalog.error || catalog.errors?.[provider.id]) && (
+              <p>{catalog.error || catalog.errors?.[provider.id]}</p>
+            )}
+            {catalog.cacheError && <p>{catalog.cacheError}</p>}
+          </div>
+        )}
+        {provider.configured && (
+          <p className="muted model-discovery-status" title={discovery?.error}>
+            {local || discovery?.checkedAt !== undefined
+              ? modelDiscoveryLabel(discovery)
+              : 'Saved-key listing is optional; public updates do not use your key.'}
+            {discovery?.error && <> · {discovery.error}</>}
+          </p>
+        )}
+      </details>
     </form>
   );
 }
 
 export function Help({ onClose }: { onClose: () => void }) {
+  const [tab, setTab] = useState<'start' | 'shortcuts'>('start');
+  const [query, setQuery] = useState('');
+  const groups = [
+    {
+      title: 'Navigation',
+      items: [
+        ['Ctrl / ⌘ K', 'Search nodes and commands'],
+        ['Drag canvas', 'Pan the canvas'],
+        ['Space + drag', 'Pan over cards'],
+        ['/', 'Focus message composer'],
+      ],
+    },
+    {
+      title: 'Canvas',
+      items: [
+        ['Double-click canvas', 'Quick creation menu'],
+        ['Shift + click / drag', 'Select multiple nodes'],
+        ['Ctrl / ⌘ D', 'Duplicate selection'],
+        ['Ctrl / ⌘ C / V', 'Copy / paste nodes within Branchboard'],
+        ['Ctrl / ⌘ G', 'Group selection'],
+        ['Ctrl / ⌘ Z', 'Undo'],
+        ['Ctrl / ⌘ Shift Z', 'Redo'],
+        ['Delete / Backspace', 'Delete selection'],
+        ['G', 'Toggle grid and snapping'],
+        ['Alt + drag a port', 'Move its connection point'],
+      ],
+    },
+    {
+      title: 'Writing',
+      items: [
+        ['T', 'Text selection mode (copy card text)'],
+        ['Enter / Shift Enter', 'Send message / new line'],
+      ],
+    },
+  ].map((group) => ({
+    ...group,
+    items: group.items.filter((item) => item.join(' ').toLowerCase().includes(query.toLowerCase())),
+  }));
   return (
-    <Modal title="Keyboard shortcuts & help" onClose={onClose}>
-      <p>A canvas for conversations that don’t have to follow a straight line.</p>
-      <dl className="shortcuts">
-        {[
-          ['Ctrl / ⌘ K', 'Search nodes and commands'],
-          ['Double-click canvas', 'Quick creation menu'],
-          ['Drag canvas', 'Pan the canvas'],
-          ['Space + drag', 'Pan the canvas'],
-          ['Shift + click / drag', 'Select multiple nodes'],
-          ['Ctrl / ⌘ D', 'Duplicate selection'],
-          ['Ctrl / ⌘ C / V', 'Copy / paste nodes within Branchboard'],
-          ['Ctrl / ⌘ G', 'Group selection'],
-          ['Ctrl / ⌘ Z', 'Undo'],
-          ['Ctrl / ⌘ Shift Z', 'Redo'],
-          ['Delete / Backspace', 'Delete selection'],
-          ['G', 'Toggle grid and snapping'],
-          ['T', 'Text selection mode (copy card text)'],
-          ['/', 'Focus message composer'],
-          ['Alt + drag a port', 'Move its connection point'],
-          ['Enter / Shift Enter', 'Send message / new line'],
-        ].map(([key, description]) => (
-          <div key={key}>
-            <dt>{description}</dt>
-            <dd>
-              <kbd>{key}</kbd>
-            </dd>
-          </div>
+    <Modal title="Help" className="help-dialog" onClose={onClose}>
+      <div
+        className="help-tabs"
+        role="tablist"
+        aria-label="Help sections"
+        onKeyDown={(event) => {
+          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+          event.preventDefault();
+          const next =
+            event.key === 'Home'
+              ? 'start'
+              : event.key === 'End'
+                ? 'shortcuts'
+                : tab === 'start'
+                  ? 'shortcuts'
+                  : 'start';
+          setTab(next);
+          document.getElementById(`help-tab-${next}`)?.focus();
+        }}
+      >
+        {(['start', 'shortcuts'] as const).map((id) => (
+          <button
+            type="button"
+            key={id}
+            id={`help-tab-${id}`}
+            role="tab"
+            aria-selected={tab === id}
+            aria-controls={`help-panel-${id}`}
+            tabIndex={tab === id ? 0 : -1}
+            onClick={() => setTab(id)}
+          >
+            {id === 'start' ? 'Getting started' : 'Keyboard shortcuts'}
+          </button>
         ))}
-      </dl>
-      <p className="muted">
-        Drag an output dot to an input dot to share upstream context. Branches inherit history; they
-        don’t copy it. Drag anywhere on a card to move it. Press T to select its text instead.
-        Touch-scroll inside content; drag its header or padding to move. Drag an output onto empty
-        space to branch.
-      </p>
+      </div>
+      <div
+        className="dialog-body"
+        role="tabpanel"
+        id={`help-panel-${tab}`}
+        aria-labelledby={`help-tab-${tab}`}
+        tabIndex={0}
+      >
+        {tab === 'start' ? (
+          <div className="help-guide">
+            <section>
+              <span>01</span>
+              <h3>Capture a thought</h3>
+              <p>
+                Add a conversation or note. Choose a connected model in the message bar, then write
+                your first message.
+              </p>
+            </section>
+            <section>
+              <span>02</span>
+              <h3>Connect your ideas</h3>
+              <p>
+                Drag an output dot onto an input to share upstream context. Drop it on empty canvas
+                to branch. History is inherited, not copied.
+              </p>
+            </section>
+            <section>
+              <span>03</span>
+              <h3>Make room to explore</h3>
+              <p>
+                Drag a card’s surface to move it. Use Focus conversation to read, Fit canvas for the
+                overview. Touch-scroll inside content; drag its header to move.
+              </p>
+            </section>
+            <p className="muted">
+              Canvases are saved in this browser. Export a workspace backup before changing browsers
+              or origins.
+            </p>
+          </div>
+        ) : (
+          <>
+            <input
+              aria-label="Search shortcuts"
+              placeholder="Find a shortcut…"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+            {groups
+              .filter((group) => group.items.length)
+              .map((group) => (
+                <section className="shortcut-group" key={group.title}>
+                  <h3>{group.title}</h3>
+                  <dl className="shortcuts">
+                    {group.items.map(([key, description]) => (
+                      <div key={key}>
+                        <dt>{description}</dt>
+                        <dd>
+                          <kbd>{key}</kbd>
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              ))}
+            {!groups.some((group) => group.items.length) && (
+              <p role="status">No matching shortcuts.</p>
+            )}
+            <p className="muted">Canvas shortcuts are inactive while typing or using a dialog.</p>
+          </>
+        )}
+      </div>
     </Modal>
   );
 }
