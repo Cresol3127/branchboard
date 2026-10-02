@@ -1,0 +1,369 @@
+/* Material window size classes: compact, medium, expanded, large, extra-large. */
+@media (max-width: 599px) {
+  .app-shell {
+    --topbar-height: 64px;
+  }
+
+  .topbar {
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    gap: var(--md-space-4);
+    padding-inline: var(--md-space-16);
+  }
+
+  .brand > div,
+  .topbar-actions .md-button,
+  .workspace-status,
+  .composer-hint {
+    display: none;
+  }
+
+  .brand-mark {
+    width: 40px;
+  }
+
+  .topbar-center {
+    min-width: 0;
+    justify-self: stretch;
+  }
+
+  .board-picker .md-button {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    padding-inline: var(--md-space-8);
+    font-size: var(--md-type-label-medium-size);
+  }
+
+  .topbar-actions {
+    gap: 0;
+  }
+
+  .empty-state {
+    width: calc(100vw - 32px);
+    padding: var(--md-space-24);
+  }
+
+  .empty-illustration {
+    width: 60px;
+    height: 60px;
+    margin-bottom: var(--md-space-12);
+    border-radius: 20px;
+  }
+
+  .empty-illustration .material-symbol {
+    font-size: 34px;
+  }
+
+  .empty-state h1 {
+    font-size: clamp(28px, 8vw, var(--md-type-headline-large-size));
+    line-height: 1.14;
+  }
+
+  .empty-state p {
+    font-size: var(--md-type-body-medium-size);
+    line-height: var(--md-type-body-medium-line);
+  }
+
+  .empty-workflow {
+    gap: var(--md-space-4);
+    margin-bottom: var(--md-space-16);
+  }
+
+  .empty-workflow > span {
+    gap: 2px;
+    padding-inline: var(--md-space-6);
+    font-size: var(--md-type-label-small-size);
+  }
+
+  .empty-workflow > span .material-symbol,
+  .empty-workflow .workflow-arrow {
+    font-size: 18px;
+  }
+
+  .composer-wrap {
+    bottom: var(--md-space-16);
+    width: calc(100vw - 24px);
+  }
+
+  .composer {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) 56px;
+    align-items: end;
+    gap: var(--md-space-4);
+    padding: var(--md-space-8);
+  }
+
+  .attachment-picker {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .composer-body {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .send-button.md-button {
+    grid-column: 3;
+    grid-row: 1;
+    min-width: 56px;
+    width: 56px;
+    min-height: 56px;
+    padding: 0;
+    overflow: hidden;
+    font-size: 0;
+  }
+
+  .send-button .material-symbol {
+    font-size: 24px;
+  }
+
+  .send-button .md-button__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  .route-picker {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-width: 0;
+  }
+
+  .route-picker-trigger.md-button {
+    width: 100%;
+    max-width: none;
+    justify-content: flex-start;
+  }
+
+  .composer-context {
+    gap: var(--md-space-8);
+    padding-inline: var(--md-space-12);
+  }
+
+  .merge-session-summary {
+    min-width: 0;
+  }
+
+  .merge-session-summary > span {
+    flex: 1 1 100%;
+  }
+
+  .merge-session-summary .md-button {
+    min-height: 40px;
+  }
+
+  .composer-hint {
+    display: none;
+  }
+
+  .annotation-toolbar,
+  .conversation-color-tray-panel,
+  .viewport-toolbar,
+  .react-flow__minimap {
+    margin: var(--md-space-12);
+  }
+
+  .annotation-tray.is-open,
+  .conversation-color-tray.is-open {
+    max-width: calc(100vw - 24px);
+  }
+
+  .annotation-tray-content,
+  .annotation-tools,
+  .conversation-color-tray-content {
+    flex-wrap: wrap;
+  }
+
+  .token-selection-panel,
+  .family-selection-panel {
+    width: calc(100vw - 24px);
+    max-width: none;
+  }
+
+  .token-selection-summary,
+  .family-selection-summary {
+    width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
+  .card-actions {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 399px) {
+  .topbar {
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    gap: 2px;
+    padding-inline: var(--md-space-8);
+  }
+
+  .topbar-actions .md-icon-button {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+  }
+
+  .composer-wrap {
+    width: calc(100vw - 16px);
+    bottom: var(--md-space-8);
+  }
+
+  .composer-context {
+    font-size: var(--md-type-label-small-size);
+  }
+
+  .composer {
+    grid-template-columns: 40px minmax(0, 1fr) 48px;
+    gap: 2px;
+    padding: var(--md-space-6);
+  }
+
+  .empty-state {
+    padding: var(--md-space-16);
+  }
+
+  .empty-workflow > span .material-symbol {
+    display: none;
+  }
+
+  .composer .attachment-picker-trigger.md-icon-button {
+    width: 40px;
+    height: 48px;
+  }
+
+  .send-button.md-button {
+    min-width: 48px;
+    width: 48px;
+    min-height: 48px;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 839px) {
+  .topbar {
+    grid-template-columns: 40px minmax(120px, 1fr) auto;
+    gap: var(--md-space-8);
+    padding-inline: var(--md-space-16);
+  }
+
+  .brand > div,
+  .workspace-status {
+    display: none;
+  }
+
+  .composer {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    align-items: end;
+    gap: var(--md-space-8);
+  }
+
+  .attachment-picker {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .composer-body {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .send-button.md-button {
+    grid-column: 3;
+    grid-row: 1;
+    min-height: 56px;
+  }
+
+  .route-picker {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .route-picker-trigger.md-button {
+    width: 100%;
+    max-width: none;
+    justify-content: flex-start;
+  }
+
+  .composer-wrap {
+    width: min(720px, calc(100vw - 48px));
+  }
+}
+
+@media (min-width: 840px) and (max-width: 1199px) {
+  .topbar {
+    grid-template-columns: auto minmax(150px, 1fr) auto auto;
+    gap: var(--md-space-8);
+    padding-inline: var(--md-space-16);
+  }
+}
+
+@media (min-width: 840px) {
+  .annotation-toolbar {
+    top: 50% !important;
+    transform: translateY(-50%);
+  }
+
+  .annotation-tray {
+    flex-direction: column;
+    border-radius: var(--md-shape-xl);
+  }
+
+  .annotation-tray-content,
+  .annotation-tools {
+    flex-direction: column;
+  }
+
+  .annotation-tool-separator {
+    width: 32px;
+    height: 1px;
+    margin: 4px 8px;
+  }
+
+  .annotation-options {
+    max-width: 220px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .composer-wrap {
+    width: min(880px, calc(100vw - 64px));
+  }
+}
+
+@media (min-width: 1600px) {
+  .composer-wrap {
+    width: min(920px, calc(100vw - 64px));
+  }
+}
+
+@media (forced-colors: active) {
+  .conversation-card.is-selected,
+  .conversation-card.is-token-selected,
+  .conversation-card.is-family-selected,
+  .sticky-note.is-selected,
+  .sticky-note.is-group-selected {
+    outline: 3px solid Highlight;
+    outline-offset: 2px;
+  }
+
+  .status-dot::before {
+    border: 1px solid CanvasText;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

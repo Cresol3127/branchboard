@@ -1,0 +1,43 @@
+:root {
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface);
+  font-family: Roboto, "Noto Sans", system-ui, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+.material-symbol {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 1em;
+  overflow: hidden;
+  direction: ltr;
+  font-family: "Material Symbols Rounded";
+  font-size: 24px;
+  font-style: normal;
+  font-weight: var(--md-symbol-weight, 400);
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  word-wrap: normal;
+  -webkit-font-feature-settings: "liga";
+  font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings:
+    "FILL" var(--md-symbol-fill, 0),
+    "wght" var(--md-symbol-weight, 400),
+    "GRAD" var(--md-symbol-grade, 0),
+    "opsz" var(--md-symbol-size, 24);
+}
+
+:where(button, [role="button"], input, textarea, select, a[href]):focus-visible {
+  outline: 3px solid var(--md-sys-color-primary);
+  outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+  :where(button, [role="button"], input, textarea, select, a[href]):focus-visible {
+    outline-color: Highlight;
+  }
+}

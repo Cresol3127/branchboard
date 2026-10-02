@@ -1,0 +1,855 @@
+:root,
+.app-shell {
+  --ink: var(--md-sys-color-on-surface);
+  --muted: var(--md-sys-color-on-surface-variant);
+  --line: var(--md-sys-color-outline-variant);
+  --panel: var(--md-sys-color-surface-container);
+  --panel-raised: var(--md-sys-color-surface-container-high);
+  --acid: var(--md-sys-color-primary);
+  --acid-dim: var(--md-sys-color-primary);
+  --danger: var(--md-sys-color-error);
+  --canvas-bg: var(--md-sys-color-surface);
+  --bar-bg: var(--md-sys-color-surface-container);
+  --field-bg: var(--md-sys-color-surface-container-high);
+  --subtle-bg: var(--md-sys-color-surface-container-low);
+  --card-bg: var(--md-sys-color-surface-container-lowest);
+  --overlay: color-mix(in srgb, var(--md-sys-color-scrim) 32%, transparent);
+  --shadow: color-mix(in srgb, var(--md-sys-color-shadow) 18%, transparent);
+  --markdown-code-bg: var(--md-sys-color-surface-container-high);
+  --markdown-quote-bg: color-mix(in srgb, var(--md-sys-color-primary-container) 18%, transparent);
+  --markdown-table-stripe: color-mix(in srgb, var(--md-sys-color-on-surface) 4%, transparent);
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface);
+}
+
+body,
+#root,
+.app-shell {
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface);
+}
+
+.app-shell {
+  --topbar-height: 64px;
+  --bar-bg: var(--md-sys-color-surface-container-lowest);
+}
+
+.topbar {
+  height: var(--topbar-height);
+  display: grid;
+  grid-template-columns: auto minmax(160px, 1fr) auto auto;
+  gap: var(--md-space-12);
+  padding-inline: var(--md-space-24);
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-container-lowest);
+  backdrop-filter: none;
+}
+
+.brand {
+  gap: var(--md-space-12);
+}
+
+.brand-mark {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 0;
+  border-radius: var(--md-shape-md);
+  color: var(--md-sys-color-on-primary-container);
+  background: var(--md-sys-color-primary-container);
+}
+
+.brand .brand-mark .material-symbol {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  overflow: visible;
+  font-family: "Material Symbols Rounded";
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: normal;
+}
+
+.brand strong {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-weight-medium) var(--md-type-title-large-size)/var(--md-type-title-large-line) Roboto, sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.brand > div > span {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-weight-regular) var(--md-type-body-small-size)/var(--md-type-body-small-line) Roboto, sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.topbar-center {
+  min-width: 0;
+  justify-self: start;
+}
+
+.board-picker,
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--md-space-8);
+}
+
+.board-picker {
+  height: auto;
+  border: 0;
+  background: transparent;
+}
+
+.board-picker .md-button {
+  display: inline-flex;
+  width: auto;
+  min-height: 44px;
+  max-width: min(360px, 34vw);
+  padding: 0 var(--md-space-12);
+  border: 0;
+  border-radius: var(--md-shape-md);
+  color: var(--md-sys-color-on-surface);
+  background: transparent;
+  font: var(--md-weight-medium) var(--md-type-title-medium-size)/var(--md-type-title-medium-line) Roboto, sans-serif;
+  text-transform: none;
+}
+
+.board-picker .md-button:hover {
+  background: var(--md-sys-color-surface-container-low);
+}
+
+.board-picker .md-button > span:not(.material-symbol) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-status {
+  position: static;
+  display: flex;
+  align-items: stretch;
+  justify-self: end;
+  gap: var(--md-space-8);
+  padding: 0;
+  border-radius: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  background: transparent;
+}
+
+.context-readout,
+.usage-readout {
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  gap: var(--md-space-6);
+  padding: 0 var(--md-space-8);
+  border: 0;
+  border-radius: var(--md-shape-sm);
+  background: transparent;
+  font: var(--md-weight-regular) var(--md-type-label-medium-size)/var(--md-type-label-medium-line) Roboto, sans-serif;
+  letter-spacing: 0;
+}
+
+.context-readout span,
+.usage-readout span {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-weight-medium) var(--md-type-label-medium-size)/var(--md-type-label-medium-line) Roboto, sans-serif;
+  letter-spacing: 0;
+}
+
+:root[data-theme] .context-readout strong,
+:root[data-theme] .usage-readout strong {
+  display: inline;
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  border: 0;
+  color: var(--md-sys-color-primary);
+  background: transparent;
+  font: var(--md-weight-medium) var(--md-type-label-large-size)/var(--md-type-label-large-line) Roboto, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.context-readout strong {
+  display: inline-flex;
+  min-width: 24px;
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
+  padding-inline: var(--md-space-4);
+  border-radius: var(--md-shape-full);
+  color: var(--md-sys-color-on-secondary-container) !important;
+  background: var(--md-sys-color-secondary-container) !important;
+}
+
+.canvas {
+  inset: var(--topbar-height) 0 0;
+  background: var(--md-sys-color-surface);
+}
+
+.empty-state {
+  top: 42%;
+  width: min(560px, calc(100vw - 40px));
+  padding: var(--md-space-32);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-xxl);
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-container-lowest);
+  box-shadow: var(--md-elevation-level1);
+}
+
+:root[data-theme] .empty-state {
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-container-lowest);
+}
+
+.empty-illustration {
+  display: grid;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto var(--md-space-16);
+  place-items: center;
+  border-radius: 24px;
+  color: var(--md-sys-color-on-primary-container);
+  background:
+    radial-gradient(circle at 72% 28%, color-mix(in srgb, var(--md-sys-color-tertiary-container) 76%, transparent) 0 18px, transparent 19px),
+    var(--md-sys-color-primary-container);
+}
+
+.empty-illustration .material-symbol {
+  font-size: 40px;
+}
+
+.empty-kicker,
+.panel-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--md-space-8);
+  color: var(--md-sys-color-primary);
+  font: var(--md-weight-medium) var(--md-type-label-large-size)/var(--md-type-label-large-line) Roboto, sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.empty-state h1 {
+  margin: var(--md-space-8) 0 var(--md-space-12);
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-weight-regular) var(--md-type-headline-large-size)/var(--md-type-headline-large-line) Roboto, sans-serif;
+  letter-spacing: -.025em;
+}
+
+:root[data-theme] .empty-state h1 {
+  color: var(--md-sys-color-on-surface);
+}
+
+.empty-state p {
+  max-width: 52ch;
+  margin: 0 auto var(--md-space-16);
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-weight-regular) var(--md-type-body-large-size)/var(--md-type-body-large-line) Roboto, sans-serif;
+}
+
+:root[data-theme] .empty-state p {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.empty-workflow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--md-space-8);
+  margin: 0 auto var(--md-space-24);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.empty-workflow > span {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: var(--md-space-4);
+  padding: 0 var(--md-space-8);
+  border-radius: var(--md-shape-full);
+  background: var(--md-sys-color-surface-container-low);
+  font: var(--md-weight-medium) var(--md-type-label-medium-size)/var(--md-type-label-medium-line) Roboto, sans-serif;
+}
+
+.empty-workflow > span .material-symbol {
+  color: var(--md-sys-color-primary);
+  font-size: 20px;
+}
+
+.empty-workflow .workflow-arrow {
+  color: var(--md-sys-color-outline);
+  font-size: 20px;
+}
+
+:root[data-theme] .empty-state .md-button--filled {
+  min-height: 56px;
+  padding: 0 var(--md-space-24);
+  border: 0;
+  border-radius: var(--md-shape-full);
+  color: var(--md-sys-color-on-primary);
+  background: var(--md-sys-color-primary);
+  box-shadow: var(--md-elevation-level1);
+  font: var(--md-weight-medium) var(--md-type-label-large-size)/var(--md-type-label-large-line) Roboto, sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+:root[data-theme] .empty-state .md-button--filled:hover {
+  color: var(--md-sys-color-on-primary);
+  background: color-mix(in srgb, var(--md-sys-color-primary) 92%, var(--md-sys-color-on-primary));
+}
+
+.empty-state .md-button--tonal {
+  min-height: 56px;
+  border-radius: var(--md-shape-full);
+}
+
+.empty-state-hint {
+  display: block;
+  margin-top: var(--md-space-12);
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-weight-regular) var(--md-type-body-small-size)/var(--md-type-body-small-line) Roboto, sans-serif;
+}
+
+.composer-wrap {
+  bottom: var(--md-space-24);
+  display: grid;
+  width: min(880px, calc(100vw - 64px));
+  gap: var(--md-space-8);
+}
+
+.composer-context {
+  position: relative;
+  bottom: auto;
+  left: auto;
+  width: fit-content;
+  min-height: 32px;
+  padding: var(--md-space-4) var(--md-space-12);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-full);
+  color: var(--md-sys-color-on-surface-variant);
+  background: var(--md-sys-color-surface-container-lowest);
+  box-shadow: var(--md-elevation-level1);
+  font: var(--md-weight-medium) var(--md-type-label-medium-size)/var(--md-type-label-medium-line) Roboto, sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.composer-context.is-branch {
+  color: var(--md-sys-color-on-secondary-container);
+  background: var(--md-sys-color-secondary-container);
+}
+
+:root[data-theme] .composer-context.is-branch {
+  color: var(--md-sys-color-on-secondary-container);
+  background: var(--md-sys-color-secondary-container);
+}
+
+.composer-context.is-merge {
+  color: var(--md-sys-color-on-primary-container);
+  background: var(--md-sys-color-primary-container);
+}
+
+:root[data-theme] .composer-context.is-merge {
+  color: var(--md-sys-color-on-primary-container);
+  background: var(--md-sys-color-primary-container);
+}
+
+.composer-context > .material-symbol {
+  flex: 0 0 auto;
+}
+
+.composer-context b {
+  color: inherit;
+}
+
+.composer {
+  min-height: 88px;
+  gap: var(--md-space-8);
+  padding: var(--md-space-12);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-composer);
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-container-lowest);
+  box-shadow: var(--md-elevation-level2);
+}
+
+:root[data-theme] .composer {
+  border-color: var(--md-sys-color-outline-variant);
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-container-lowest);
+  box-shadow: var(--md-elevation-level2);
+}
+
+.composer:focus-within {
+  border-color: var(--md-sys-color-primary);
+  box-shadow: var(--md-focus-ring), var(--md-elevation-level2);
+}
+
+:root[data-theme] .composer:focus-within {
+  border-color: var(--md-sys-color-primary);
+  box-shadow: var(--md-focus-ring), var(--md-elevation-level2);
+}
+
+.composer-body {
+  min-width: 0;
+}
+
+:root[data-theme] .markdown-composer .cm-editor {
+  min-height: 56px;
+  color: var(--md-sys-color-on-surface);
+  background: transparent;
+  font-family: Roboto, sans-serif;
+  font-size: var(--md-type-body-large-size);
+  line-height: var(--md-type-body-large-line);
+}
+
+:root[data-theme] .markdown-composer .cm-scroller {
+  max-height: 180px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  font-family: inherit;
+}
+
+:root[data-theme] .markdown-composer .cm-content {
+  min-height: 56px;
+  padding: var(--md-space-12) 2px;
+  caret-color: var(--md-sys-color-primary);
+}
+
+:root[data-theme] .markdown-composer .cm-placeholder {
+  color: var(--md-sys-color-on-surface-variant);
+  opacity: .82;
+}
+
+:root[data-theme] .markdown-composer .cm-cursor,
+:root[data-theme] .markdown-composer .cm-dropCursor {
+  border-left-color: var(--md-sys-color-primary);
+}
+
+:root[data-theme] .markdown-composer .cm-selectionBackground,
+:root[data-theme] .markdown-composer .cm-content ::selection {
+  background: color-mix(in srgb, var(--md-sys-color-primary) 22%, transparent) !important;
+}
+
+.route-picker-trigger.md-button {
+  max-width: min(280px, 30vw);
+  min-height: 48px;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-weight-medium) var(--md-type-label-medium-size)/var(--md-type-label-medium-line) Roboto, sans-serif;
+  text-transform: none;
+}
+
+:root[data-theme] .route-picker-trigger.md-button {
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-full);
+  color: var(--md-sys-color-on-surface-variant);
+  background: var(--md-sys-color-surface-container-low);
+}
+
+.composer .attachment-picker-trigger.md-icon-button {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--md-shape-lg);
+  color: var(--md-sys-color-on-surface-variant);
+  background: var(--md-sys-color-surface-container-high);
+}
+
+:root[data-theme] .composer .attachment-picker-trigger.md-icon-button {
+  border: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  background: var(--md-sys-color-surface-container-high);
+}
+
+.composer .send-button.md-button {
+  min-height: 56px;
+  padding-inline: var(--md-space-24);
+  color: var(--md-sys-color-on-primary);
+  background: var(--md-sys-color-primary);
+  box-shadow: none;
+}
+
+:root[data-theme] .composer .send-button.md-button {
+  color: var(--md-sys-color-on-primary);
+  background: var(--md-sys-color-primary);
+}
+
+:root[data-theme] .composer .send-button.md-button:disabled {
+  border-color: var(--md-sys-color-surface-container-highest);
+  color: var(--md-sys-color-on-surface-variant);
+  background: var(--md-sys-color-surface-container-highest);
+  box-shadow: none;
+}
+
+.send-button.md-button {
+  align-self: center;
+}
+
+.composer-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--md-space-4);
+  padding: var(--md-space-6) var(--md-space-16) 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-weight-regular) var(--md-type-body-small-size)/var(--md-type-body-small-line) Roboto, sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+:root[data-theme] .composer-hint {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.merge-session-summary {
+  gap: var(--md-space-8);
+}
+
+.merge-session-summary .md-button {
+  min-height: 40px;
+}
+
+.material-dialog-header,
+.settings-header,
+.shortcut-dialog header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--md-space-16);
+}
+
+.material-dialog-header h2,
+.settings-header h2,
+.shortcut-dialog h2,
+.confirmation-dialog h2 {
+  margin: 0;
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-weight-regular) var(--md-type-headline-small-size)/var(--md-type-headline-small-line) Roboto, sans-serif;
+}
+
+.material-dialog-header p,
+.confirmation-dialog p {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-weight-regular) var(--md-type-body-medium-size)/var(--md-type-body-medium-line) Roboto, sans-serif;
+}
+
+.material-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--md-space-8);
+  margin-top: var(--md-space-24);
+}
+
+.material-field-grid,
+.settings-form {
+  display: grid;
+  gap: var(--md-space-16);
+}
+
+.material-field-grid {
+  margin-top: var(--md-space-24);
+}
+
+.material-field-grid label,
+.settings-form label,
+.material-text-field > span {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-weight-medium) var(--md-type-label-medium-size)/var(--md-type-label-medium-line) Roboto, sans-serif;
+}
+
+.material-field-grid input,
+.material-field-grid select,
+.settings-form input,
+.settings-form select,
+.material-text-field input {
+  min-height: 56px;
+  padding-inline: var(--md-space-16);
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--md-shape-xs);
+  color: var(--md-sys-color-on-surface);
+  background: transparent;
+  font: var(--md-weight-regular) var(--md-type-body-large-size)/var(--md-type-body-large-line) Roboto, sans-serif;
+}
+
+.material-field-grid input:focus,
+.material-field-grid select:focus,
+.settings-form input:focus,
+.settings-form select:focus,
+.material-text-field input:focus {
+  border-color: var(--md-sys-color-primary);
+  outline: 1px solid var(--md-sys-color-primary);
+}
+
+.settings-panel,
+.shortcut-dialog,
+.model-dialog,
+.confirmation-dialog {
+  color: var(--md-sys-color-on-surface);
+  background: transparent;
+}
+
+.settings-panel {
+  padding: 0;
+}
+
+.settings-panel > .settings-header {
+  align-items: flex-start;
+  padding: 0 0 var(--md-space-24);
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.settings-panel .panel-kicker {
+  color: var(--md-sys-color-primary);
+  font: var(--md-weight-bold) var(--md-type-label-medium-size)/var(--md-type-label-medium-line) Roboto, sans-serif;
+  letter-spacing: .04em;
+}
+
+.settings-panel .settings-form {
+  display: grid;
+  gap: var(--md-space-16);
+  padding-top: var(--md-space-24);
+}
+
+.settings-panel .settings-form label {
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-weight-medium) var(--md-type-label-medium-size)/var(--md-type-label-medium-line) Roboto, sans-serif;
+  letter-spacing: .04em;
+  text-transform: none;
+}
+
+.settings-panel .settings-form > label:not(:first-child),
+.settings-panel .local-fields label,
+.settings-panel .appearance-setting label {
+  margin-top: var(--md-space-8);
+}
+
+.settings-panel .local-fields,
+.settings-panel .appearance-setting {
+  display: grid;
+  gap: var(--md-space-16);
+}
+
+.settings-panel .settings-form input,
+.settings-panel .settings-form select {
+  width: 100%;
+  min-height: 56px;
+  padding-inline: var(--md-space-16);
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--md-shape-xs);
+  outline: 0;
+  color: var(--md-sys-color-on-surface);
+  background: transparent;
+  font: var(--md-weight-regular) var(--md-type-body-large-size)/var(--md-type-body-large-line) Roboto, sans-serif;
+}
+
+.settings-panel .settings-form input:focus,
+.settings-panel .settings-form select:focus {
+  border-color: var(--md-sys-color-primary);
+  outline: 1px solid var(--md-sys-color-primary);
+}
+
+.settings-panel .secret-input input {
+  padding-inline-end: 64px;
+}
+
+.settings-panel .secret-input > .md-tooltip-anchor {
+  position: absolute;
+  inset-block-start: 4px;
+  inset-inline-end: 4px;
+  width: 48px;
+  height: 48px;
+}
+
+.settings-panel .secret-input .md-icon-button {
+  position: relative;
+  inset: auto;
+  width: 48px;
+  height: 48px;
+}
+
+.settings-panel .field-note {
+  margin: calc(var(--md-space-8) * -1) 0 var(--md-space-8);
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-weight-regular) var(--md-type-body-small-size)/var(--md-type-body-small-line) Roboto, sans-serif;
+}
+
+.settings-panel .connection-actions {
+  gap: var(--md-space-8);
+  margin-top: 0;
+}
+
+.settings-panel .connection-actions .md-button {
+  min-height: 48px;
+  padding-inline: var(--md-space-12);
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--md-shape-full);
+  color: var(--md-sys-color-primary);
+  background: transparent;
+  font: var(--md-weight-bold) var(--md-type-label-large-size)/var(--md-type-label-large-line) Roboto, sans-serif;
+  letter-spacing: .01em;
+  text-transform: none;
+}
+
+.settings-panel .appearance-setting {
+  margin: var(--md-space-8) 0 0;
+  padding: var(--md-space-16);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-md);
+  background: var(--md-sys-color-surface-container);
+}
+
+.settings-panel .appearance-setting legend {
+  padding-inline: var(--md-space-8);
+  color: var(--md-sys-color-primary);
+  font: var(--md-weight-bold) var(--md-type-label-large-size)/var(--md-type-label-large-line) Roboto, sans-serif;
+  letter-spacing: .01em;
+  text-transform: none;
+}
+
+.settings-panel .appearance-setting label:first-of-type {
+  margin-top: 0;
+}
+
+.settings-panel .font-size-stepper {
+  grid-template-columns: 48px minmax(0, 1fr) 48px;
+  gap: var(--md-space-8);
+}
+
+.settings-panel .font-size-stepper > .md-tooltip-anchor,
+.settings-panel .font-size-stepper .md-icon-button {
+  width: 48px;
+  height: 48px;
+}
+
+.settings-panel .font-size-stepper .md-icon-button {
+  border: 0;
+  border-radius: var(--md-shape-full);
+  color: var(--md-sys-color-on-secondary-container);
+  background: var(--md-sys-color-secondary-container);
+}
+
+.settings-panel .font-size-stepper > div > span {
+  inset-inline-end: var(--md-space-12);
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-weight-medium) var(--md-type-label-medium-size)/var(--md-type-label-medium-line) Roboto, sans-serif;
+  text-transform: none;
+}
+
+.settings-panel .appearance-note {
+  margin-bottom: 0;
+}
+
+.settings-section-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--md-space-12);
+  margin: var(--md-space-8) 0;
+}
+
+.settings-section-heading h3 {
+  margin: 0;
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-weight-medium) var(--md-type-title-medium-size)/var(--md-type-title-medium-line) Roboto, sans-serif;
+}
+
+.settings-section-heading p {
+  margin: var(--md-space-4) 0 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-weight-regular) var(--md-type-body-small-size)/var(--md-type-body-small-line) Roboto, sans-serif;
+}
+
+.settings-section-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  border-radius: var(--md-shape-md);
+  color: var(--md-sys-color-on-secondary-container);
+  background: var(--md-sys-color-secondary-container);
+}
+
+.settings-data-heading {
+  margin-top: var(--md-space-32);
+}
+
+.settings-panel .setup-guide {
+  margin-top: var(--md-space-24);
+  padding: var(--md-space-16);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-md);
+  background: var(--md-sys-color-surface-container);
+}
+
+.settings-panel .setup-guide ol {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-weight-regular) var(--md-type-body-medium-size)/var(--md-type-body-medium-line) Roboto, sans-serif;
+}
+
+.settings-panel .setup-guide > p,
+.settings-panel .settings-danger span {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-weight-regular) var(--md-type-body-small-size)/var(--md-type-body-small-line) Roboto, sans-serif;
+}
+
+.settings-panel .settings-danger {
+  margin-top: var(--md-space-24);
+  padding-top: var(--md-space-16);
+  border-top-color: var(--md-sys-color-outline-variant);
+}
+
+.settings-panel .settings-danger strong {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-weight-medium) var(--md-type-title-small-size)/var(--md-type-title-small-line) Roboto, sans-serif;
+}
+
+.settings-panel .settings-danger .md-button {
+  min-height: 48px;
+  border: 0;
+  border-radius: var(--md-shape-full);
+  color: var(--md-sys-color-error);
+  background: transparent;
+  font: var(--md-weight-bold) var(--md-type-label-large-size)/var(--md-type-label-large-line) Roboto, sans-serif;
+  text-transform: none;
+}
+
+.settings-form fieldset,
+.danger-zone,
+.setup-guide {
+  border-color: var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-md);
+  background: var(--md-sys-color-surface-container);
+}
+
+.connection-feedback.is-success {
+  color: var(--md-sys-color-on-primary-container);
+  background: var(--md-sys-color-primary-container);
+}
+
+.connection-feedback.is-error,
+.md-menu__item--error {
+  color: var(--md-sys-color-error);
+}
+
+.loading-screen {
+  gap: var(--md-space-16);
+  color: var(--md-sys-color-on-surface-variant);
+  background: var(--md-sys-color-surface);
+  font: var(--md-weight-medium) var(--md-type-body-large-size)/var(--md-type-body-large-line) Roboto, sans-serif;
+}
+
+.md-menu__item > span:not(.material-symbol) {
+  display: grid;
+}
+
+.md-menu__item small {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-weight-regular) var(--md-type-body-small-size)/var(--md-type-body-small-line) Roboto, sans-serif;
+}

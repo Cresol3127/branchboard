@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Branchboard",
+  "description": "Branch multimodal LLM conversations, control context, and explore ideas spatially.",
+  "version": "0.1.0",
+  "action": {
+    "default_title": "Open Branchboard"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["storage", "unlimitedStorage"],
+  "host_permissions": ["https://generativelanguage.googleapis.com/*"],
+  "optional_host_permissions": [
+    "https://api.openai.com/*",
+    "https://api.anthropic.com/*",
+    "https://ollama.com/*",
+    "http://*/*",
+    "https://*/*"
+  ]
+}

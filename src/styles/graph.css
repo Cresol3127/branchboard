@@ -1,0 +1,612 @@
+.board-canvas,
+.board-canvas .react-flow__pane {
+  background-color: var(--md-sys-color-surface);
+}
+
+.board-canvas .react-flow__edge-path {
+  stroke: var(--md-sys-color-outline);
+}
+
+.board-canvas .react-flow__edge.merge-edge .react-flow__edge-path {
+  stroke: var(--md-sys-color-primary);
+  stroke-width: 2.5;
+}
+
+.board-canvas .react-flow__edge.muted-edge .react-flow__edge-path {
+  stroke: var(--md-sys-color-outline-variant);
+  opacity: .56;
+  stroke-dasharray: 5 7;
+}
+
+.board-canvas .react-flow__edge.draft-edge .react-flow__edge-path {
+  stroke: var(--md-sys-color-outline);
+  stroke-dasharray: 3 6;
+}
+
+.board-canvas .react-flow__edge.animated .react-flow__edge-path {
+  stroke: var(--md-sys-color-primary);
+}
+
+.annotation-toolbar,
+.conversation-color-tray-panel {
+  margin: var(--md-space-24) var(--md-space-16);
+}
+
+.annotation-tray,
+.conversation-color-tray,
+.viewport-toolbar {
+  border: 0;
+  border-radius: var(--md-shape-full);
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-container);
+  outline: 1px solid var(--md-sys-color-outline-variant);
+  box-shadow: none;
+}
+
+:root[data-theme] .annotation-tray,
+:root[data-theme] .conversation-color-tray,
+:root[data-theme] .viewport-toolbar,
+:root[data-theme] .annotation-options,
+:root[data-theme] .conversation-color-panel {
+  border-color: var(--md-sys-color-outline-variant);
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-container-lowest);
+  box-shadow: var(--md-elevation-level2);
+}
+
+.annotation-tray,
+.conversation-color-tray {
+  min-height: 64px;
+  padding: var(--md-space-8);
+}
+
+:root[data-theme] .annotation-tray {
+  border-radius: var(--md-shape-xl);
+}
+
+.annotation-tray-content,
+.conversation-color-tray-content {
+  gap: var(--md-space-8);
+}
+
+.annotation-tray:not(.is-open) .annotation-tray-content,
+.conversation-color-tray:not(.is-open) .conversation-color-tray-content {
+  height: 0;
+  max-height: 0;
+}
+
+.annotation-tray.is-open .annotation-tray-content,
+.conversation-color-tray.is-open .conversation-color-tray-content {
+  height: auto;
+  max-height: none;
+}
+
+.annotation-tools {
+  gap: var(--md-space-4);
+}
+
+.annotation-tools > .md-tooltip-anchor,
+.viewport-toolbar > .md-tooltip-anchor {
+  flex: 0 0 48px;
+}
+
+.annotation-tools .md-icon-button,
+.annotation-tray-handle.md-icon-button,
+.conversation-color-tray-handle.md-icon-button,
+.viewport-toolbar .md-icon-button {
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: var(--md-shape-full);
+  color: var(--md-sys-color-on-surface-variant);
+  background: transparent;
+}
+
+:root[data-theme] .annotation-tools .md-icon-button,
+:root[data-theme] .annotation-tray-handle.md-icon-button,
+:root[data-theme] .conversation-color-tray-handle.md-icon-button,
+:root[data-theme] .viewport-toolbar .md-icon-button {
+  border: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  background: transparent;
+}
+
+.annotation-tools .md-icon-button.is-selected,
+.annotation-tools .md-icon-button.active,
+.annotation-tray-handle.md-icon-button.is-selected,
+.conversation-color-tray-handle.md-icon-button.is-selected {
+  color: var(--md-sys-color-on-secondary-container);
+  background: var(--md-sys-color-secondary-container);
+}
+
+:root[data-theme] .annotation-tools .md-icon-button.is-selected,
+:root[data-theme] .annotation-tools .md-icon-button.active,
+:root[data-theme] .annotation-tray-handle.md-icon-button.is-selected,
+:root[data-theme] .conversation-color-tray-handle.md-icon-button.is-selected {
+  color: var(--md-sys-color-on-primary-container);
+  background: var(--md-sys-color-primary-container);
+}
+
+.annotation-tools .md-icon-button:hover:not(:disabled),
+.annotation-tray-handle.md-icon-button:hover:not(:disabled),
+.conversation-color-tray-handle.md-icon-button:hover:not(:disabled),
+.viewport-toolbar .md-icon-button:hover:not(:disabled) {
+  color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-surface-container-high);
+}
+
+.annotation-tool-separator {
+  width: 1px;
+  height: 32px;
+  margin: 8px 4px;
+  background: var(--md-sys-color-outline-variant);
+}
+
+.annotation-options,
+.conversation-color-panel {
+  border-color: var(--md-sys-color-outline-variant);
+  color: var(--md-sys-color-on-surface-variant);
+  background: var(--md-sys-color-surface-container-high);
+}
+
+.annotation-options label,
+.annotation-options > span,
+.conversation-color-heading {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-weight-medium) var(--md-type-label-medium-size)/var(--md-type-label-medium-line) Roboto, sans-serif;
+  letter-spacing: 0;
+}
+
+.conversation-color-heading span {
+  display: flex;
+  align-items: center;
+  gap: var(--md-space-8);
+}
+
+.conversation-color-heading strong {
+  color: var(--md-sys-color-primary);
+}
+
+.conversation-color-scope .md-connected-group__button {
+  min-height: 40px;
+}
+
+.viewport-toolbar {
+  display: flex;
+  gap: var(--md-space-4);
+  min-height: 64px;
+  margin: var(--md-space-24) var(--md-space-16);
+  padding: var(--md-space-8);
+}
+
+:root[data-theme] .react-flow__controls {
+  overflow: hidden;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-lg);
+  background: var(--md-sys-color-surface-container-lowest);
+  box-shadow: var(--md-elevation-level1);
+}
+
+:root[data-theme] .react-flow__controls-button {
+  color: var(--md-sys-color-on-surface-variant);
+  border-bottom-color: var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface-container-lowest);
+}
+
+:root[data-theme] .react-flow__controls-button:hover {
+  color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-surface-container-high);
+}
+
+.react-flow__minimap {
+  margin: var(--md-space-24) var(--md-space-16);
+  border: 0;
+  border-radius: var(--md-shape-lg);
+  background: var(--md-sys-color-surface-container) !important;
+  outline: 1px solid var(--md-sys-color-outline-variant);
+  box-shadow: none;
+}
+
+:root[data-theme] .react-flow__minimap {
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-lg);
+  background: var(--md-sys-color-surface-container-lowest) !important;
+  box-shadow: var(--md-elevation-level1);
+}
+
+.conversation-card {
+  border: 1px solid color-mix(in srgb, var(--md-sys-color-outline-variant) 72%, transparent);
+  border-radius: var(--md-shape-node);
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-container-lowest);
+  box-shadow: var(--md-elevation-level1);
+}
+
+:root[data-theme] .conversation-card {
+  border-color: var(--md-sys-color-outline-variant);
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-container-lowest);
+  box-shadow: var(--md-elevation-level1);
+}
+
+.conversation-card:hover {
+  border-color: var(--md-sys-color-outline);
+  box-shadow: var(--md-elevation-level2);
+}
+
+:root[data-theme] .conversation-card:hover {
+  border-color: var(--md-sys-color-outline);
+  box-shadow: var(--md-elevation-level2);
+}
+
+.conversation-card.is-selected {
+  border-color: var(--md-sys-color-primary);
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: 2px;
+  box-shadow: var(--md-elevation-level2);
+}
+
+:root[data-theme] .conversation-card.is-selected {
+  border-color: var(--md-sys-color-primary);
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: 2px;
+  box-shadow: var(--md-elevation-level2);
+}
+
+.conversation-card.is-token-selected {
+  border-color: var(--md-sys-color-tertiary);
+  outline: 2px solid var(--md-sys-color-tertiary);
+  outline-offset: 2px;
+}
+
+:root[data-theme] .conversation-card.is-token-selected {
+  border-color: var(--md-sys-color-tertiary);
+  outline: 2px solid var(--md-sys-color-tertiary);
+  outline-offset: 2px;
+}
+
+.conversation-card.is-family-selected {
+  border-color: var(--md-sys-color-secondary);
+  outline: 2px dashed var(--md-sys-color-secondary);
+  outline-offset: 2px;
+}
+
+:root[data-theme] .conversation-card.is-family-selected {
+  border-color: var(--md-sys-color-secondary);
+  outline: 2px dashed var(--md-sys-color-secondary);
+  outline-offset: 2px;
+}
+
+.conversation-card.is-selected.is-token-selected,
+.conversation-card.is-selected.is-family-selected {
+  outline: 2px solid var(--md-sys-color-primary);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--md-sys-color-tertiary) 65%, transparent);
+}
+
+:root[data-theme] .conversation-card.is-selected.is-token-selected,
+:root[data-theme] .conversation-card.is-selected.is-family-selected {
+  outline: 2px solid var(--md-sys-color-primary);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--md-sys-color-tertiary) 65%, transparent);
+}
+
+.conversation-card.is-muted {
+  opacity: .78;
+}
+
+.conversation-card.merge-selected {
+  border-color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-surface-container-high);
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: 2px;
+  box-shadow: var(--md-elevation-level2);
+}
+
+.conversation-card.merge-eligible {
+  border-color: var(--md-sys-color-tertiary);
+  border-style: dashed;
+}
+
+:root[data-theme] .conversation-card.merge-selected {
+  border-color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-surface-container-high);
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: 2px;
+  box-shadow: var(--md-elevation-level2);
+}
+
+.conversation-card.merge-eligible {
+  border-color: var(--md-sys-color-tertiary);
+  border-style: dashed;
+}
+
+.conversation-card.merge-blocked {
+  opacity: .48;
+}
+
+.card-header {
+  min-height: 48px;
+  padding: var(--md-space-8) var(--md-space-16);
+  border-bottom-color: transparent;
+  border-radius: var(--md-shape-node) var(--md-shape-node) 0 0;
+  background: var(--md-sys-color-surface-container-low);
+}
+
+:root[data-theme] .card-header {
+  color: var(--md-sys-color-on-surface-variant);
+  background: var(--md-sys-color-surface-container-low);
+}
+
+.card-index,
+.status-dot,
+.message-label,
+.metadata-model,
+.metadata-stats {
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: Roboto, sans-serif;
+  font-size: var(--md-type-label-medium-size);
+  font-weight: var(--md-weight-medium);
+  line-height: var(--md-type-label-medium-line);
+  letter-spacing: 0;
+}
+
+.status-dot::before {
+  background: var(--md-sys-color-outline);
+}
+
+.status-streaming::before {
+  background: var(--md-sys-color-primary);
+}
+
+.status-error::before {
+  background: var(--md-sys-color-error);
+}
+
+.message {
+  padding: var(--md-space-16);
+}
+
+.prompt-message {
+  margin: var(--md-space-8) var(--md-space-8) 0;
+  padding: var(--md-space-12) var(--md-space-16);
+  border-radius: var(--md-shape-md);
+  background: var(--md-sys-color-surface-container);
+}
+
+.response-message {
+  padding-top: var(--md-space-16);
+}
+
+.message-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  margin-bottom: var(--md-space-8);
+  padding: 0 var(--md-space-8);
+  border-radius: var(--md-shape-xs);
+  color: var(--md-sys-color-on-surface-variant);
+  background: var(--md-sys-color-surface-container-high);
+  letter-spacing: 0;
+}
+
+.markdown-content {
+  color: var(--md-sys-color-on-surface);
+}
+
+.markdown-content a {
+  color: var(--md-sys-color-primary);
+  text-decoration: underline;
+}
+
+.markdown-content blockquote,
+.markdown-content pre,
+.markdown-content table {
+  border-color: var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface-container);
+}
+
+.card-rule {
+  background: var(--md-sys-color-outline-variant);
+}
+
+.node-error {
+  color: var(--md-sys-color-on-error-container);
+  background: var(--md-sys-color-error-container);
+}
+
+.card-metadata {
+  padding: var(--md-space-8) var(--md-space-16);
+  border-color: transparent;
+  background: var(--md-sys-color-surface-container-low);
+}
+
+.card-actions {
+  min-height: 64px;
+  align-items: center;
+  gap: var(--md-space-4);
+  padding: var(--md-space-8);
+  border-top-color: transparent;
+  border-radius: 0 0 var(--md-shape-node) var(--md-shape-node);
+  background: var(--md-sys-color-surface-container-low);
+}
+
+.card-actions .md-button {
+  min-width: 0;
+  min-height: 48px;
+  padding-inline: var(--md-space-12);
+  border: 0;
+  color: var(--md-sys-color-primary);
+  background: transparent;
+  font: var(--md-weight-medium) var(--md-type-label-large-size)/var(--md-type-label-large-line) Roboto, sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+:root[data-theme] .card-actions .md-button {
+  color: var(--md-sys-color-primary);
+  background: transparent;
+}
+
+.card-actions .branch-action.md-button {
+  min-height: 44px;
+  border-radius: var(--md-shape-full);
+  color: var(--md-sys-color-on-primary-container);
+  background: var(--md-sys-color-primary-container);
+}
+
+:root[data-theme] .card-actions .branch-action.md-button {
+  color: var(--md-sys-color-on-primary-container);
+  background: var(--md-sys-color-primary-container);
+}
+
+.card-actions .retry-action.md-button {
+  border-radius: var(--md-shape-full);
+  color: var(--md-sys-color-on-tertiary-container);
+  background: var(--md-sys-color-tertiary-container);
+}
+
+:root[data-theme] .card-actions .retry-action.md-button {
+  color: var(--md-sys-color-on-tertiary-container);
+  background: var(--md-sys-color-tertiary-container);
+}
+
+.card-actions .merge-action.md-button.active {
+  color: var(--md-sys-color-on-primary);
+  background: var(--md-sys-color-primary);
+}
+
+:root[data-theme] .card-actions .merge-action.md-button.active {
+  color: var(--md-sys-color-on-primary);
+  background: var(--md-sys-color-primary);
+}
+
+.card-actions .stop-action.md-button {
+  color: var(--md-sys-color-error);
+}
+
+:root[data-theme] .card-actions .stop-action.md-button {
+  color: var(--md-sys-color-error);
+}
+
+.card-actions .md-icon-button {
+  flex: 0 0 48px;
+}
+
+.draft-message {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.draft-message > .material-symbol {
+  color: var(--md-sys-color-primary);
+}
+
+.node-resize-control,
+.sticky-resize-control,
+.group-selection-drag-handle {
+  color: var(--md-sys-color-on-primary);
+  background: var(--md-sys-color-primary);
+}
+
+.sticky-note {
+  border: 1px solid color-mix(in srgb, var(--md-sys-color-outline) 64%, transparent);
+  border-radius: var(--md-shape-lg);
+  box-shadow: none;
+}
+
+.sticky-note.is-selected,
+.sticky-note.is-group-selected {
+  box-shadow: 0 0 0 2px var(--md-sys-color-primary);
+}
+
+:root[data-theme] .sticky-note.is-selected,
+:root[data-theme] .sticky-note.is-group-selected {
+  border-color: var(--md-sys-color-primary);
+  box-shadow: 0 0 0 2px var(--md-sys-color-primary);
+}
+
+.sticky-drag-handle {
+  min-height: 48px;
+  padding-inline: var(--md-space-8);
+  border-bottom-color: color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: var(--md-shape-lg) var(--md-shape-lg) 0 0;
+  font: var(--md-weight-bold) var(--md-type-label-medium-size)/var(--md-type-label-medium-line) Roboto, sans-serif;
+  letter-spacing: .04em;
+}
+
+.sticky-note textarea {
+  color: inherit;
+  font-size: calc(var(--reading-font-size) + 3px);
+}
+
+.pending-attachment,
+.node-attachment {
+  border-color: var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-md);
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-container);
+}
+
+.pending-attachment .md-icon-button {
+  flex: 0 0 48px;
+}
+
+.node-attachment-error {
+  color: var(--md-sys-color-on-error-container);
+  background: var(--md-sys-color-error-container);
+}
+
+.token-selection-summary,
+.family-selection-summary {
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--md-shape-lg);
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-container-high);
+  box-shadow: none;
+  backdrop-filter: none;
+  font-family: Roboto, sans-serif;
+}
+
+.family-selection-summary strong,
+.token-selection-summary > strong {
+  color: var(--md-sys-color-on-primary-container);
+  background: var(--md-sys-color-primary-container);
+}
+
+.group-selection-bounds {
+  border-color: var(--md-sys-color-secondary);
+}
+
+.board-canvas.tool-select .react-flow__selection {
+  border-color: var(--md-sys-color-secondary);
+  background: color-mix(in srgb, var(--md-sys-color-secondary-container) 38%, transparent);
+}
+
+:root[data-theme] .board-canvas.tool-select .react-flow__selection {
+  border-color: var(--md-sys-color-secondary);
+  background: color-mix(in srgb, var(--md-sys-color-secondary-container) 38%, transparent);
+}
+
+.board-canvas.tool-compare .react-flow__selection {
+  border-color: var(--md-sys-color-tertiary);
+  background: color-mix(in srgb, var(--md-sys-color-tertiary-container) 38%, transparent);
+}
+
+:root[data-theme] .board-canvas.tool-compare .react-flow__selection {
+  border-color: var(--md-sys-color-tertiary);
+  background: color-mix(in srgb, var(--md-sys-color-tertiary-container) 38%, transparent);
+}
+
+.conversation-color-coral { --conversation-color: #ba1a1a; --conversation-color-soft: #ffdad6; }
+.conversation-color-amber { --conversation-color: #7c5800; --conversation-color-soft: #ffdea6; }
+.conversation-color-green { --conversation-color: #386a20; --conversation-color-soft: #b8f397; }
+.conversation-color-cyan { --conversation-color: #006874; --conversation-color-soft: #97f0ff; }
+.conversation-color-blue { --conversation-color: #315da8; --conversation-color-soft: #d8e2ff; }
+.conversation-color-violet { --conversation-color: #6f43a5; --conversation-color-soft: #eddcff; }
+.conversation-color-pink { --conversation-color: #984061; --conversation-color-soft: #ffd9e3; }
+
+:root[data-theme="dark"] .conversation-color-coral { --conversation-color: #ffb4ab; --conversation-color-soft: #93000a; }
+:root[data-theme="dark"] .conversation-color-amber { --conversation-color: #ffba46; --conversation-color-soft: #5e4200; }
+:root[data-theme="dark"] .conversation-color-green { --conversation-color: #9dd67d; --conversation-color-soft: #205107; }
+:root[data-theme="dark"] .conversation-color-cyan { --conversation-color: #4fd8eb; --conversation-color-soft: #004f58; }
+:root[data-theme="dark"] .conversation-color-blue { --conversation-color: #afc6ff; --conversation-color-soft: #17458f; }
+:root[data-theme="dark"] .conversation-color-violet { --conversation-color: #d8b9ff; --conversation-color-soft: #57288b; }
+:root[data-theme="dark"] .conversation-color-pink { --conversation-color: #ffb0ca; --conversation-color-soft: #7b2949; }
