@@ -118,7 +118,6 @@ import {
   type WhiteboardCollection,
 } from "./types";
 import "./styles.css";
-import "./styles/m3-overrides.css";
 
 const PROVIDER_OPTIONS: Array<{ id: ProviderId; label: string }> = [
   { id: "gemini", label: "Gemini" },
