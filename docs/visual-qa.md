@@ -1,5 +1,25 @@
 # Visual and interaction QA
 
+## Docked workspace — 1.8.0 (2026-10-24)
+
+- Reviewed docked Models/Settings/Help/editors, titleless cards, rectangle selection,
+  integrated confirmations, original-order canvas navigation and the right creation
+  toolbar at desktop/mobile widths and in both themes.
+- Kept 24px minimap clearance, 44px sidebar targets, visible rounded canvas corners,
+  readable panel hierarchy, focus return, native text selection and touch scrolling.
+- Fixed annotation/tool overlap, Favorite/delete overlap, Shift-click interception,
+  a stale pointer-draft completion race and narrow mobile layer-name fields.
+- Full-size PNG inspection found narrow cloned table cells wrapping the header and
+  clipping the last row. Export now lets cell widths recompute without table clipping;
+  a real-image pixel regression covers the final row. PNG/PDF use the same raster.
+- Seven cleanup editions passed their own builds, unit suites and three production
+  Chromium tests each. All four previews per edition were reviewed; no full historical
+  browser-suite pass is implied. Existing parent groups remain readable/ungroupable.
+- The final current build, 181 unit/HTTP tests and 95 Chromium tests passed; all 104
+  desktop/mobile captures and the downloaded PNG were inspected after the fixes.
+  Current final evidence lives in `releases/v1.8.0/verification.json`. No paid provider
+  requests were used; browser generation fixtures and local HTTP upstreams are explicit.
+
 ## Design improvements — 1.7.0 (2026-10-23)
 
 - The picker is search-first, with five persistent recent choices and only configured

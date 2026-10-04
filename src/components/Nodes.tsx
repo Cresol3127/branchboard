@@ -1,12 +1,4 @@
-import {
-  memo,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-  type PointerEvent,
-} from 'react';
+import { memo, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import {
   Handle,
   NodeResizer,
@@ -28,14 +20,12 @@ import {
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { contextFor, estimateTokens, nodeMessages } from '../graph';
 import { currentBoard, useStore } from '../store';
-import { draftKey } from '../composer';
+import { nodeLabel } from '../nodeLabel';
 import type { BoardNode } from '../types';
 import { IconButton, Menu } from './ui';
 import { ModelSelector } from './ModelSelector';
-import { ContextInspector } from './ContextInspector';
-import { MessageHistory } from './MessageHistory';
+import { useWorkspacePanels } from '../workspacePanels';
 import { NoteContent } from './NoteContent';
 import { useCanvasTextSelection } from './useCanvasTextSelection';
 
@@ -125,41 +115,16 @@ export function CanvasNode({ id, data, selected, type }: NodeProps<BoardNode>) {
   const selectText = useCanvasTextSelection();
   const state = useStore(),
     board = currentBoard(state);
-  const node = board.nodes.find((n) => n.id === id);
   const streaming = Boolean(state.streaming[id]);
-  const draft = state.composerDrafts[draftKey(board.id, id)] || '';
-  const [contextOpen, setContextOpen] = useState(false);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
-  const [historyAction, setHistoryAction] = useState<{
-    messageId: string;
-    mode: 'edit' | 'delete';
-  } | null>(null);
+  const editHistory = (messageId: string, mode: 'edit' | 'delete') =>
+    useWorkspacePanels.getState().navigate(() =>
+      useWorkspacePanels.setState({
+        messageEditor: { boardId: board.id, nodeId: id, messageId, mode },
+      }),
+    );
   const historyBusy = Object.values(state.streaming).some(Boolean);
   const expanded = selected && !data.collapsed;
-  // Positions/selection change every drag frame; graph context depends only on content and edges.
-  const semantic = useRef<{ nodes: BoardNode[]; edges: typeof board.edges }>({
-    nodes: [],
-    edges: [],
-  });
-  if (
-    semantic.current.edges !== board.edges ||
-    semantic.current.nodes.length !== board.nodes.length ||
-    semantic.current.nodes.some(
-      (n, i) =>
-        n.id !== board.nodes[i].id ||
-        n.type !== board.nodes[i].type ||
-        n.data !== board.nodes[i].data,
-    )
-  )
-    semantic.current = { nodes: board.nodes, edges: board.edges };
-  const content = semantic.current;
-  const { inherited, tokens } = useMemo(() => {
-    const inherited = contextFor(id, content.nodes, content.edges, false);
-    const preview = contextFor(id, content.nodes, content.edges);
-    if (draft.trim()) preview.push({ id: 'draft', role: 'user', content: draft.trim() });
-    return { inherited, tokens: estimateTokens(preview) };
-  }, [id, content, draft]);
-  const overBudget = Boolean(data.contextTokenLimit && tokens > data.contextTokenLimit);
   const contentRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -208,6 +173,7 @@ export function CanvasNode({ id, data, selected, type }: NodeProps<BoardNode>) {
   return (
     <div
       ref={rootRef}
+      aria-label={nodeLabel({ type, data })}
       // React Flow's nokey exempts card gestures from its Shift-rectangle capture handler.
       className={`board-node nokey ${type}-node ${expanded ? 'expanded' : ''} color-${data.color}`}
       onPointerDownCapture={(e) => {
@@ -237,74 +203,52 @@ export function CanvasNode({ id, data, selected, type }: NodeProps<BoardNode>) {
         }}
         onResizeEnd={() => state.settleNodes([id])}
       />
-      <div className="node-heading">
-        <span className="node-type-dot">
-          <Icon size={16} />
-        </span>
-        <input
-          className="node-title nodrag"
-          aria-label="Node title"
-          value={data.title}
-          onFocus={state.checkpoint}
-          onChange={(e) => update({ title: e.target.value })}
-        />
-        <div className="node-heading-actions nodrag">
-          {type === 'chat' && data.error && (
-            <span
-              className="generation-error-dot"
-              role="img"
-              aria-label="Generation failed"
-              title={data.error}
-            />
-          )}
-          {type !== 'group' && (
+      {(type === 'group' || data.collapsed) && (
+        <div className="node-heading">
+          <span className="node-type-dot">
+            <Icon size={16} />
+          </span>
+          <span className="node-preview">{nodeLabel({ type, data })}</span>
+          <div className="node-heading-actions nodrag">
+            {type === 'chat' && data.error && (
+              <span
+                className="generation-error-dot"
+                role="img"
+                aria-label="Generation failed"
+                title={data.error}
+              />
+            )}
+            {type !== 'group' && (
+              <IconButton
+                label={data.collapsed ? 'Expand node' : 'Collapse node'}
+                onClick={() => {
+                  if (data.collapsed && !selected) choose();
+                  update({ collapsed: !data.collapsed }, true);
+                }}
+              >
+                {data.collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+              </IconButton>
+            )}
             <IconButton
-              label={data.collapsed ? 'Expand node' : 'Collapse node'}
-              onClick={() => {
-                if (data.collapsed && !selected) choose();
-                update({ collapsed: !data.collapsed }, true);
+              label="Node actions"
+              onClick={(e) => {
+                if (!selected) choose();
+                setMenu({ x: e.clientX, y: e.clientY });
               }}
             >
-              {data.collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+              <MoreHorizontal size={16} />
             </IconButton>
-          )}
-          <IconButton
-            label="Node actions"
-            onClick={(e) => {
-              if (!selected) choose();
-              setMenu({ x: e.clientX, y: e.clientY });
-            }}
-          >
-            <MoreHorizontal size={16} />
-          </IconButton>
+          </div>
         </div>
-      </div>
+      )}
       {type !== 'group' && !data.collapsed && (
         <>
           {type === 'note' ? (
             <NoteContent id={id} note={data.note} expanded={expanded} />
           ) : (
             <>
-              <ModelSelector id={id} data={data} streaming={streaming} />
-              <button
-                className={`node-context-button nodrag ${overBudget ? 'over-budget' : ''}`}
-                aria-label="Inspect AI context"
-                onClick={() => setContextOpen(true)}
-              >
-                <GitBranch size={12} />
-                Context · ~{tokens.toLocaleString()}
-                {data.contextTokenLimit ? ` / ${data.contextTokenLimit.toLocaleString()}` : ''}{' '}
-                tokens
-                {overBudget && ' · over budget'}
-              </button>
               <div ref={contentRef} className="messages sizing-region nowheel">
                 <div className="sizing-content">
-                  {inherited.length > 0 && (
-                    <button className="context-chip" onClick={() => setContextOpen(true)}>
-                      <GitBranch size={12} />
-                      {inherited.length} inherited messages
-                    </button>
-                  )}
                   {!data.messages.length && (
                     <div className="empty-conversation">
                       <span className="empty-icon">
@@ -351,14 +295,14 @@ export function CanvasNode({ id, data, selected, type }: NodeProps<BoardNode>) {
                           <IconButton
                             label="Edit message"
                             disabled={historyBusy}
-                            onClick={() => setHistoryAction({ messageId: m.id, mode: 'edit' })}
+                            onClick={() => editHistory(m.id, 'edit')}
                           >
                             <Pencil size={12} />
                           </IconButton>
                           <IconButton
                             label="Delete message"
                             disabled={historyBusy}
-                            onClick={() => setHistoryAction({ messageId: m.id, mode: 'delete' })}
+                            onClick={() => editHistory(m.id, 'delete')}
                           >
                             <Trash2 size={12} />
                           </IconButton>
@@ -400,9 +344,21 @@ export function CanvasNode({ id, data, selected, type }: NodeProps<BoardNode>) {
           )}
         </>
       )}
-      {type === 'note' && !data.collapsed && node && (
-        <div className="node-token-count">
-          ~{estimateTokens(nodeMessages(node)).toLocaleString()} tokens · estimated
+      {type !== 'group' && !data.collapsed && (
+        <div className="node-bottom-actions">
+          {type === 'chat' && <ModelSelector id={id} data={data} streaming={streaming} />}
+          <IconButton label="Collapse node" onClick={() => update({ collapsed: true }, true)}>
+            <ChevronUp size={14} />
+          </IconButton>
+          <IconButton
+            label="Node actions"
+            onClick={(e) => {
+              if (!selected) choose();
+              setMenu({ x: e.clientX, y: e.clientY });
+            }}
+          >
+            <MoreHorizontal size={16} />
+          </IconButton>
         </div>
       )}
       {type !== 'group' && <Ports id={id} data={data} />}
@@ -425,18 +381,9 @@ export function CanvasNode({ id, data, selected, type }: NodeProps<BoardNode>) {
               Automatic content sizing
             </button>
           )}
-          {type === 'group' ? (
+          {type === 'group' && (
             <button role="menuitem" onClick={() => state.ungroup(id)}>
               Ungroup
-            </button>
-          ) : (
-            <button role="menuitem" onClick={state.group}>
-              Group selection
-            </button>
-          )}
-          {type === 'chat' && (
-            <button role="menuitem" onClick={() => setContextOpen(true)}>
-              Inspect AI context
             </button>
           )}
           {type === 'note' && (
@@ -458,27 +405,30 @@ export function CanvasNode({ id, data, selected, type }: NodeProps<BoardNode>) {
             className="danger"
             onClick={() => {
               const selected = board.nodes.filter((n) => n.selected);
-              if (
-                (selected.length < 5 && !selected.some((n) => n.type === 'group')) ||
-                confirm('Delete the selected nodes and their connected content?')
-              )
+              if (selected.length < 5 && !selected.some((n) => n.type === 'group'))
                 state.removeSelected();
+              else {
+                const selection = {
+                  nodes: selected.map((n) => n.id),
+                  edges: board.edges.filter((e) => e.selected).map((e) => e.id),
+                };
+                useWorkspacePanels.setState({
+                  confirmation: {
+                    title: 'Delete selection',
+                    description:
+                      'Delete these nodes and their connected content? You can undo this change.',
+                    run: () => {
+                      if (useStore.getState().currentId === board.id)
+                        useStore.getState().removeSelected(selection);
+                    },
+                  },
+                });
+              }
             }}
           >
             Delete selection
           </button>
         </Menu>
-      )}
-      {contextOpen && node && (
-        <ContextInspector node={node} draft={draft} onClose={() => setContextOpen(false)} />
-      )}
-      {historyAction && (
-        <MessageHistory
-          nodeId={id}
-          messageId={historyAction.messageId}
-          mode={historyAction.mode}
-          onClose={() => setHistoryAction(null)}
-        />
       )}
     </div>
   );

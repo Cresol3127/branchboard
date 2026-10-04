@@ -194,7 +194,13 @@ export function spentForBudget(records: GenerationRecord[], budget: Budget) {
 export function budgetCheck(
   budgets: Budget[],
   records: GenerationRecord[],
-  pending: { boardId: string; nodeId: string; provider: ProviderId; cost: number; currency: string }[],
+  pending: {
+    boardId: string;
+    nodeId: string;
+    provider: ProviderId;
+    cost: number;
+    currency: string;
+  }[],
   request: {
     boardId: string;
     nodeId: string;

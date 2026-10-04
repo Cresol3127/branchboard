@@ -1,85 +1,76 @@
 # Release catalog
 
-## Current and refreshed editions
+## Maintained downloads and previews
 
-| Version   | Purpose                                                        | Preserved source        |
-| --------- | -------------------------------------------------------------- | ----------------------- |
-| **1.7.0** | Design improvements: minimal picker, history and responsive UI | Maintained project root |
-| 1.6.0     | Original Material workspace release                            | Tag v1.6.0              |
-| 1.1.1     | Minimal two-card conversation/note prototype                   | v1.1                    |
-| 1.2.1     | Prototype with inherited-context controls                      | v1.2                    |
-| 1.3.1     | Prototype with searchable, editable history                    | v1.3                    |
-| 1.4.1     | Rich notes, annotations, exports, organization and snapshots   | v1.4                    |
-| 1.5.1     | Fixed composer, text selection and model discovery             | v1.5                    |
+| Version | Purpose | Source |
+| --- | --- | --- |
+| **1.8.0** | Docked panels, quiet cards and bounded model testing | Maintained project root |
+| 1.7.1 | Design improvements with canvas cleanup | `v1.7.1/` |
+| 1.6.1 | Material workspace with canvas cleanup | `v1.6.1/` |
+| 1.5.2 | Composer and model discovery with canvas cleanup | `v1.5.2/` |
+| 1.4.2 | Rich notes and canvas tools with canvas cleanup | `v1.4.2/` |
+| 1.3.2 | Searchable history with canvas cleanup | `v1.3.2/` |
+| 1.2.2 | Connected-context prototype with canvas cleanup | `v1.2.2/` |
+| 1.1.2 | Minimal conversation/note prototype with canvas cleanup | `v1.1.2/` |
 
-The refreshed historical editions were **created 2026-10-22**, followed by
-**1.7.0 — Design improvements (2026-10-23)**. They are not historical originals with silently
-changed contents or invented dates. Every edition has matching package/lock versions,
-release notes, a manifest, checksums and a verification record. Source and runtime
-archives are separate: the runtime includes both the built frontend and Node server,
-but no node_modules. Use Node 22.12+, `npm ci --omit=dev`, then `npm start`.
-Source archives use `npm ci`, `npm run build`, then `npm start`.
-Each edition also has checked desktop, dark and mobile images in `previews/`.
-Current app previews: [desktop](v1.7.0/previews/desktop.png),
-[dark](v1.7.0/previews/dark.png), [mobile](v1.7.0/previews/mobile.png).
-Design details: [model picker](v1.7.0/previews/models.png),
-[Settings](v1.7.0/previews/settings.png), [Help](v1.7.0/previews/help.png),
-[shortcuts](v1.7.0/previews/shortcuts.png), [mobile overlays](v1.7.0/previews/overlays.png).
+The seven cleanup editions were created on **2026-10-24** from verified source
+archives. Only Inspector and persistent group-creation entry points were removed;
+existing groups and inherited context remain compatible. They do not backport the
+full docked workspace. Each `verification.json` records its original archive hash
+and source commit. `index.json` records which maintained download each supersedes.
 
-**Private local releases:** no project distribution license has been selected.
-Nothing has been published to a public registry, hosting service or Git remote.
+Earlier downloads/previews are withdrawn from the maintained list, not rewritten.
+Original source directories, archived payloads, checksums and tags remain preserved
+for private recovery. No original implementation has been fabricated for `v1.0`.
 
-## Original provenance and recovery
+Current previews: [desktop](v1.8.0/previews/desktop.png),
+[dark](v1.8.0/previews/dark.png), [mobile](v1.8.0/previews/mobile.png),
+[Models](v1.8.0/previews/models.png), [Settings](v1.8.0/previews/settings.png),
+[Help](v1.8.0/previews/help.png), [shortcuts](v1.8.0/previews/shortcuts.png),
+[mobile layers](v1.8.0/previews/layers.png) and [canvas export](v1.8.0/previews/export.png).
+Each cleanup edition also has four inspected production-browser previews.
 
-The original `v1.0`–`v1.5` directories are preserved in place, byte-for-byte.
-All populated originals embed package version **1.0.0**, despite their directory
-labels. `index.json` keeps those facts separate rather than rewriting history.
-`v1.0` contains empty directories and no recoverable implementation; no replacement
-has been fabricated. Original QA traces may contain data, so do not distribute raw
-snapshots without a separate privacy review.
+## Local installation
 
-A verified pre-change archive and full file inventory are stored outside this project:
-`../branchboard-backups/20261022T133446Z-before-material-redesign/`.
-It preserves historical builds, screenshots, traces and empty directories; protected
-`data/` and dependency caches were excluded and never touched. Source checkpoints:
-`918e636` and `03b4db3`. Original path mappings are unchanged; `inventories/` records
-file hashes and empty-directory entries. Original guides/docs remain historical.
+Use Node.js 22.12+ and npm. Runtime downloads contain the built frontend and Node
+server: run `npm ci --omit=dev`, then `npm start`. Source downloads use `npm ci`,
+`npm run build`, then `npm start`. Open `http://127.0.0.1:3001`.
 
-## Verification and packaging
+This remains a private single-user local service. No distribution license has been
+selected, and nothing has been published to a registry, hosting service or remote.
+Do not expose the server publicly. Back up workspace data before comparing editions;
+use separate browser profiles/origins and do not edit the same storage concurrently.
 
-- Current app: full build, unit/HTTP and Chromium suites plus inspected screenshots.
-- Refreshes: per-edition build/unit tests and a separate real production Chromium
-  smoke check. Their inherited original layout tests are retained as historical
-  references, **not claimed as passing unchanged**.
-- Every new source/runtime archive is extracted and byte-compared during packaging.
-  Additional clean-install/runtime results are recorded in each verification file.
-- No paid AI requests were made. Cloud responses in full browser tests use fixtures;
-  HTTP tests use actual local upstream servers. Screenshot/smoke runs use real UI
-  without mock AI or saved credentials.
+## Provenance and verification
 
-New packages use an explicit source/runtime allowlist: no secrets, .env files,
-provider settings, user databases, node_modules, browser traces, caches or QA downloads.
-`.env.example` contains configuration placeholders only. Generated assets belong in
-archives, not Git. `scripts/package-releases.py` creates manifests/checksums and refuses
-changed originals; `scripts/verify-editions.mjs` exercises the refreshed apps.
-`scripts/verify-packages.mjs` checks extracted inventories, fresh source installs/builds/tests,
-and production-only installs with real HTTP and Chromium checks. A missing local Ollama
-service is recorded separately from application asset or browser failures.
-The current release uses tag `v1.7.0` with the title **Design improvements**;
-`v1.6.0` is preserved. Refreshed source paths use namespaced tags
-`editions/v1.1.1` through `editions/v1.5.1`, so they cannot be mistaken for older
-standalone root checkouts. Tagged archives are immutable.
+- Verified external checkpoints: `../branchboard-backups/20261022T133446Z-before-material-redesign/`
+  and `../branchboard-backups/20261024T042350Z-before-sidebar-redesign/`.
+  Protected `data/`, real provider configuration and user work are not release payloads.
+- Current app: full build, unit/HTTP and Chromium suites, complete screenshot flow,
+  inspected screenshots and real PNG/PDF downloads.
+- Cleanup editions: independent build/unit checks plus three dedicated production
+  Chromium tests each. Four layouts, removed controls, note persistence, rectangle
+  selection and legacy groups are covered; inherited full browser suites are not
+  claimed as passing unchanged.
+- Every new source/runtime archive is extracted and byte-compared with its manifest.
+  Fresh source installs/builds/tests and production-only runtime installs with HTTP
+  and Chromium checks are recorded against the exact artifact hashes.
+- No paid AI requests were made. Browser generation tests use fixtures; HTTP adapter
+  tests use real local upstream servers. Missing local Ollama is recorded separately
+  from asset or browser failures. Public model listings do not guarantee account access.
 
-For future releases: back up/checkpoint first, update package/lock/changelog versions
-together, build/test and inspect screenshots, then freeze maintained sources in Git.
-Use `python3 scripts/package-current-release.py` for **only the new current version**,
-which rejects source bytes that do not match the frozen Git checkpoint,
-then `node scripts/verify-packages.mjs VERSION` for fresh extracted source/runtime checks.
-Run `python3 scripts/package-current-release.py --finalize` to require matching verified
-archive hashes and append the catalog. Commit evidence and create the annotated version tag.
-`--replace-unpublished` is only for local preparation and refuses tagged versions.
-The older `package-releases.py` is the historical batch tool, not the updater for new releases.
+Packaging uses explicit allowlists: no credentials, `.env`, provider configuration,
+user databases, `node_modules`, browser traces, caches or QA downloads. `.env.example`
+contains placeholders only. Build assets are inside archives, not source control.
 
-Back up your workspace before comparing versions. Use separate browser profiles or
-origins: browser storage is keyed by scheme/host/port, not application version.
-Do not run multiple editions/tabs against the same stored workspace concurrently.
+## Release workflow
+
+Freeze reviewed sources in Git first. Prepare only new editions with
+`python3 scripts/package-current-release.py --version VERSION`, then run
+`node scripts/verify-packages.mjs VERSION`. Finalize with
+`python3 scripts/package-current-release.py --version VERSION --finalize` only after
+matching fresh-install hashes pass. Commit evidence, then create the annotated tag.
+Current tag: `v1.8.0`; cleanup tags: `editions/v1.1.2`, `editions/v1.2.2`,
+`editions/v1.3.2`, `editions/v1.4.2`, `editions/v1.5.2`, `editions/v1.6.1`,
+`editions/v1.7.1`. Tagged releases are immutable. The old batch packager is not the
+updater for new releases.

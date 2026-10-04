@@ -92,13 +92,14 @@ test('edits saved turns, cancels safely, supports undo and persists without AI r
   await historyWorkspace(page);
   const question = page.locator('[data-message-id="question"]');
   await question.getByRole('button', { name: 'Edit message', exact: true }).click();
-  let dialog = page.getByRole('dialog', { name: 'Edit message', exact: true });
+  let dialog = page.getByRole('region', { name: 'Edit message', exact: true });
   await expect(dialog).toContainText('Later messages are kept');
   await dialog.getByRole('textbox').fill('Uncommitted change');
   await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Discard changes', exact: true }).click();
   await expect(question).toContainText('Original question');
   await question.getByRole('button', { name: 'Edit message', exact: true }).click();
-  dialog = page.getByRole('dialog', { name: 'Edit message', exact: true });
+  dialog = page.getByRole('region', { name: 'Edit message', exact: true });
   await dialog.getByRole('textbox').fill('   ');
   await expect(dialog.getByRole('button', { name: 'Save changes' })).toBeDisabled();
   await dialog.getByRole('textbox').fill('Edited **orchids** question.');
@@ -107,7 +108,7 @@ test('edits saved turns, cancels safely, supports undo and persists without AI r
   await expect(page.locator('[data-message-id="answer"]')).toContainText('Original answer.');
   // Searching the current board must not clear the edit's undo snapshot.
   await command(page, 'Search saved content');
-  const search = page.getByRole('dialog', { name: 'Search saved content', exact: true });
+  const search = page.getByRole('region', { name: 'Search saved content', exact: true });
   await search.getByRole('searchbox').fill('Edited **orchids**');
   await search.locator('.history-search-results button').click();
   await expect(question).toBeFocused();
@@ -129,12 +130,12 @@ test('confirms individual deletions, preserves other turns and restores through 
   await historyWorkspace(page);
   const question = page.locator('[data-message-id="question"]');
   await question.getByRole('button', { name: 'Delete message', exact: true }).click();
-  let dialog = page.getByRole('dialog', { name: 'Delete message', exact: true });
+  let dialog = page.getByRole('region', { name: 'Delete message', exact: true });
   await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
   await dialog.getByRole('button', { name: 'Cancel' }).click();
   await expect(question).toBeVisible();
   await question.getByRole('button', { name: 'Delete message', exact: true }).click();
-  dialog = page.getByRole('dialog', { name: 'Delete message', exact: true });
+  dialog = page.getByRole('region', { name: 'Delete message', exact: true });
   await dialog.getByRole('button', { name: 'Delete message', exact: true }).click();
   await expect(question).toHaveCount(0);
   await expect(page.locator('[data-message-id="answer"]')).toContainText('Original answer.');
@@ -154,7 +155,7 @@ test('searches across boards and opens a collapsed conversation at the matching 
 }) => {
   await historyWorkspace(page, true);
   await command(page, 'Search saved content');
-  const dialog = page.getByRole('dialog', { name: 'Search saved content', exact: true });
+  const dialog = page.getByRole('region', { name: 'Search saved content', exact: true });
   const input = dialog.getByRole('searchbox');
   await input.fill('impossible phrase');
   await expect(dialog.getByRole('status')).toHaveText('No matching saved content.');
@@ -191,14 +192,14 @@ test('history controls and search dialogs fit a mobile viewport', async ({ page 
     .locator('[data-message-id="answer"]')
     .getByRole('button', { name: 'Edit message', exact: true })
     .click();
-  let dialog = page.getByRole('dialog', { name: 'Edit message', exact: true });
+  let dialog = page.getByRole('region', { name: 'Edit message', exact: true });
   const bounds = (await dialog.boundingBox())!;
   expect(bounds.x).toBeGreaterThanOrEqual(0);
   expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
   await dialog.getByRole('textbox').fill('Mobile edit');
   await dialog.getByRole('button', { name: 'Save changes' }).click();
   await command(page, 'Search saved content');
-  dialog = page.getByRole('dialog', { name: 'Search saved content', exact: true });
+  dialog = page.getByRole('region', { name: 'Search saved content', exact: true });
   await dialog.getByRole('searchbox').fill('Mobile edit');
   await expect(dialog.locator('.history-search-results button')).toContainText('Mobile edit');
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
@@ -238,7 +239,7 @@ test('history controls cannot mutate turns during an active generation and unloc
   try {
     await historyWorkspace(page);
     const chat = page.locator('.react-flow__node-chat');
-    await chat.locator('.node-heading').click();
+    await chat.locator('.node-bottom-actions').click({ position: { x: 5, y: 12 } });
     await page
       .getByRole('textbox', { name: 'Message', exact: true })
       .fill('Continue the discussion');

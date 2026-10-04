@@ -46,7 +46,7 @@ export function exportFilter(node: HTMLElement) {
     !node.matches(
       '.react-flow__handle, .react-flow__resize-control, .react-flow__edgelabel-renderer, ' +
         '.node-heading-actions, .note-toolbar, .rich-note-hint, .composer, .model-selector, ' +
-        '.conversation-bottom, .node-context-button, .context-chip, .message-tools, .annotation-hit, [data-export-ignore]',
+        '.conversation-bottom, .node-bottom-actions, .node-context-button, .context-chip, .message-tools, .annotation-hit, [data-export-ignore]',
     )
   );
 }
@@ -66,7 +66,7 @@ export async function renderCanvas(viewport: HTMLElement, board: Board) {
     backgroundColor: background || '#fff',
     filter: exportFilter,
     // Embedded in the exported clone only: retain clipping without native scrollbars.
-    fontEmbedCSS: `${fonts}\n.sizing-region, .markdown pre, .markdown table { overflow: hidden !important; } * { scrollbar-width: none !important; }`,
+    fontEmbedCSS: `${fonts}\n.sizing-region, .markdown pre { overflow: hidden !important; } .markdown table { overflow: visible !important; } .markdown th, .markdown td { width: auto !important; } * { scrollbar-width: none !important; }`,
     preferredFontFormat: 'woff2',
     style: {
       transform: `translate(${-geometry.x}px, ${-geometry.y}px)`,

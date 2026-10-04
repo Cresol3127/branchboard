@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   parseConversations,
   type ConversationImport as ImportPreview,
@@ -12,6 +12,12 @@ export function ConversationImport({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const request = useRef(0);
+  useEffect(
+    () => () => {
+      request.current++;
+    },
+    [],
+  );
   const generating = useStore((s) => Object.values(s.streaming).some(Boolean));
   const close = () => {
     request.current++;
@@ -38,7 +44,12 @@ export function ConversationImport({ onClose }: { onClose: () => void }) {
     }
   };
   return (
-    <Modal title="Import conversations" className="conversation-import" onClose={close}>
+    <Modal
+      title="Import conversations"
+      kind="import"
+      className="conversation-import"
+      onClose={close}
+    >
       <p>
         Import text-only ChatGPT or Claude JSON exports, or a JSON object with a messages array
         containing role and content. An array of conversations is also supported.

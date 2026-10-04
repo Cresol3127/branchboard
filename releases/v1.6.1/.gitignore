@@ -1,0 +1,26 @@
+node_modules/
+dist/
+dist-server/
+.env
+.env.*
+!.env.example
+playwright-report/
+test-results/
+screenshots/
+*.tsbuildinfo
+branchboard.providers.json
+branchboard.providers.json.*.tmp
+data/
+# Original snapshots are preserved locally and in the external checkpoint archive.
+releases/v1.0/
+releases/v1.1/
+releases/v1.2/
+releases/v1.3/
+releases/v1.4/
+releases/v1.5/
+releases/*/dist-server/
+releases/*/test-results/
+releases/*/playwright-report/
+releases/*/dist/
+releases/*/screenshots/
+releases/*/*.tar.gz

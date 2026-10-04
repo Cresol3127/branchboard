@@ -24,13 +24,20 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--finalize', action='store_true')
     parser.add_argument('--replace-unpublished', action='store_true')
+    parser.add_argument('--version', help='New edition version; defaults to the current source version')
     args = parser.parse_args()
-    package = json.loads((ROOT / 'package.json').read_text())
-    lock = json.loads((ROOT / 'package-lock.json').read_text())
+    current_version = json.loads((ROOT / 'package.json').read_text())['version']
+    requested = args.version or current_version
+    if not re.fullmatch(r'\d+\.\d+\.\d+', requested):
+        raise ValueError('A stable SemVer version is required')
+    source = ROOT if requested == current_version else ROOT / 'releases' / f'v{requested}'
+    package = json.loads((source / 'package.json').read_text())
+    lock = json.loads((source / 'package-lock.json').read_text())
     version = package['version']
     if not re.fullmatch(r'\d+\.\d+\.\d+', version):
         raise ValueError('A stable SemVer version is required')
     assert version == lock['version'] == lock['packages']['']['version']
+    assert version == requested
     for tag in [f'v{version}', f'editions/v{version}']:
         if subprocess.run(['git', 'rev-parse', '--verify', f'refs/tags/{tag}'],
                           cwd=ROOT, capture_output=True).returncode == 0:
@@ -46,40 +53,46 @@ def main():
     assert verification['unitAndHttp']['status'] == 'passed'
     assert verification['browser']['status'] == 'passed'
     assert verification['screenshots']['inspected'] is True
+    title = verification['title']
+    if not isinstance(title, str) or not title.strip() or len(title) > 100:
+        raise ValueError('A concise release title is required')
+    source_path = source.relative_to(ROOT).as_posix()
     notes = (directory / 'RELEASE_NOTES.md').read_bytes()
     source_commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT,
                                             text=True).strip()
     artifacts = []
     for kind, names in [('source', helpers['SOURCE_PATHS']),
                         ('runtime', helpers['RUNTIME_PATHS'])]:
-        files = helpers['payload'](ROOT, names)
+        files = helpers['payload'](source, names)
         files['RELEASE_NOTES.md'] = notes
         if kind == 'runtime':
-            files['README.md'] = (f'# BranchBoard {version} — Design improvements\n\n'
+            files['README.md'] = (f'# BranchBoard {version} — {title}\n\n'
                 'Private local runtime. Requires Node.js 22.12+ and npm.\n\n'
                 'Run `npm ci --omit=dev`, then `npm start`. Open '
                 'http://127.0.0.1:3001. The frontend and Node server are included; '
                 'no TypeScript runner is required.\n\n'
-                'Configure providers in Settings. Keys stay on this server. '
-                'Public model updates need no key; available catalog IDs do not '
-                'guarantee account access. Local Ollama needs a running service.\n\n'
+                'Configure providers in the provider settings. Keys stay on this server. '
+                'A model listing does not guarantee account access. '
+                'Local Ollama needs a running service.\n\n'
                 'Back up browser work before changing origin or edition. '
                 'Do not expose this single-user service publicly. '
                 'See the adjacent manifest, checksums and verification records '
                 'for exact evidence. No distribution license has been selected.\n').encode()
         else:
-            files['releases/README.md'] = (ROOT / 'releases/README.md').read_bytes()
-            files['releases/index.json'] = json.dumps({
-                'current': version,
-                'note': 'Full catalog, historical editions and verification are adjacent to the download.',
-            }, indent=2).encode()
-            for preview in sorted((directory / 'previews').glob('*.png')):
-                files[f'releases/v{version}/previews/{preview.name}'] = preview.read_bytes()
+            if source == ROOT:
+                files['releases/README.md'] = (ROOT / 'releases/README.md').read_bytes()
+                files['releases/index.json'] = json.dumps({
+                    'current': version,
+                    'note': 'Full catalog, historical editions and verification are adjacent to the download.',
+                }, indent=2).encode()
+                for preview in sorted((directory / 'previews').glob('*.png')):
+                    files[f'releases/v{version}/previews/{preview.name}'] = preview.read_bytes()
             for name, data in files.items():
                 if name == 'releases/index.json':
                     continue  # Deliberately generated minimal download catalog.
                 tracked = (f'releases/v{version}/RELEASE_NOTES.md'
-                           if name == 'RELEASE_NOTES.md' else name)
+                           if name == 'RELEASE_NOTES.md' else
+                           name if source == ROOT else f'{source_path}/{name}')
                 frozen = subprocess.run(['git', 'show', f'{source_commit}:{tracked}'],
                                         cwd=ROOT, capture_output=True)
                 if frozen.returncode != 0 or frozen.stdout != data:
@@ -103,9 +116,10 @@ def main():
         for p in sorted((directory / 'previews').glob('*.png'))}
     date = verification.get('date', datetime.date.today().isoformat())
     save_json(directory / 'manifest.json', {
-        'name': 'branchboard', 'version': version, 'title': 'Design improvements',
+        'name': 'branchboard', 'version': version, 'title': title,
         'date': date, 'private': True, 'license': 'not selected',
-        'sourceCommit': source_commit, 'sourcePath': '.', 'backupSchemaVersion': 1,
+        'sourceCommit': source_commit, 'sourcePath': source_path, 'backupSchemaVersion': 1,
+        **({'derivedFrom': verification['derivedFrom']} if 'derivedFrom' in verification else {}),
         'artifacts': artifacts, 'previews': previews,
     })
     paths = [directory / a['file'] for a in artifacts]
@@ -116,11 +130,19 @@ def main():
     if args.finalize:
         # Preserve every historical entry verbatim; only append the new edition.
         catalog['editions'].append({
-            'version': version, 'title': 'Design improvements', 'path': f'v{version}/',
+            'version': version, 'title': title, 'path': f'v{version}/',
             'manifest': f'v{version}/manifest.json',
             'verification': f'v{version}/verification.json',
         })
-        catalog.update(current=version, date=date)
+        if 'derivedFrom' in verification:
+            catalog.setdefault('supersessions', []).append({
+                'version': verification['derivedFrom']['version'], 'replacement': version,
+                'status': 'withdrawn from maintained downloads and previews',
+                'reason': 'Context-inspection and persistent-group creation UI removed',
+                'originals': 'Preserved privately with unchanged tags and checksums',
+            })
+        if source == ROOT:
+            catalog.update(current=version, date=date)
         save_json(catalog_path, catalog)
     print(f'{version}: source + runtime byte-verified' +
           ('; exact fresh-install hashes verified and catalog appended' if args.finalize else

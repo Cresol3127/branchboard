@@ -1,4 +1,4 @@
-# BranchBoard 1.7.0 — Design improvements
+# BranchBoard 1.8.0 — Docked workspace
 
 A local-first thinking space: an infinite canvas of connected AI conversations and sticky notes.
 
@@ -8,6 +8,12 @@ Google branding or changing where your data lives. New installations follow the
 system theme; existing theme and canvas preferences are retained. On a fresh mobile
 canvas, the first conversation opens at a readable zoom. **Focus conversation**
 returns to a readable card view; **Fit canvas** shows the entire graph.
+
+Workspace tools open in one panel extending from the sidebar. The canvas stays usable
+beside it on wide screens; narrow screens offer **Back to canvas** without losing your
+draft or viewport. Conversation cards prioritize questions and answers, with quiet
+bottom actions and retained right-click menus. The right-edge creation toolbar expands
+from **New conversation** when you need the other tools.
 
 ## Run
 
@@ -22,7 +28,13 @@ Open **http://localhost:3000**. This command starts Vite and the local API toget
 
 ### Connect real AI
 
-Open **Settings in the sidebar** or **Connect AI** in the header, choose a provider, and save its API key. OpenAI, Anthropic, Google Gemini, OpenRouter, Groq, Ollama, Ollama Cloud, and custom OpenAI-compatible endpoints are supported. Model pickers show only keyed, configured providers and successfully connected local Ollama. Use **Manage providers** to connect another provider. Existing conversation selections remain in board backups even if a provider is later disconnected; credentials never do.
+Open **Models in the sidebar**, choose a provider, and save its API key. OpenAI, Anthropic, Google Gemini, OpenRouter, Groq, Ollama, Ollama Cloud, and custom OpenAI-compatible endpoints are supported. Model pickers show only keyed, configured providers and successfully connected local Ollama. Use **Manage providers** to connect another provider. Existing conversation selections remain in board backups even if a provider is later disconnected; credentials never do.
+
+**Test model** sends a small, output-bounded real request for the selected model through
+the saved server settings. It sends no canvas content and creates no conversation.
+Testing is explicit, cancellable and may incur provider charges. A public model listing
+does not prove account access; an empty, interrupted or failed test is not reported as
+successful. Save changed keys or endpoints before testing them.
 
 Settings are saved atomically to **`branchboard.providers.json` in the project root**, with owner-only file permissions. This unencrypted local secrets file is gitignored: do not share it or include it in backups of your boards. Alternatively, copy `.env.example` to `.env` and set the providers you need:
 
@@ -48,15 +60,15 @@ All providers stream real responses through the local server. Provider charges a
 ## What works
 
 - Infinite canvas: drag empty space to pan, Space-drag over cards, scroll/pinch zoom, fit/reset view, optional dotted grid with grid snapping, and a toggleable interactive minimap. Saved viewports survive reload and canvas switches.
-- Nodes: create conversations and notes; edit titles/content; drag any non-interactive surface after a 5px threshold; resize selected nodes at their corners; collapse; color-code note icons; duplicate; delete; group and ungroup. **T** enables text selection; touch scrolling remains available inside content.
-- Connections: drag from a right-side dot to a left-side dot, or drop an output on open canvas to create a connected branch. Multiple parents merge context; cycles, self-links, and duplicate connections are rejected. Select an edge to inspect its context or disconnect it.
+- Nodes: create conversations and notes; edit content; drag non-interactive surfaces after a 5px threshold; resize selected nodes at their corners; collapse; color-code notes; duplicate and delete. Titles in older backups remain compatible metadata rather than required header controls. **T** enables text selection; touch scrolling remains available inside content.
+- Connections: drag from a right-side dot to a left-side dot, or drop an output on open canvas to create a connected branch. Multiple parents merge context; cycles, self-links, and duplicate connections are rejected. Select an edge to disconnect it.
 - Floating message bar: select a chat to continue it, or choose New conversation for an independent chat. Change models directly on desktop or mobile; recent choices persist and new conversations use the last choice unless a per-canvas session choice overrides it. Existing chats keep their own model. Changing models never sends a message or discards a draft, and is disabled for a generating chat. Session drafts stay separate per canvas/conversation. Enter sends, Shift+Enter adds a line, and **/** focuses the input. The bar stays fixed while panning/zooming and grows for multiline drafts.
-- Conversations: Markdown rendering, token streaming, stop, retry/regenerate, persistent message history, and branching into new conversations. Branches inherit live ancestor history instead of making disconnected copies. “Inspect AI context” shows the exact ordered context, with shared ancestors included once.
+- Conversations: Markdown rendering, token streaming, stop, retry/regenerate, persistent message history, and branching into new conversations. Branches inherit live ancestor history with shared ancestors included once; historical branches preserve their turn cutoff. Older saved context settings remain respected. If an old input limit blocks sending, **Remove old input limit** is undoable and keeps the draft.
 - AI routing: independent provider/model selection per conversation, native Anthropic/Gemini/Ollama streaming, OpenAI-compatible routing, persistent provider settings, and dynamic/extendable model lists.
-- Workspace: multiple canvases, rename/delete, search, undo/redo (50 steps per current canvas), auto-arrange, JSON backup/import, and Markdown export.
+- Workspace: canvases numbered in creation/insertion order, rename, red hover/focus delete controls, search, undo/redo (50 steps per current canvas), auto-arrange, JSON backup/import, and Markdown export. Deleting an inactive canvas leaves the active canvas and its history unchanged.
 - Local persistence: browser autosave, reload restoration, storage failure warnings, and import validation. Fonts are bundled locally.
 
-Double-click or right-click empty canvas space for quick creation at that location. **Tips & shortcuts** opens Help with a short Getting started guide and searchable, grouped Keyboard shortcuts. **Ctrl/Command K** searches commands, canvases, nodes and saved content. Import/export/backups are in **Workspace tools**. Press **G** for grid/snapping; toggle the minimap from the command palette or board tools. View controls leave 24px above a visible minimap and move down when it is off, avoiding the composer and keyboard without changing your zoom or position. Very short viewports temporarily pause the minimap with a visible notice. Delete or Backspace removes selected nodes/connections, with confirmation for groups or five selected nodes. Shift-click selects multiple nodes; Shift-drag on empty space selects a rectangle. **Ctrl/Command C/V** copies and pastes nodes within BranchBoard, not the operating-system clipboard. Alt-drag a connection dot repositions it; a short Alt-drag resets it.
+Double-click or right-click empty canvas space for quick creation at that location. **Tips & shortcuts** opens Help with a short Getting started guide and searchable, grouped Keyboard shortcuts. **Ctrl/Command K** searches commands, canvases, nodes and saved content. Import/export/backups are in **Workspace tools**. Press **G** for grid/snapping; toggle the minimap from the command palette or expanded creation tools. View controls leave 24px above a visible minimap and move down when it is off, avoiding the composer and keyboard without changing your zoom or position. Drawing controls stay below the creation toolbar. Very short viewports temporarily pause the minimap with a visible notice. Delete or Backspace removes selected nodes/connections, with integrated confirmation for legacy groups or five selected nodes. **Ctrl/Command-drag** on empty space draws a selection rectangle; **Shift-click** adds/removes individual selections. Rectangle selection never creates a container. Existing legacy groups remain readable and can be ungrouped. **Ctrl/Command C/V** copies and pastes nodes within BranchBoard, not the operating-system clipboard. Alt-drag a connection dot repositions it; a short Alt-drag resets it.
 
 ## Data and privacy
 
@@ -79,7 +91,7 @@ npm start           # local API + built app at http://127.0.0.1:3001
 npm test            # graph, persistence, streaming, and HTTP/API tests
 npx playwright install chromium
 npm run test:e2e    # actual Chromium canvas and conversation interactions
-npm run screenshot # with dev server running: 90 desktop/tablet/mobile captures and exports
+npm run screenshot # with dev server running: desktop/tablet/mobile captures and exports
 ```
 
 On Linux, Playwright may require `npx playwright install --with-deps chromium` or equivalent distribution-specific libraries. The browser tests reuse a running dev server or start one automatically. Test AI fixtures are confined to tests; API tests exercise an actual local upstream HTTP/SSE provider. A paid live OpenAI request is not part of the automated suite.
@@ -92,8 +104,10 @@ The screenshot script uses isolated browser storage and actual UI interactions, 
 
 See [releases/README.md](releases/README.md) for preserved originals, explicitly labeled
 prototype refreshes, checksums and verification. No original release or protected `data/`
-payload was overwritten. The refreshed 1.1.1–1.3.1 editions intentionally begin with two
-cards and a smaller feature surface; 1.4.1–1.5.1 retain their progressively richer tools.
+payload was overwritten. Maintained cleanup editions supersede older UI-bearing
+downloads and previews without rewriting their tags or provenance. Early prototypes
+retain two cards and a smaller feature surface; later editions retain their progressively
+richer tools. Each download has its own verification scope.
 
 Automatic recovery timelines, attachments, token billing, RAG and workflows remain
 unfinished groundwork—not enabled product features. This release does not migrate

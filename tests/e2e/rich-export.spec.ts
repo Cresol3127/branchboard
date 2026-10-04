@@ -6,6 +6,7 @@ async function newNote(page: Page, source: string) {
   await page.goto('/');
   await command(page, 'New canvas');
   await expect(page.locator('.react-flow__node')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Expand creation tools', exact: true }).click();
   await page.getByRole('button', { name: 'Add note', exact: true }).click();
   await page.getByRole('textbox', { name: 'Note content', exact: true }).fill(source);
   await command(page, 'Fit canvas');
@@ -40,7 +41,9 @@ test('WYSIWYG formats real text, uses workspace undo, and retains Markdown throu
   await expect(editor.locator('strong')).toHaveText('A real thought');
   await expect.poll(() => savedNote(page)).toBe('**A real thought**');
   await page.reload();
-  await page.locator('.react-flow__node-note .node-heading').click();
+  await page
+    .locator('.react-flow__node-note .node-bottom-actions')
+    .click({ position: { x: 5, y: 12 } });
   await page.getByRole('button', { name: 'Rich text', exact: true }).click();
   await expect(
     page.getByRole('textbox', { name: 'Rich note content' }).locator('strong'),
@@ -125,10 +128,15 @@ test('full-canvas PNG and A4 PDF downloads contain real content without changing
 }) => {
   await newNote(page, '## Exported plan\n\n**Readable content**\n\n- [x] Finished');
   await page.getByRole('button', { name: 'Preview', exact: true }).click();
-  const transform = await page.locator('.react-flow__viewport').getAttribute('style');
+  const readViewport = () =>
+    page.locator('.react-flow__viewport').evaluate((el) => {
+      const matrix = new DOMMatrix(getComputedStyle(el).transform);
+      return [matrix.a, matrix.d, matrix.e, matrix.f];
+    });
+  const transform = await readViewport();
   const undoDisabled = await page.getByRole('button', { name: 'Undo', exact: true }).isDisabled();
   await command(page, 'Export canvas (PNG)');
-  const dialog = page.getByRole('dialog', { name: 'Export canvas', exact: true });
+  const dialog = page.getByRole('region', { name: 'Export canvas', exact: true });
   await dialog.getByRole('button', { name: 'Generate preview', exact: true }).click();
   const image = dialog.getByRole('img', { name: /^Export preview of/ });
   await expect(image).toBeVisible();
@@ -160,10 +168,53 @@ test('full-canvas PNG and A4 PDF downloads contain real content without changing
   expect(pdf).toContain('/Subtype /Image');
   expect(pdf).toContain('/Count 1');
   await page.keyboard.press('Escape');
-  expect(await page.locator('.react-flow__viewport').getAttribute('style')).toBe(transform);
+  const after = await readViewport();
+  after.forEach((value, index) => expect(value).toBeCloseTo(transform[index], 3));
   expect(await page.getByRole('button', { name: 'Undo', exact: true }).isDisabled()).toBe(
     undoDisabled,
   );
+});
+
+test('PNG export keeps the last Markdown table row readable', async ({ page }) => {
+  await newNote(
+    page,
+    '## Export table\n\n| Format | Purpose |\n| --- | --- |\n| PNG | Share a visual |\n| PDF | Print the plan |\n\nAfter the table.',
+  );
+  await page.getByRole('button', { name: 'Preview', exact: true }).click();
+  await page.getByRole('button', { name: 'Node actions', exact: true }).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Automatic content sizing' }).click();
+  await command(page, 'Export canvas (PNG)');
+  const cell = await page
+    .locator('.note-preview tbody tr:last-child td:last-child')
+    .evaluate((el) => {
+      const card = el.closest('.react-flow__node')!.getBoundingClientRect();
+      const box = el.getBoundingClientRect();
+      const zoom = card.width / (el.closest('.react-flow__node') as HTMLElement).offsetWidth;
+      return {
+        x: 80 + (box.x - card.x) / zoom + 6,
+        y: 80 + (box.y - card.y) / zoom + 6,
+        width: box.width / zoom - 12,
+        height: box.height / zoom - 12,
+      };
+    });
+  const dialog = page.getByRole('region', { name: 'Export canvas', exact: true });
+  await dialog.getByRole('button', { name: 'Generate preview', exact: true }).click();
+  const image = dialog.getByRole('img', { name: /^Export preview of/ });
+  await expect(image).toBeVisible();
+  const dark = await image.evaluate(async (el: HTMLImageElement, box) => {
+    await el.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = el.naturalWidth;
+    canvas.height = el.naturalHeight;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(el, 0, 0);
+    const pixels = ctx.getImageData(box.x * 2, box.y * 2, box.width * 2, box.height * 2).data;
+    let count = 0;
+    for (let i = 0; i < pixels.length; i += 4)
+      if (pixels[i] < 150 && pixels[i + 1] < 150 && pixels[i + 2] < 150) count++;
+    return count;
+  }, cell);
+  expect(dark).toBeGreaterThan(60);
 });
 
 test('annotation-only export includes remote visible strokes at any zoom and omits hidden layers', async ({
@@ -223,7 +274,7 @@ test('annotation-only export includes remote visible strokes at any zoom and omi
   await command(page, 'Export canvas (PNG)');
   await page.getByRole('button', { name: 'Generate preview', exact: true }).click();
   const image = page
-    .getByRole('dialog', { name: 'Export canvas', exact: true })
+    .getByRole('region', { name: 'Export canvas', exact: true })
     .getByRole('img', { name: /^Export preview of/ });
   await expect(image).toBeVisible();
   const colors = await image.evaluate(async (element: HTMLImageElement) => {
@@ -254,7 +305,7 @@ test('empty-canvas export reports an error and the export dialog stays usable on
   await command(page, 'New canvas');
   await expect(page.locator('.react-flow__node')).toHaveCount(0);
   await command(page, 'Export canvas (PDF)');
-  const dialog = page.getByRole('dialog', { name: 'Export canvas', exact: true });
+  const dialog = page.getByRole('region', { name: 'Export canvas', exact: true });
   await dialog.getByRole('button', { name: 'Generate preview', exact: true }).click();
   await expect(dialog.getByRole('alert')).toContainText('Add a node');
   await expect(dialog.getByRole('button', { name: 'Download PDF', exact: true })).toBeDisabled();
@@ -304,7 +355,7 @@ test('rich editing and export pause during generation and resume after stopping'
     const chat = page.locator('.react-flow__node-chat');
     await page.getByRole('textbox', { name: 'Message', exact: true }).fill('Test generation guard');
     await page.getByRole('button', { name: 'Send message', exact: true }).click();
-    await note.locator('.node-heading').click();
+    await note.locator('.node-bottom-actions').click({ position: { x: 5, y: 12 } });
     await note.getByRole('button', { name: 'Rich text', exact: true }).click();
     await expect(note.getByRole('textbox', { name: 'Rich note content' })).toHaveAttribute(
       'contenteditable',
@@ -316,9 +367,9 @@ test('rich editing and export pause during generation and resume after stopping'
       page.getByRole('button', { name: 'Generate preview', exact: true }),
     ).toBeDisabled();
     await page.keyboard.press('Escape');
-    await chat.locator('.node-heading').click();
+    await chat.locator('.node-bottom-actions').click({ position: { x: 5, y: 12 } });
     await page.getByRole('button', { name: 'Stop generating', exact: true }).click();
-    await note.locator('.node-heading').click();
+    await note.locator('.node-bottom-actions').click({ position: { x: 5, y: 12 } });
     await expect(note.getByRole('textbox', { name: 'Rich note content' })).toHaveAttribute(
       'contenteditable',
       'true',

@@ -12,6 +12,12 @@ export function Backups({
   onImport: () => void;
 }) {
   const state = useStore();
+  const [source] = useState(() => {
+    const board = currentBoard(state);
+    return { id: board.id, name: board.name };
+  });
+  const sourceBoard = state.boards.find((board) => board.id === source.id);
+  const sourceActive = state.currentId === source.id;
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -29,7 +35,7 @@ export function Backups({
     }
   };
   return (
-    <Modal title="Backups & snapshots" onClose={onClose} className="backups-dialog">
+    <Modal title="Backups & snapshots" kind="backups" onClose={onClose} className="backups-dialog">
       <p className="muted">
         Workspace JSON includes every canvas, projects/folders, favorites, templates, and saved
         snapshots. Credentials and appearance preferences are never included. Import adds copies and
@@ -46,15 +52,17 @@ export function Backups({
         download a workspace backup for independent recovery.
       </p>
       <form
+        data-dirty={Boolean(name.trim())}
         onSubmit={(e) => {
           e.preventDefault();
+          if (useStore.getState().currentId !== source.id || !sourceBoard) return;
           attempt(() => {
             state.createSnapshot(name);
             setName('');
           });
         }}
       >
-        <label htmlFor="snapshot-name">Snapshot name for {currentBoard(state).name}</label>
+        <label htmlFor="snapshot-name">Snapshot name for {sourceBoard?.name || source.name}</label>
         <input
           id="snapshot-name"
           data-autofocus
@@ -67,12 +75,27 @@ export function Backups({
           className="primary"
           type="submit"
           disabled={
-            busy || !name.trim() || state.snapshots.length >= 30 || Boolean(state.snapshotError)
+            busy ||
+            !sourceActive ||
+            !sourceBoard ||
+            !name.trim() ||
+            state.snapshots.length >= 30 ||
+            Boolean(state.snapshotError)
           }
         >
           Save snapshot
         </button>
       </form>
+      {!sourceActive && (
+        <p role="status">
+          {sourceBoard
+            ? 'Your snapshot draft belongs to another canvas.'
+            : 'The source canvas was deleted. Your draft is unchanged.'}{' '}
+          {sourceBoard && (
+            <button onClick={() => state.switchBoard(source.id)}>Return to source canvas</button>
+          )}
+        </p>
+      )}
       {busy && <p className="muted">Stop active generations to save a consistent snapshot.</p>}
       {(error || state.snapshotError) && (
         <p className="error" role="alert">

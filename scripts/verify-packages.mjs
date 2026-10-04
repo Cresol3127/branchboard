@@ -36,6 +36,17 @@ try {
   for (const [index, version] of versions.entries()) {
     const release = path.join(root, 'releases', `v${version}`);
     const manifest = JSON.parse(await readFile(path.join(release, 'manifest.json'), 'utf8'));
+    const expected = JSON.parse(await readFile(path.join(release, 'verification.json'), 'utf8'))
+      .runtimeExpectations || {
+      starterNodes: ['1.1.1', '1.2.1', '1.3.1'].includes(version) ? 2 : 3,
+      settingsRole: 'dialog',
+      settingsName: 'Settings',
+    };
+    if (
+      !Number.isInteger(expected.starterNodes) ||
+      !['dialog', 'region'].includes(expected.settingsRole)
+    )
+      throw new Error(`Invalid runtime expectations: ${version}`);
     const checks = {};
     for (const kind of ['source', 'runtime']) {
       const artifact = manifest.artifacts.find((entry) => entry.kind === kind);
@@ -158,10 +169,12 @@ assert actual == record['files'], 'Extracted inventory differs from manifest'
           await page.locator('.react-flow__node').first().waitFor();
           await page.evaluate(() => document.fonts.ready);
           const nodeCount = await page.locator('.react-flow__node').count();
-          if (nodeCount !== (['1.1.1', '1.2.1', '1.3.1'].includes(version) ? 2 : 3))
+          if (nodeCount !== expected.starterNodes)
             throw new Error(`Unexpected starter nodes: ${nodeCount}`);
           await page.getByRole('button', { name: 'Settings', exact: true }).click();
-          await page.getByRole('dialog').waitFor();
+          await page
+            .getByRole(expected.settingsRole, { name: expected.settingsName, exact: true })
+            .waitFor();
           await page.screenshot({
             path: path.join(output, `${version}-runtime.png`),
             animations: 'disabled',
@@ -174,7 +187,7 @@ assert actual == record['files'], 'Extracted inventory differs from manifest'
             developmentDependenciesAbsent: true,
             extractedInventory: 'matched manifest',
             http: ['frontend', 'public config', 'JSON API 404', 'origin rejection'],
-            chromium: 'rendered starter canvas, local assets/fonts and working settings dialog',
+            chromium: `rendered ${expected.starterNodes} starter cards, local assets/fonts and working settings ${expected.settingsRole}`,
             pageErrors: errors,
             unavailableProviders,
           };

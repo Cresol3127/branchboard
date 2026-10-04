@@ -120,6 +120,92 @@ export function createApp(options: ProviderOptions & { catalog?: CatalogOptions 
     }
   });
   let active = 0;
+  let testing = false;
+  app.post('/api/providers/:provider/test-model', async (req, res) => {
+    const id = req.params.provider;
+    const model = req.body?.model;
+    if (
+      !isProviderId(id) ||
+      typeof model !== 'string' ||
+      !model.trim() ||
+      model.length > 512 ||
+      /[\r\n\0]/.test(model) ||
+      Object.keys(req.body).some((key) => key !== 'model')
+    ) {
+      res
+        .status(400)
+        .json({ error: 'Choose a provider and exact model ID. Only a model ID is accepted.' });
+      return;
+    }
+    if (!registry.ready(id)) {
+      res.status(401).json({ error: 'Save this provider’s settings before testing.' });
+      return;
+    }
+    if (active >= 5 || testing) {
+      res
+        .status(429)
+        .json({ error: 'Another model test or too many conversations are running. Please wait.' });
+      return;
+    }
+    const config = registry.get(id);
+    const controller = new AbortController();
+    const started = Date.now();
+    const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? 30_000);
+    res.on('close', () => controller.abort());
+    active++;
+    testing = true;
+    try {
+      let text = '';
+      for await (const token of streamChat(
+        id,
+        config,
+        model.trim(),
+        [
+          {
+            role: 'user',
+            content: 'Reply with one short sentence confirming you can respond. Do not use tools.',
+          },
+        ],
+        controller.signal,
+        { maxOutputTokens: 128 },
+      )) {
+        text += token;
+        if (text.length > 4096) {
+          controller.abort();
+          throw new Error('The model exceeded the test response limit. The test was stopped.');
+        }
+      }
+      if (controller.signal.aborted) throw new Error('The model test was stopped.');
+      if (!text.trim())
+        throw new Error(
+          'The model completed without a text response. Compatibility has not been confirmed.',
+        );
+      if (JSON.stringify(config) !== JSON.stringify(registry.get(id)))
+        throw new Error(
+          'Provider settings changed during this test. Test the current settings again.',
+        );
+      if (!res.destroyed)
+        res.json({
+          provider: id,
+          model: model.trim(),
+          text: text.trim(),
+          elapsedMs: Date.now() - started,
+          status: 'passed',
+        });
+    } catch (error) {
+      if (!res.destroyed)
+        res.status(502).json({
+          error: controller.signal.aborted
+            ? 'The model test was stopped or timed out. It may still incur provider charges.'
+            : safeProviderError(error, config),
+          elapsedMs: Date.now() - started,
+        });
+    } finally {
+      clearTimeout(timeout);
+      active--;
+      testing = false;
+    }
+  });
   app.post('/api/chat', async (req, res) => {
     const provider = req.body?.provider ?? 'openai';
     if (!isProviderId(provider)) {

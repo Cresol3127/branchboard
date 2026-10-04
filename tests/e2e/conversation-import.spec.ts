@@ -29,7 +29,7 @@ test('previews and selects conversations, imports independent canvases, persists
   });
   await page.goto('/');
   await command(page, 'Import conversations');
-  const dialog = page.getByRole('dialog', { name: 'Import conversations', exact: true });
+  const dialog = page.getByRole('region', { name: 'Import conversations', exact: true });
   await upload(page, archive);
   await expect(dialog.getByRole('status')).toContainText('2 conversations found');
   await dialog.getByRole('checkbox', { name: /Claude research/ }).uncheck();
@@ -67,7 +67,7 @@ test('failed imports and cancellation leave work untouched, including mixed vali
 }) => {
   await page.goto('/');
   await command(page, 'Import conversations');
-  const dialog = page.getByRole('dialog', { name: 'Import conversations', exact: true });
+  const dialog = page.getByRole('region', { name: 'Import conversations', exact: true });
   await page.getByLabel('Conversation JSON file').setInputFiles({
     name: 'invalid.json',
     mimeType: 'application/json',
@@ -154,18 +154,22 @@ test('conversation imports cannot switch the workspace during generation', async
     await page.goto('/');
     await command(page, 'New canvas');
     await page.getByRole('button', { name: 'Add conversation', exact: true }).click();
-    await page.locator('.react-flow__node-chat .node-heading').click();
+    await page
+      .locator('.react-flow__node-chat .node-bottom-actions')
+      .click({ position: { x: 5, y: 12 } });
     await page.getByRole('textbox', { name: 'Message' }).fill('Start generation');
     await page.getByRole('button', { name: 'Send message', exact: true }).click();
     await command(page, 'Import conversations');
     await upload(page, archive[0]);
-    const dialog = page.getByRole('dialog', { name: 'Import conversations', exact: true });
+    const dialog = page.getByRole('region', { name: 'Import conversations', exact: true });
     await expect(
       dialog.getByRole('button', { name: 'Import 1 conversation', exact: true }),
     ).toBeDisabled();
     await expect(dialog).toContainText('Stop generation before importing.');
     await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
-    await page.locator('.react-flow__node-chat .node-heading').click();
+    await page
+      .locator('.react-flow__node-chat .node-bottom-actions')
+      .click({ position: { x: 5, y: 12 } });
     await page.getByRole('button', { name: 'Stop generating', exact: true }).click();
     await command(page, 'Import conversations');
     await upload(page, archive[0]);

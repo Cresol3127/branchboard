@@ -1,5 +1,43 @@
 # Changelog
 
+## 1.8.0 — Docked workspace — 2026-10-24
+
+### Changed
+
+- Settings, Models, Help, history, backups and editors now share one docked workspace
+  panel. On narrow screens, Back to canvas returns to the preserved canvas view.
+- Conversation and note cards are titleless, with derived navigation labels and quiet
+  contextual actions. Removed Inspector and persistent group-creation controls.
+- Ctrl/Command-drag selects a rectangle; Shift-click toggles individual selection.
+  Space/middle-drag pans. Existing groups remain readable and can be ungrouped.
+- Creation tools dock at the right, collapsed to New conversation and an expand control.
+  Removed routine autosave/header status, canvas token clutter and permanent hints.
+- Canvas numbers follow original creation order. Delete controls appear on hover/focus;
+  deleting another canvas preserves the active canvas, draft, viewport and history.
+
+### Added
+
+- Explicit bounded, cancellable testing of a selected configured provider/model using
+  server-held credentials and no canvas content. Empty or interrupted output cannot pass.
+- Integrated, target-pinned confirmations and dirty-panel navigation guards, with draft
+  preservation, source-canvas return actions and keyboard focus restoration.
+- Separate cleanup editions 1.1.2, 1.2.2, 1.3.2, 1.4.2, 1.5.2, 1.6.1 and 1.7.1,
+  derived from verified originals with Inspector/group-creation entry points removed.
+
+### Fixed
+
+- Annotation gesture completion no longer depends on a potentially stale rendered draft.
+- Markdown table export no longer wraps narrow cloned cells and clips the final row.
+- Canvas-name focus spacing, mobile layer-name fields, toolbar/annotation placement
+  and Favorite/delete hit targets are clearer without resetting canvas position.
+
+### Compatibility
+
+- Workspace formats, historical titles, context inheritance, cutoffs and legacy input
+  limits remain compatible. Blocking legacy limits have an undoable reset.
+- Original tags and artifacts remain unchanged. No paid requests, hosting, authentication,
+  workspace migration or unfinished attachment/accounting features were introduced.
+
 ## 1.7.0 — Design improvements — 2026-10-23
 
 ### Changed

@@ -16,6 +16,9 @@ export function WorkspaceLibrary({
   const [name, setName] = useState('');
   const [parentId, setParentId] = useState('');
   const [destination, setDestination] = useState(boardFolders[board.id] || '');
+  const [source] = useState({ id: board.id, name: board.name });
+  const sourceBoard = state.boards.find((candidate) => candidate.id === source.id);
+  const sourceActive = board.id === source.id;
   const [includeMessages, setIncludeMessages] = useState(false);
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -42,6 +45,7 @@ export function WorkspaceLibrary({
   ));
   return (
     <Modal
+      kind="library"
       title={section === 'projects' ? 'Projects & folders' : 'Canvas templates'}
       onClose={onClose}
       className="library-dialog"
@@ -72,6 +76,7 @@ export function WorkspaceLibrary({
           </label>
           <h3>Create a project or folder · {folders.length} / 100</h3>
           <form
+            data-dirty={Boolean(name.trim())}
             onSubmit={(e) => {
               e.preventDefault();
               attempt(() => {
@@ -160,11 +165,25 @@ export function WorkspaceLibrary({
             stay on this browser; workspace backups include them.
           </p>
           <h3>
-            Save {board.name} as a template · {templates.length} / 50
+            Save {sourceBoard?.name || source.name} as a template · {templates.length} / 50
           </h3>
+          {!sourceActive && (
+            <p role="status">
+              {sourceBoard
+                ? 'Your draft belongs to another canvas.'
+                : 'The source canvas was deleted. Your draft is unchanged.'}{' '}
+              {sourceBoard && (
+                <button onClick={() => state.switchBoard(source.id)}>
+                  Return to source canvas
+                </button>
+              )}
+            </p>
+          )}
           <form
+            data-dirty={Boolean(name.trim())}
             onSubmit={(e) => {
               e.preventDefault();
+              if (useStore.getState().currentId !== source.id || !sourceBoard) return;
               attempt(() => {
                 state.saveTemplate(name, includeMessages);
                 setName('');
@@ -189,7 +208,12 @@ export function WorkspaceLibrary({
               />
               Include saved conversation messages
             </label>
-            <button className="primary" disabled={busy || !name.trim() || templates.length >= 50}>
+            <button
+              className="primary"
+              disabled={
+                busy || !sourceActive || !sourceBoard || !name.trim() || templates.length >= 50
+              }
+            >
               Save template
             </button>
           </form>

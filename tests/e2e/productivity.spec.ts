@@ -72,6 +72,7 @@ async function setup(page: Page, scrolling = false) {
   );
   await page.goto('/');
   await expect(page.locator('.react-flow__node')).toHaveCount(3);
+  await page.getByRole('button', { name: 'Expand creation tools', exact: true }).click();
   await command(page, 'Fit canvas');
   await page.waitForTimeout(300);
 }
@@ -104,7 +105,8 @@ test('whole-card dragging respects the threshold, controls, text selection, grou
   expect(await position(alpha)).toBe(initial);
   await page.getByRole('button', { name: 'Redo', exact: true }).click();
   expect(await position(alpha)).toBe(moved);
-  await alpha.getByRole('textbox', { name: 'Node title' }).fill('Edited alpha');
+  await alpha.getByRole('button', { name: /^Select model:/ }).click();
+  await page.keyboard.press('Escape');
   expect(await position(alpha)).toBe(moved);
   await page.getByRole('button', { name: 'Text selection mode', exact: true }).click();
   const line = await text.evaluate((el) => {
@@ -123,8 +125,10 @@ test('whole-card dragging respects the threshold, controls, text selection, grou
   );
   await page.evaluate(() => window.getSelection()?.removeAllRanges());
   await page.getByRole('button', { name: 'Text selection mode', exact: true }).click();
-  await alpha.locator('.node-type-dot').click();
-  await beta.locator('.node-type-dot').click({ modifiers: ['Shift'] });
+  await alpha.locator('.node-bottom-actions').click({ position: { x: 5, y: 12 } });
+  await beta
+    .locator('.node-bottom-actions')
+    .click({ position: { x: 5, y: 12 }, modifiers: ['Shift'] });
   const beforeBeta = await position(beta);
   await drag(page, text, 0, 60);
   await expect.poll(() => position(beta)).not.toBe(beforeBeta);
@@ -135,7 +139,7 @@ test('whole-card dragging respects the threshold, controls, text selection, grou
   expect(await position(alpha)).toBe(final);
 });
 
-test('empty-space pan, Shift rectangle selection, Space pan and zoom reset leave the composer anchored', async ({
+test('empty-space pan, Ctrl rectangle selection, Space pan and zoom reset leave the composer anchored', async ({
   page,
 }) => {
   await setup(page);
@@ -162,12 +166,12 @@ test('empty-space pan, Shift rectangle selection, Space pan and zoom reset leave
   await command(page, 'Fit canvas');
   await page.waitForTimeout(300);
   const a = (await alpha.boundingBox())!;
-  await page.keyboard.down('Shift');
+  await page.keyboard.down('Control');
   await page.mouse.move(a.x - 12, a.y - 12);
   await page.mouse.down();
   await page.mouse.move(a.x + a.width + 10, a.y + a.height + 10, { steps: 12 });
   await page.mouse.up();
-  await page.keyboard.up('Shift');
+  await page.keyboard.up('Control');
   await expect(alpha).toHaveClass(/selected/);
   await page.getByRole('button', { name: 'Zoom in', exact: true }).click();
   await page.getByRole('button', { name: 'Reset zoom', exact: true }).click();
@@ -248,7 +252,7 @@ test('keyboard copy/paste works across canvases and universal search carries its
   page,
 }) => {
   await setup(page);
-  await page.locator('[data-id="alpha"] .node-type-dot').click();
+  await page.locator('[data-id="alpha"] .node-bottom-actions').click({ position: { x: 5, y: 12 } });
   await page.keyboard.press('Control+c');
   await command(page, 'New canvas');
   await page.keyboard.press('Control+v');
@@ -262,7 +266,7 @@ test('keyboard copy/paste works across canvases and universal search carries its
   await page.getByRole('combobox', { name: 'Search commands and nodes' }).fill('ordinary message');
   await page.getByRole('button', { name: /Search saved messages & notes/ }).click();
   await expect(page.getByRole('searchbox')).toHaveValue('ordinary message');
-  await expect(page.getByRole('dialog', { name: 'Search saved content' })).toContainText(
+  await expect(page.getByRole('region', { name: 'Search saved content' })).toContainText(
     '2 matches',
   );
 });

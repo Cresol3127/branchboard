@@ -34,6 +34,7 @@ test('resizes a node, undoes the resize, and toggles the interactive minimap', a
   await expect.poll(async () => (await node.boundingBox())!.height).toBeLessThan(80);
   await node.getByRole('button', { name: 'Expand node', exact: true }).click();
   await expect.poll(async () => (await node.boundingBox())!.height).toBeCloseTo(expanded.height, 0);
+  await page.getByRole('button', { name: 'Expand creation tools', exact: true }).click();
   await page.getByRole('button', { name: 'Toggle minimap', exact: true }).click();
   await expect(page.locator('.react-flow__minimap')).toBeVisible();
   await page.getByRole('button', { name: 'Toggle minimap', exact: true }).click();
@@ -46,6 +47,7 @@ test('unreadable workspace data is warned about and not silently overwritten', a
   );
   await page.goto('/');
   await expect(page.getByRole('alert')).toContainText('has not been overwritten');
+  await page.getByRole('button', { name: 'Expand creation tools', exact: true }).click();
   await page.getByRole('button', { name: 'Add note', exact: true }).click();
   await page.waitForTimeout(500);
   expect(await page.evaluate(() => localStorage.getItem('branchboard.workspace.v1'))).toBe(

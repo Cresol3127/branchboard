@@ -5,12 +5,15 @@ export function useCanvasLayout(
   canvas: RefObject<HTMLElement | null>,
   minimap: boolean,
   boardId: string,
+  annotationsOpen = false,
 ) {
   useLayoutEffect(() => {
     const root = canvas.current;
     if (!root) return;
     const composer = root.querySelector<HTMLElement>('.message-bar');
     const controls = root.querySelector<HTMLElement>('.view-controls');
+    const creation = root.querySelector<HTMLElement>('.board-tools');
+    const annotations = root.querySelector<HTMLElement>('.annotation-panel');
     if (!composer || !controls) return;
     const measure = () => {
       const bounds = root.getBoundingClientRect();
@@ -22,6 +25,12 @@ export function useCanvasLayout(
       root.style.setProperty('--keyboard-inset', `${inset}px`);
       const bar = composer.getBoundingClientRect();
       const toolbar = controls.getBoundingClientRect();
+      const creationBottom = creation ? creation.getBoundingClientRect().bottom - bounds.top : 64;
+      root.style.setProperty('--creation-bottom', `${creationBottom + 12}px`);
+      root.style.setProperty(
+        '--canvas-top-reserved',
+        `${Math.max(creationBottom, annotations ? annotations.getBoundingClientRect().bottom - bounds.top : 0) + 16}px`,
+      );
       const overlaps = (width: number) =>
         bounds.right - 16 > bar.left && bounds.right - 16 - width < bar.right;
       const bottomFor = (width: number) =>
@@ -42,7 +51,13 @@ export function useCanvasLayout(
       );
     };
     const observer = new ResizeObserver(measure);
-    [root, composer, controls].forEach((element) => observer.observe(element));
+    [
+      root,
+      composer,
+      controls,
+      ...(creation ? [creation] : []),
+      ...(annotations ? [annotations] : []),
+    ].forEach((element) => observer.observe(element));
     window.addEventListener('resize', measure);
     window.visualViewport?.addEventListener('resize', measure);
     window.visualViewport?.addEventListener('scroll', measure);
@@ -53,5 +68,5 @@ export function useCanvasLayout(
       window.visualViewport?.removeEventListener('resize', measure);
       window.visualViewport?.removeEventListener('scroll', measure);
     };
-  }, [canvas, minimap, boardId]);
+  }, [canvas, minimap, boardId, annotationsOpen]);
 }

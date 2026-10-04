@@ -129,6 +129,7 @@ h3 {
   gap: 8px;
 }
 .breadcrumbs input {
+  padding: 8px 12px;
   width: min(240px, 18vw);
   font-size: 20px;
   font-weight: 450;

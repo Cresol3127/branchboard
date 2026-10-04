@@ -31,11 +31,11 @@ async function listen(server: Server) {
   return `http://127.0.0.1:${(server.address() as { port: number }).port}`;
 }
 
-async function setup() {
+async function setup(options: Parameters<typeof createApp>[0] = {}) {
   const directory = await mkdtemp('/tmp/opencode/branchboard-dev-proxy-');
   directories.push(directory);
   const configPath = `${directory}/providers.json`;
-  const api = await listen(createServer(createApp({ configPath })));
+  const api = await listen(createServer(createApp({ ...options, configPath })));
   const config = viteConfig({ command: 'serve', mode: 'test' });
   const configuredProxy = config.server?.proxy?.['/api'];
   if (!configuredProxy) throw new Error('The development API proxy is missing.');
@@ -69,6 +69,38 @@ const post = (url: string, origin: string, body: unknown) =>
   });
 
 describe('development API proxy origin protection', () => {
+  it.each(['localhost', '127.0.0.1'])(
+    'runs a bounded model test through the real %s proxy',
+    async (hostname) => {
+      let body: Record<string, unknown> = {};
+      const upstream = await listen(
+        createServer(async (request, response) => {
+          const chunks = [];
+          for await (const chunk of request) chunks.push(chunk);
+          body = JSON.parse(Buffer.concat(chunks).toString());
+          response.setHeader('Content-Type', 'text/event-stream');
+          response.end(
+            'data: {"choices":[{"delta":{"content":"Proxy response"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n',
+          );
+        }),
+      );
+      const { frontend } = await setup({ apiKey: 'isolated-proxy-fixture', baseURL: upstream });
+      const origin = new URL(frontend);
+      origin.hostname = hostname;
+      const response = await fetch(`${origin.origin}/api/providers/openai/test-model`, {
+        method: 'POST',
+        headers: { Origin: origin.origin, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'gpt-4o-mini' }),
+      });
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({
+        status: 'passed',
+        text: 'Proxy response',
+        model: 'gpt-4o-mini',
+      });
+      expect(body).toMatchObject({ max_tokens: 128, model: 'gpt-4o-mini' });
+    },
+  );
   it.each(['localhost', '127.0.0.1'])(
     'saves, reloads and removes settings from the same %s browser origin',
     async (hostname) => {

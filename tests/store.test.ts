@@ -2,6 +2,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { composerTarget, draftKey } from '../src/composer';
 import { absolutePosition, contextFor, estimateTokens } from '../src/graph';
 import { providerDefinitions, providerIds } from '../src/providers';
+import { emptyOrganization } from '../src/organization';
 import type { Board } from '../src/types';
 
 let store: typeof import('../src/store');
@@ -17,6 +18,8 @@ beforeAll(async () => {
 beforeEach(() => {
   store.useStore.getState().newBoard();
   store.useStore.setState({
+    boards: [store.currentBoard(store.useStore.getState())],
+    organization: emptyOrganization(),
     configured: true,
     streaming: {},
     composerDrafts: {},
@@ -44,6 +47,46 @@ const selected = () =>
   store.currentBoard(store.useStore.getState()).nodes.filter((n) => n.selected);
 const board = () => store.currentBoard(store.useStore.getState());
 describe('canvas clipboard and drag persistence', () => {
+  it('deletes an inactive canvas without changing the active graph, history, viewport or draft', () => {
+    const s = store.useStore.getState(),
+      inactive = board().id;
+    const oldNode = s.addNode('chat', { x: 10, y: 20 });
+    s.setComposerDraft(inactive, oldNode, 'Remove only this draft');
+    s.newBoard();
+    const active = board().id,
+      node = s.addNode('note', { x: 40, y: 50 });
+    s.updateNode(node, { note: 'Keep this undoable edit' }, true);
+    s.setComposerDraft(active, null, 'Keep my active draft');
+    const before = store.useStore.getState(),
+      activeBoard = board();
+    s.deleteBoard(inactive);
+    const after = store.useStore.getState();
+    expect(after.currentId).toBe(active);
+    expect(board()).toBe(activeBoard);
+    expect(after.past).toBe(before.past);
+    expect(after.future).toBe(before.future);
+    expect(after.composerDrafts[draftKey(active, null)]).toBe('Keep my active draft');
+    expect(after.composerDrafts[draftKey(inactive, oldNode)]).toBeUndefined();
+    s.undo();
+    expect(board().nodes.find((n) => n.id === node)?.data.note).not.toBe('Keep this undoable edit');
+  });
+  it('keeps confirmed deletion pinned to its original nodes when selection changes', () => {
+    const s = store.useStore.getState(),
+      a = s.addNode('note', { x: 0, y: 0 }),
+      b = s.addNode('note', { x: 500, y: 0 });
+    s.removeSelected({ nodes: [a], edges: [] });
+    expect(board().nodes.map((n) => n.id)).toEqual([b]);
+    s.undo();
+    expect(board().nodes.map((n) => n.id)).toEqual([a, b]);
+  });
+  it('preserves optional creation metadata without inventing legacy timestamps from edits', () => {
+    const old = structuredClone(board());
+    delete old.createdAt;
+    old.updatedAt = 999999;
+    expect(store.validateBoard(old).createdAt).toBeUndefined();
+    expect(store.validateBoard({ ...old, createdAt: 10 }).createdAt).toBe(10);
+    expect(board().createdAt).toBeTypeOf('number');
+  });
   it('normalizes reset ports across validation, backup and snapshots', () => {
     const s = store.useStore.getState();
     const id = s.addNode('chat', { x: 0, y: 0 });

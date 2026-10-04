@@ -1,0 +1,337 @@
+/* Docked workspace and quiet canvas. No rule here changes graph coordinates. */
+.workspace {
+  position: relative;
+}
+.workspace-panel-host {
+  display: none;
+  position: relative;
+  flex: 0 0 360px;
+  min-width: 0;
+  background: var(--app-bg);
+  border-right: 1px solid var(--line);
+  z-index: 8;
+}
+.workspace-panel-host[data-open='true'] {
+  display: flex;
+}
+.workspace-panel-content {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.workspace-panel-content > .docked-panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  height: 100%;
+  margin: 0;
+  padding: 24px 20px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--app-bg);
+  overflow-y: auto;
+  gap: 16px;
+  animation: none;
+}
+.docked-panel > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+  position: sticky;
+  top: -24px;
+  padding-block: 12px;
+  background: var(--app-bg);
+  z-index: 2;
+}
+.docked-panel > header h2 {
+  font-size: 24px;
+  line-height: 1.25;
+  margin: 0;
+}
+.docked-panel .dialog-body {
+  padding: 0;
+  overflow: visible;
+  flex-shrink: 0;
+}
+.docked-panel p {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.docked-panel input:not([type='checkbox']),
+.docked-panel textarea,
+.docked-panel select {
+  max-width: 100%;
+  min-width: 0;
+}
+.docked-panel .provider-actions {
+  flex-wrap: wrap;
+}
+.panel-leave-confirmation {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  padding: 28px 20px;
+  background: var(--app-bg);
+}
+.panel-leave-confirmation h3 {
+  font-size: 22px;
+}
+.panel-leave-confirmation p {
+  line-height: 1.6;
+}
+.panel-leave-confirmation button {
+  margin: 8px 8px 8px 0;
+  padding: 12px;
+}
+.workspace[data-panel-full-view='true'] .workspace-panel-host[data-open='true'] {
+  position: absolute;
+  left: var(--panel-sidebar-width);
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: auto;
+}
+.workspace[data-panel-full-view='true'] .workspace-main {
+  visibility: hidden;
+  pointer-events: none;
+}
+.workspace-panel-content .command-results {
+  max-height: none;
+  overflow: visible;
+}
+.workspace-panel-content .command-results button {
+  min-height: 48px;
+}
+.workspace-panel-content .palette-footer {
+  display: none;
+}
+.canvas-number {
+  width: 24px;
+  flex: 0 0 24px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.workspace-sidebar .board-link > .canvas-number {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 24px;
+  width: 24px;
+}
+.canvas-area .canvas-bottom {
+  justify-content: flex-end;
+}
+.react-flow__nodesselection-rect {
+  pointer-events: none;
+}
+.board-tools > .add-conversation {
+  width: auto;
+  padding-inline: 14px;
+}
+.board-tools > .add-conversation span {
+  display: inline;
+}
+.board-row {
+  position: relative;
+}
+.board-row .board-link {
+  padding-right: 60px;
+}
+.board-row > .icon-button:not(.canvas-delete) {
+  position: absolute;
+  right: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 36px;
+}
+.board-row > .canvas-delete {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 36px;
+  color: var(--error);
+  opacity: 0;
+}
+.board-row:hover > .canvas-delete,
+.board-row:focus-within > .canvas-delete {
+  opacity: 1;
+}
+.sidebar-shell[data-collapsed='true'] .canvas-number {
+  width: 20px;
+  flex-basis: 20px;
+}
+.sidebar-shell[data-collapsed='true'] .board-row .board-link {
+  padding-right: 0;
+}
+.sidebar-shell[data-collapsed='true'] .board-row > .icon-button {
+  display: none;
+}
+.board-tools {
+  left: auto;
+  right: 16px;
+  top: 16px;
+  max-width: calc(100% - 32px);
+  padding: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  border-radius: 24px;
+}
+.board-tools > .add-conversation {
+  order: 1;
+}
+.board-tools > .icon-button {
+  order: 2;
+}
+.creation-extra {
+  display: flex;
+  order: 0;
+  gap: 2px;
+}
+.creation-extra[hidden] {
+  display: none;
+}
+.node-bottom-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 10px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--line);
+  min-height: 44px;
+}
+.node-bottom-actions > .model-selector {
+  border: 0;
+  flex: 1;
+  min-width: 0;
+  padding: 6px;
+  font-size: 12px;
+}
+.node-bottom-actions > .icon-button {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+.node-preview {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13px;
+}
+.board-node.chat-node > .messages {
+  padding-top: 18px;
+}
+.chat-node .messages {
+  flex: 1;
+  min-height: 0;
+}
+.node-bottom-actions + .node-ports {
+  pointer-events: none;
+}
+.model-test {
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+  margin-block: 8px;
+}
+.model-test h3 {
+  font-size: 16px;
+  margin: 0 0 8px;
+}
+.model-test .test-response {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 180px;
+  overflow: auto;
+  padding: 12px;
+  background: var(--surface);
+  border-radius: 12px;
+}
+.workspace-panel-content .essential-actions {
+  background: var(--app-bg);
+  z-index: 1;
+}
+.workspace-panel-content .model-test .provider-actions {
+  background: transparent;
+  padding: 0;
+}
+.workspace-panel-content .provider-settings {
+  gap: 16px;
+}
+.workspace-panel-content .model-test {
+  margin-bottom: 0;
+}
+.sidebar-shell[data-collapsed='true'] .board-row:hover > .canvas-delete,
+.sidebar-shell[data-collapsed='true'] .board-row:focus-within > .canvas-delete {
+  display: flex;
+  opacity: 1;
+  right: -28px;
+  width: 44px;
+  height: 44px;
+  background: var(--surface);
+  z-index: 6;
+  box-shadow: var(--shadow);
+}
+@media (max-width: 700px) {
+  .board-tools {
+    left: auto;
+    right: 12px;
+    top: 12px;
+    max-width: calc(100% - 24px);
+  }
+  .board-tools[data-expanded='true'] {
+    max-width: 220px;
+  }
+  .creation-extra {
+    order: 3;
+    flex-basis: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .workspace-panel-content > .docked-panel {
+    padding: 16px;
+  }
+  .docked-panel > header {
+    top: -16px;
+  }
+  .sidebar-shell .board-row .board-link {
+    padding-right: 0;
+  }
+  .sidebar-shell .board-row > .icon-button {
+    display: none;
+  }
+  .sidebar-shell .board-row:focus-within > .canvas-delete {
+    display: flex;
+    right: -28px;
+    width: 44px;
+    height: 44px;
+    opacity: 1;
+    z-index: 6;
+    background: var(--surface);
+  }
+}
+@media (hover: none) {
+  .board-row > .canvas-delete {
+    opacity: 1;
+  }
+}
+.canvas-area .annotation-panel.react-flow__panel {
+  top: var(--creation-bottom, 80px);
+  margin-top: 0;
+  max-height: calc(100% - var(--creation-bottom, 80px) - var(--composer-height, 90px) - 24px);
+  overflow-y: auto;
+}
+.workspace-panel-content .annotation-layer > input {
+  flex: 1 0 100%;
+  width: 100%;
+}

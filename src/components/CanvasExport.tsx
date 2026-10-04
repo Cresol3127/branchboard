@@ -18,6 +18,20 @@ export function CanvasExport({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const alive = useRef(true);
+  const version = JSON.stringify({
+    name: board.name,
+    nodes: board.nodes.map((n) => ({
+      id: n.id,
+      data: n.data,
+      position: n.position,
+      style: n.style,
+    })),
+    edges: board.edges,
+    annotations: board.annotations,
+  });
+  const latest = useRef(version);
+  latest.current = version;
+  const [previewVersion, setPreviewVersion] = useState('');
   useEffect(() => {
     alive.current = true;
     return () => {
@@ -33,9 +47,14 @@ export function CanvasExport({
     setBusy(true);
     setError('');
     setPreview(null);
+    const requestedVersion = latest.current;
     try {
       const image = await renderCanvas(viewport, board);
-      if (alive.current) setPreview(image);
+      if (alive.current && latest.current === requestedVersion) {
+        setPreview(image);
+        setPreviewVersion(requestedVersion);
+      } else if (alive.current)
+        setError('The canvas changed while rendering. Generate a new preview.');
     } catch (e) {
       if (alive.current) setError(e instanceof Error ? e.message : 'Could not render the canvas.');
     } finally {
@@ -43,7 +62,7 @@ export function CanvasExport({
     }
   };
   const save = async () => {
-    if (!preview) return;
+    if (!preview || previewVersion !== latest.current) return;
     setBusy(true);
     setError('');
     try {
@@ -55,7 +74,7 @@ export function CanvasExport({
     }
   };
   return (
-    <Modal title="Export canvas" className="canvas-export" onClose={onClose}>
+    <Modal title="Export canvas" kind="export" className="canvas-export" onClose={onClose}>
       <p>
         Export the whole canvas, not just the current view. Visible layers and current node
         presentation are included; controls and the grid are omitted. Content overflowing a node
@@ -78,6 +97,9 @@ export function CanvasExport({
         on one A4 page; text is not selectable. Use Markdown or JSON for complete text and backups.
       </p>
       {generating && <p role="status">Stop generation before exporting a stable canvas.</p>}
+      {preview && previewVersion !== version && (
+        <p role="status">The canvas changed. Refresh the preview before downloading.</p>
+      )}
       {error && (
         <p role="alert" className="error">
           {error}
@@ -97,7 +119,7 @@ export function CanvasExport({
         </button>
         <button
           className="primary"
-          disabled={busy || generating || !preview}
+          disabled={busy || generating || !preview || previewVersion !== version}
           onClick={() => void save()}
         >
           Download {format.toUpperCase()}

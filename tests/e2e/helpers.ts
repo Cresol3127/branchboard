@@ -2,7 +2,7 @@ import { expect, type Page } from '@playwright/test';
 
 export async function command(page: Page, label: string) {
   await page.keyboard.press('Control+k');
-  const palette = page.getByRole('dialog', { name: 'Command palette' });
+  const palette = page.getByRole('region', { name: 'Command palette' });
   await expect(palette).toBeVisible();
   await palette.getByRole('combobox', { name: 'Search commands and nodes' }).fill(label);
   await palette.getByRole('option', { name: label, exact: true }).click();

@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import { useStore } from '../store';
 import { Modal } from './ui';
+import { useWorkspacePanels } from '../workspacePanels';
+import { ModelTest } from './ModelTest';
 import type { ProviderId, PublicProvider } from '../providers';
+type Theme = 'light' | 'dark' | 'system';
 import { ProviderSetup } from './ProviderSetup';
 import { modelDiscoveryLabel } from '../modelDiscovery';
 import {
@@ -12,40 +15,118 @@ import {
   hasPublicCatalog,
 } from '../modelCatalog';
 
-export function Settings() {
+export function Settings({
+  theme,
+  onThemeChange,
+}: {
+  theme: Theme;
+  onThemeChange: (theme: Theme) => void;
+}) {
   const providers = useStore((s) => s.providers);
   const provider = useStore((s) => s.settingsProvider);
   const selected = providers.find((p) => p.id === provider);
+  const section = useStore((s) => s.settingsSection);
   return (
     <Modal
-      title="Settings"
+      title={section === 'models' ? 'Models' : 'Settings'}
+      kind={section === 'models' ? 'models' : 'settings'}
       className="settings-dialog"
       onClose={() => useStore.setState({ settingsOpen: false })}
     >
-      <div className="dialog-body">
-        <p className="dialog-subtitle">Choose your AI provider. Keys stay on this server.</p>
-        <label htmlFor="settings-provider">Provider</label>
-        <select
-          id="settings-provider"
-          value={provider}
-          onChange={(e) => useStore.setState({ settingsProvider: e.target.value as ProviderId })}
-        >
-          {providers.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-        {selected && <ProviderSettings key={provider} provider={selected} />}
-        {!selected && (
-          <p role="status">
-            Provider settings are unavailable. Check that the local API server is running.
-          </p>
+      <div
+        className="help-tabs"
+        role="tablist"
+        aria-label="Workspace settings"
+        onKeyDown={(e) => {
+          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+          e.preventDefault();
+          const next =
+            e.key === 'Home'
+              ? 'models'
+              : e.key === 'End'
+                ? 'workspace'
+                : section === 'models'
+                  ? 'workspace'
+                  : 'models';
+          useWorkspacePanels.getState().navigate(() => {
+            useStore.setState({ settingsSection: next });
+            requestAnimationFrame(() => document.getElementById(`settings-tab-${next}`)?.focus());
+          });
+        }}
+      >
+        {(['models', 'workspace'] as const).map((id) => (
+          <button
+            type="button"
+            role="tab"
+            key={id}
+            id={`settings-tab-${id}`}
+            aria-controls={`settings-panel-${id}`}
+            aria-selected={section === id}
+            tabIndex={section === id ? 0 : -1}
+            onClick={() =>
+              useWorkspacePanels
+                .getState()
+                .navigate(() => useStore.setState({ settingsSection: id }))
+            }
+          >
+            {id === 'models' ? 'Models' : 'Workspace'}
+          </button>
+        ))}
+      </div>
+      <div
+        className="dialog-body"
+        role="tabpanel"
+        id={`settings-panel-${section}`}
+        aria-labelledby={`settings-tab-${section}`}
+      >
+        {section === 'workspace' ? (
+          <section>
+            <h3>Appearance</h3>
+            <label>
+              Color theme
+              <select
+                aria-label="Color theme"
+                value={theme}
+                onChange={(e) => onThemeChange(e.target.value as Theme)}
+              >
+                <option value="system">System</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+            </label>
+            <p className="muted">
+              Canvases stay in this browser. Use Backups before changing browser or origin.
+            </p>
+          </section>
+        ) : (
+          <>
+            <p className="dialog-subtitle">Choose your AI provider. Keys stay on this server.</p>
+            <label htmlFor="settings-provider">Provider</label>
+            <select
+              id="settings-provider"
+              value={provider}
+              onChange={(e) => {
+                const id = e.target.value as ProviderId;
+                useWorkspacePanels
+                  .getState()
+                  .navigate(() => useStore.setState({ settingsProvider: id }));
+              }}
+            >
+              {providers.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            {selected && <ProviderSettings key={provider} provider={selected} />}
+            {!selected && (
+              <p role="status">
+                Provider settings are unavailable. Check that the local API server is running.
+              </p>
+            )}
+          </>
         )}
       </div>
-      <button className="text-button" onClick={() => useStore.setState({ settingsOpen: false })}>
-        Back to canvas
-      </button>
     </Modal>
   );
 }
@@ -108,6 +189,12 @@ function ProviderSettings({ provider }: { provider: PublicProvider }) {
   return (
     <form
       className="provider-settings"
+      data-dirty={Boolean(
+        key ||
+        baseURL !== provider.baseURL ||
+        model !== provider.defaultModel ||
+        models !== provider.extraModels.join('\n'),
+      )}
       aria-busy={busy}
       onSubmit={(e) => {
         e.preventDefault();
@@ -173,6 +260,14 @@ function ProviderSettings({ provider }: { provider: PublicProvider }) {
           <option key={id} value={id} />
         ))}
       </datalist>
+      <ModelTest
+        provider={provider.id}
+        model={model}
+        savedSettings={JSON.stringify(provider)}
+        disabled={
+          busy || !provider.configured || Boolean(key.trim()) || baseURL !== provider.baseURL
+        }
+      />
       <div className="provider-actions essential-actions">
         <button className="primary" disabled={busy}>
           {busy ? 'Working…' : 'Save settings'}
@@ -335,10 +430,10 @@ export function Help({ onClose }: { onClose: () => void }) {
       title: 'Canvas',
       items: [
         ['Double-click canvas', 'Quick creation menu'],
-        ['Shift + click / drag', 'Select multiple nodes'],
+        ['Ctrl / ⌘ + drag canvas', 'Draw a selection rectangle'],
+        ['Shift + click', 'Add or remove a selected node'],
         ['Ctrl / ⌘ D', 'Duplicate selection'],
         ['Ctrl / ⌘ C / V', 'Copy / paste nodes within Branchboard'],
-        ['Ctrl / ⌘ G', 'Group selection'],
         ['Ctrl / ⌘ Z', 'Undo'],
         ['Ctrl / ⌘ Shift Z', 'Redo'],
         ['Delete / Backspace', 'Delete selection'],
@@ -358,7 +453,7 @@ export function Help({ onClose }: { onClose: () => void }) {
     items: group.items.filter((item) => item.join(' ').toLowerCase().includes(query.toLowerCase())),
   }));
   return (
-    <Modal title="Help" className="help-dialog" onClose={onClose}>
+    <Modal title="Help" kind="help" className="help-dialog" onClose={onClose}>
       <div
         className="help-tabs"
         role="tablist"
@@ -423,7 +518,7 @@ export function Help({ onClose }: { onClose: () => void }) {
               <h3>Make room to explore</h3>
               <p>
                 Drag a card’s surface to move it. Use Focus conversation to read, Fit canvas for the
-                overview. Touch-scroll inside content; drag its header to move.
+                overview. Touch-scroll inside content; drag a card’s quiet surface to move.
               </p>
             </section>
             <p className="muted">

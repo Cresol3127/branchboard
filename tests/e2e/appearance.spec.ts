@@ -11,9 +11,12 @@ test('conventional workspace stays visible and follows light, dark and system th
   await expect(page.locator('.board-node').first()).toHaveCSS('border-radius', '16px');
   await expect(page.getByRole('complementary', { name: 'Projects and boards' })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Boards' })).toBeVisible();
-  await expect(page.getByRole('toolbar', { name: 'Board tools' }).getByRole('button')).toHaveCount(
-    6,
-  );
+  await expect(
+    page
+      .getByRole('toolbar', { name: 'Board tools' })
+      .getByRole('button')
+      .filter({ visible: true }),
+  ).toHaveCount(2);
   await expect(page.locator('.project-pill, .minimal-add')).toHaveCount(0);
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(page.getByRole('combobox', { name: 'Search commands and nodes' })).toBeFocused();
@@ -58,9 +61,9 @@ test('palette keyboard navigation, grid shortcut, expansion and context menus', 
   await expect(page.locator('.react-flow__background')).toBeVisible();
   await page.keyboard.press('g');
   await expect(page.locator('.react-flow__background')).toHaveCount(0);
-  await command(page, 'Find node: Untitled note');
+  await command(page, 'Find node: A saved thought');
   await expect(note.getByRole('textbox', { name: 'Note content' })).toHaveValue('A saved thought');
-  await note.locator('.node-heading').click({ button: 'right' });
+  await note.locator('.node-bottom-actions').click({ button: 'right' });
   await expect(page.getByRole('menu', { name: 'Node actions' })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('menu')).toHaveCount(0);
@@ -71,19 +74,18 @@ test('palette keyboard navigation, grid shortcut, expansion and context menus', 
   await expect(page.locator('.react-flow__node')).toHaveCount(5);
 });
 
-test('reduced motion, add button and settings focus trap', async ({ page }) => {
+test('reduced motion, add button and integrated settings focus return', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.setViewportSize({ width: 390, height: 700 });
   await page.goto('/');
   await page.getByRole('button', { name: 'Add conversation', exact: true }).click();
   await expect(page.locator('.react-flow__node')).toHaveCount(4);
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'Settings', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Settings', exact: true })).toBeVisible();
   await expect(page.locator('.modal')).toHaveCSS('animation-name', 'none');
-  await page.keyboard.press('Tab');
-  await expect(page.getByRole('button', { name: 'Close dialog' })).toBeFocused();
+  await expect(page.getByRole('region', { name: 'Settings', exact: true })).toBeFocused();
   await page.keyboard.press('Escape');
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.locator('.docked-panel')).toHaveCount(0);
 });
 
 for (const width of [1440, 390]) {
@@ -125,8 +127,9 @@ for (const width of [1440, 390]) {
       expect(corners.rightCutout).toBe(true);
       expect(corners.insideCanvas).toBe(true);
     }
-    await expect(page.locator('.board-tools')).toHaveCSS('border-radius', '28px');
+    await expect(page.locator('.board-tools')).toHaveCSS('border-radius', '24px');
     await expect(page.locator('.view-controls')).toHaveCSS('border-radius', '28px');
+    await page.getByRole('button', { name: 'Expand creation tools', exact: true }).click();
     await page.getByRole('button', { name: 'Toggle minimap', exact: true }).click();
     await expect(page.locator('.react-flow__minimap')).toHaveCSS('border-radius', '16px');
     await expect(page.locator('.react-flow__minimap')).toHaveCSS('overflow', 'hidden');
@@ -155,10 +158,10 @@ for (const width of [1440, 390]) {
       .toBe(true);
     await command(page, 'Theme: light');
     await expect(card).toHaveCSS('border-radius', '16px');
-    await command(page, 'Settings');
-    await expect(page.getByRole('dialog', { name: 'Settings', exact: true })).toHaveCSS(
+    await command(page, 'Models');
+    await expect(page.getByRole('region', { name: 'Models', exact: true })).toHaveCSS(
       'border-radius',
-      '28px',
+      '0px',
     );
     await expect(page.getByLabel('API key', { exact: true })).toHaveCSS('border-radius', '12px');
     await page.keyboard.press('Escape');

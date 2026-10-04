@@ -1,4 +1,5 @@
 import type { Board, Message } from './types';
+import { nodeLabel } from './nodeLabel';
 
 export type SearchResult = {
   boardId: string;
@@ -40,7 +41,7 @@ export function searchWorkspace(boards: Board[], query: string, limit = 100) {
           nodeId: node.id,
           messageId: candidate.messageId,
           boardName: board.name,
-          nodeTitle: node.data.title,
+          nodeTitle: nodeLabel(node),
           source: candidate.source,
           snippet: `${start ? '…' : ''}${candidate.content.slice(start, end)}${end < candidate.content.length ? '…' : ''}`,
         });

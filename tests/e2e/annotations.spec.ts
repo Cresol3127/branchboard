@@ -5,6 +5,7 @@ import { command } from './helpers';
 async function setup(page: Page) {
   await page.goto('/');
   await command(page, 'New canvas');
+  await page.getByRole('button', { name: 'Expand creation tools', exact: true }).click();
   await page.getByRole('button', { name: 'Drawing & annotations', exact: true }).click();
 }
 async function draw(page: Page, name: string, offset = 0) {
@@ -44,11 +45,15 @@ test('annotation JSON round trips with independent IDs and tools fit a mobile vi
   await page.setViewportSize({ width: 390, height: 844 });
   await command(page, 'Fit canvas');
   const panel = await page.locator('.annotation-panel').boundingBox();
+  const creation = await page
+    .getByRole('toolbar', { name: 'Board tools', exact: true })
+    .boundingBox();
+  expect(panel!.y).toBeGreaterThanOrEqual(creation!.y + creation!.height + 11);
   expect(panel!.x).toBeGreaterThanOrEqual(0);
   expect(panel!.x + panel!.width).toBeLessThanOrEqual(390);
   await page.getByRole('button', { name: 'Annotation layers', exact: true }).click();
   const dialog = await page
-    .getByRole('dialog', { name: 'Annotation layers', exact: true })
+    .getByRole('region', { name: 'Annotation layers', exact: true })
     .boundingBox();
   expect(dialog!.x).toBeGreaterThanOrEqual(0);
   expect(dialog!.x + dialog!.width).toBeLessThanOrEqual(390);
@@ -150,6 +155,7 @@ test('freehand/highlighting persists, supports one-step undo and cancel, and mov
   await page.waitForTimeout(450);
   await page.reload();
   await expect(page.locator('[data-annotation-id]')).toHaveCount(2);
+  await page.getByRole('button', { name: 'Expand creation tools', exact: true }).click();
   await page.getByRole('button', { name: 'Drawing & annotations', exact: true }).click();
   await page.getByRole('button', { name: 'Freehand pen', exact: true }).click();
   const surface = (await page.getByLabel('Annotation drawing surface').boundingBox())!;
@@ -199,7 +205,7 @@ test('layers rename, hide, lock, reorder and delete with safe confirmation and u
   await setup(page);
   await draw(page, 'Freehand pen');
   await page.getByRole('button', { name: 'Annotation layers', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Annotation layers', exact: true });
+  const dialog = page.getByRole('region', { name: 'Annotation layers', exact: true });
   await dialog.getByLabel('Layer name 1').fill('Review');
   await dialog.getByLabel('Layer name 1').press('Enter');
   await dialog.getByLabel('Visible', { exact: true }).uncheck();
@@ -218,7 +224,7 @@ test('layers rename, hide, lock, reorder and delete with safe confirmation and u
   await dialog.getByRole('button', { name: 'Lower Layer 2' }).click();
   await expect(dialog.getByLabel('Layer name 1')).toHaveValue('Layer 2');
   await dialog.getByRole('button', { name: 'Delete layer Review' }).click();
-  const confirmation = page.getByRole('dialog', { name: 'Delete annotation layer?' });
+  const confirmation = page.getByRole('region', { name: 'Delete annotation layer?' });
   await expect(confirmation.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
   await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(page.locator('[data-annotation-id]')).toHaveCount(2);

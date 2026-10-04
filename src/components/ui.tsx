@@ -2,11 +2,13 @@ import {
   useEffect,
   useLayoutEffect,
   useRef,
+  useId,
   type ButtonHTMLAttributes,
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { closeWorkspacePanel, useWorkspacePanels, type PanelKind } from '../workspacePanels';
 
 export function IconButton({
   label,
@@ -31,86 +33,82 @@ export function Modal({
   onClose,
   children,
   className = '',
+  kind = 'settings',
 }: {
   title: string;
   onClose: () => void;
   children: ReactNode;
   className?: string;
+  kind?: PanelKind;
 }) {
+  const id = useId();
   const ref = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
   close.current = onClose;
+  const active = useWorkspacePanels((s) => s.active?.id === id);
+  useLayoutEffect(() => {
+    useWorkspacePanels.getState().activate({
+      id,
+      kind,
+      title,
+      close: () => close.current(),
+      dirty: () => Boolean(ref.current?.querySelector('[data-dirty="true"]')),
+    });
+    return () => useWorkspacePanels.getState().release(id);
+  }, [id, kind, title]);
   useEffect(() => {
+    if (!active) return;
     const previous = document.activeElement as HTMLElement | null;
     const el = ref.current!;
-    const focusables = () =>
-      [
-        ...el.querySelectorAll<HTMLElement>(
-          'button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), summary, [tabindex="0"]',
-        ),
-      ].filter((e) => e.getClientRects().length);
     (el.querySelector<HTMLElement>('[data-autofocus]') || el).focus();
     const key = (event: KeyboardEvent) => {
-      // A busy form can disable the focused control and move focus to <body>.
-      // Keep Escape and focus containment working for the topmost dialog.
-      if ([...document.querySelectorAll('[role="dialog"]')].at(-1) !== el) return;
+      if (document.querySelector('[role="dialog"], [role="menu"]')) return;
       if (event.key === 'Escape') {
         event.stopPropagation();
-        close.current();
-      }
-      if (event.key === 'Tab') {
-        const items = focusables(),
-          first = items[0],
-          last = items.at(-1);
-        if (event.shiftKey && (document.activeElement === first || document.activeElement === el)) {
-          event.preventDefault();
-          last?.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-          event.preventDefault();
-          first?.focus();
-        } else if (!el.contains(document.activeElement)) {
-          event.preventDefault();
-          (event.shiftKey ? last : first)?.focus();
-        }
+        closeWorkspacePanel();
       }
     };
-    document.addEventListener('keydown', key, true);
+    document.addEventListener('keydown', key);
     return () => {
-      document.removeEventListener('keydown', key, true);
-      previous?.focus();
+      document.removeEventListener('keydown', key);
+      if (previous?.isConnected) previous.focus();
     };
-  }, []);
+  }, [active]);
+  const host = document.getElementById('workspace-panel-host');
+  if (!active || !host) return null;
   return createPortal(
     <div
-      className="modal-backdrop"
+      className="workspace-panel-content"
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
       onDoubleClick={(e) => e.stopPropagation()}
       onWheel={(e) => e.stopPropagation()}
-      onKeyDown={(e) => e.stopPropagation()}
-      onMouseDown={(e) => {
+      onKeyDown={(e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') return;
         e.stopPropagation();
-        if (e.target === e.currentTarget) onClose();
+        if (e.key === 'Escape' && !document.querySelector('[role="dialog"], [role="menu"]')) {
+          e.preventDefault();
+          closeWorkspacePanel();
+        }
       }}
     >
       <div
         ref={ref}
-        role="dialog"
-        aria-modal="true"
+        role="region"
         aria-label={title}
-        className={`modal ${className}`}
+        className={`modal docked-panel ${className}`}
         tabIndex={-1}
       >
         <header>
           <h2>{title}</h2>
-          <IconButton label="Close dialog" onClick={onClose}>
+          <IconButton label="Back to canvas" onClick={closeWorkspacePanel}>
             <X size={18} />
           </IconButton>
         </header>
         {children}
       </div>
     </div>,
-    document.body,
+    host,
   );
 }
 

@@ -139,8 +139,8 @@ test('drop near an output creates a fresh branch; Shift-drag only moves', async 
   const original = (await node.boundingBox())!;
   const drag = async () => {
     const output = (await page.locator('[data-id="a"] .source').boundingBox())!;
-    const heading = (await node.locator('.node-type-dot').boundingBox())!;
-    await page.mouse.move(heading.x + 5, heading.y + 5);
+    const heading = (await node.locator('.node-bottom-actions').boundingBox())!;
+    await page.mouse.move(heading.x + 5, heading.y + 12);
     await page.mouse.down();
     await page.mouse.move(output.x + output.width / 2 + 15, output.y + output.height / 2, {
       steps: 20,
@@ -189,23 +189,22 @@ test('canvas loads, pans, zooms and exposes working navigation', async ({ page }
   await expect(page.getByText('No matching commands or nodes.')).toBeVisible();
   await page.keyboard.press('Escape');
   await command(page, 'Keyboard shortcuts & help');
-  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Help', exact: true })).toBeVisible();
   await page.keyboard.press('Escape');
-  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.locator('.docked-panel')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
-test('creates, connects, expands, groups, duplicates, deletes and undoes real nodes', async ({
+test('creates, connects, multi-selects, duplicates, deletes and undoes nodes without containers', async ({
   page,
 }) => {
   await page.goto('/');
   await command(page, 'New canvas');
   await page.getByRole('button', { name: 'Add conversation' }).click();
   const chat = page.locator('.react-flow__node-chat').first();
-  await chat.getByRole('textbox', { name: 'Node title' }).fill('A question');
+  await expect(chat.getByRole('textbox', { name: 'Node title' })).toHaveCount(0);
   await command(page, 'New note');
   const note = page.locator('.react-flow__node-note').first();
-  await note.getByRole('textbox', { name: 'Node title' }).fill('Research');
   await note.getByRole('textbox', { name: 'Note content' }).fill('Keep this important context.');
   await command(page, 'Auto-arrange nodes');
   await page.waitForTimeout(450);
@@ -218,24 +217,26 @@ test('creates, connects, expands, groups, duplicates, deletes and undoes real no
   });
   await page.mouse.up();
   await expect(page.locator('.react-flow__edge')).toHaveCount(1);
-  await chat.locator('.node-type-dot').click();
+  await chat.locator('.node-bottom-actions').click({ position: { x: 5, y: 12 } });
   await expect(page.getByRole('textbox', { name: 'Message', exact: true })).toBeVisible();
-  await note.locator('.node-type-dot').click({ modifiers: ['Shift'] });
-  await command(page, 'Group selection');
-  await expect(page.locator('.react-flow__node-group')).toHaveCount(1);
+  await note
+    .locator('.node-bottom-actions')
+    .click({ position: { x: 5, y: 12 }, modifiers: ['Shift'] });
+  await expect(page.locator('.react-flow__node-group')).toHaveCount(0);
   await command(page, 'Duplicate selection');
-  await expect(page.locator('.react-flow__node')).toHaveCount(6);
+  await expect(page.locator('.react-flow__node')).toHaveCount(4);
   await expect(page.locator('.react-flow__edge')).toHaveCount(2);
-  page.once('dialog', (dialog) => dialog.accept());
   await command(page, 'Delete selection');
-  await expect(page.locator('.react-flow__node')).toHaveCount(3);
+  await expect(page.locator('.react-flow__node')).toHaveCount(2);
   await command(page, 'Undo');
-  await expect(page.locator('.react-flow__node')).toHaveCount(6);
+  await expect(page.locator('.react-flow__node')).toHaveCount(4);
   await command(page, 'Redo');
-  await expect(page.locator('.react-flow__node')).toHaveCount(3);
+  await expect(page.locator('.react-flow__node')).toHaveCount(2);
   await page.reload();
-  await expect(page.locator('.react-flow__node')).toHaveCount(3);
-  await page.locator('.react-flow__node-note .node-type-dot').click();
+  await expect(page.locator('.react-flow__node')).toHaveCount(2);
+  await page
+    .locator('.react-flow__node-note .node-bottom-actions')
+    .click({ position: { x: 5, y: 12 } });
   await expect(page.getByRole('textbox', { name: 'Note content' })).toHaveValue(
     'Keep this important context.',
   );
@@ -278,21 +279,21 @@ test('streams conversations, branches context and persists history without stori
   });
   await page.goto('/');
   const chat = page.locator('.react-flow__node-chat').first();
-  await chat.locator('.node-type-dot').click();
+  await chat.locator('.node-bottom-actions').click({ position: { x: 5, y: 12 } });
   await page.getByRole('textbox', { name: 'Message', exact: true }).fill('Where should we start?');
   await page.getByRole('button', { name: 'Send message' }).click();
-  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Models', exact: true })).toBeVisible();
   await page.getByLabel('API key', { exact: true }).fill('sk-test-secret');
   await page.getByRole('button', { name: 'Save settings', exact: true }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Settings saved.' })).toBeVisible();
   await page.getByRole('button', { name: 'Back to canvas' }).click();
   await page.getByRole('button', { name: 'Send message' }).click();
   await expect(chat.locator('.markdown').last()).toHaveText('A thoughtful response.');
-  await chat.locator('.node-heading').click({ button: 'right' });
+  await chat.locator('.node-bottom-actions').click({ button: 'right' });
   await page.getByRole('menuitem', { name: 'Branch conversation' }).click();
   await expect(page.locator('.react-flow__node-chat')).toHaveCount(2);
   const child = page.locator('.react-flow__node-chat').last();
-  await expect(child.getByRole('button', { name: '3 inherited messages' })).toBeVisible();
+  await expect(page.locator('.react-flow__edge')).toHaveCount(2);
   await page.getByRole('textbox', { name: 'Message', exact: true }).fill('Try a different angle.');
   await page.getByRole('button', { name: 'Send message' }).click();
   await expect(child.locator('.markdown').last()).toHaveText('A thoughtful response.');
@@ -302,10 +303,7 @@ test('streams conversations, branches context and persists history without stori
     { role: 'assistant', content: 'A thoughtful response.' },
     { role: 'user', content: 'Try a different angle.' },
   ]);
-  await child.getByRole('button', { name: '3 inherited messages' }).click();
-  await expect(page.getByRole('dialog', { name: 'What the AI sees' })).toBeVisible();
-  await expect(page.locator('.context-list>div')).toHaveCount(5);
-  await page.keyboard.press('Escape');
+  await expect(page.getByRole('button', { name: 'Inspect AI context' })).toHaveCount(0);
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem('branchboard.workspace.v1')))
     .toContain('Try a different angle.');
@@ -343,8 +341,8 @@ test('remains usable at a compact viewport', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Add conversation' })).toBeVisible();
   await command(page, 'Settings');
-  await expect(page.getByRole('dialog')).toBeVisible();
-  const box = await page.getByRole('dialog').boundingBox();
+  await expect(page.getByRole('region', { name: 'Settings', exact: true })).toBeVisible();
+  const box = await page.getByRole('region', { name: 'Settings', exact: true }).boundingBox();
   expect(box!.x).toBeGreaterThan(0);
   expect(box!.x + box!.width).toBeLessThanOrEqual(800);
 });

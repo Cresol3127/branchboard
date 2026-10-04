@@ -83,7 +83,7 @@ test('lists only connected providers, remembers selections and retains independe
     selector.getByRole('option', { name: 'claude-sonnet-4-5', exact: true }),
   ).toHaveCount(0);
   await selector.getByRole('button', { name: 'Manage providers', exact: true }).click();
-  const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+  const settings = page.getByRole('region', { name: 'Models', exact: true });
   await expect(settings).toBeVisible();
   await settings.getByLabel('Provider', { exact: true }).selectOption('anthropic');
   await expect(settings.getByRole('button', { name: 'Remove API key' })).toHaveCount(0);
@@ -140,8 +140,8 @@ test('supports Ollama connection testing, custom settings, key removal and node 
     testedURL = route.request().postDataJSON().baseURL;
     await route.fulfill({ json: { connected: true, models: ['llama-local'] } });
   });
-  await page.getByRole('button', { name: 'AI provider settings', exact: true }).click();
-  const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+  await page.getByRole('button', { name: 'Models', exact: true }).click();
+  const settings = page.getByRole('region', { name: 'Models', exact: true });
   await settings.getByLabel('Provider', { exact: true }).selectOption('ollama');
   await settings.getByText('Models & advanced options', { exact: true }).click();
   await expect(settings.getByLabel('API key', { exact: true })).toHaveCount(0);
@@ -173,11 +173,13 @@ test('supports Ollama connection testing, custom settings, key removal and node 
   await page.getByRole('textbox', { name: 'Message', exact: true }).fill('fail');
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
   await expect(chat.getByRole('alert')).toContainText('Provider quota exceeded');
-  await expect(chat.getByRole('img', { name: 'Generation failed', exact: true })).toBeVisible();
   await expect(chat.locator('.message.assistant')).toContainText('Partial response');
+  await chat.getByRole('button', { name: 'Collapse node', exact: true }).click();
+  await expect(chat.getByRole('img', { name: 'Generation failed', exact: true })).toBeVisible();
+  await chat.getByRole('button', { name: 'Expand node', exact: true }).click();
   expect(calls).toHaveLength(1);
   expect(calls[0]).toMatchObject({ provider: 'custom', model: 'custom-model' });
-  await page.getByRole('button', { name: 'AI provider settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Models', exact: true }).click();
   await settings.getByLabel('Provider', { exact: true }).selectOption('custom');
   await settings.getByRole('button', { name: 'Remove API key', exact: true }).click();
   await expect(settings.getByRole('status')).toContainText('API key removed');
@@ -346,7 +348,7 @@ test('updates public catalogs before keys, shows no unconfigured choices, and re
   expect(publicCalls).toBe(1);
   expect(keyCalls).toBe(0);
   await selector.getByRole('button', { name: 'Manage providers', exact: true }).click();
-  const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+  const settings = page.getByRole('region', { name: 'Models', exact: true });
   await expect(settings).toBeVisible();
   await expect(settings.getByLabel('API key', { exact: true })).toHaveValue('');
   await settings.getByText('Models & advanced options', { exact: true }).click();
@@ -392,8 +394,8 @@ test('allows keyboard custom IDs on mobile and keeps provider lists usable when 
   await page.route('**/api/providers/openai/models', (route) =>
     route.fulfill({ status: 404, json: { error: 'Listing models is not supported' } }),
   );
-  await page.getByRole('button', { name: 'AI provider settings', exact: true }).click();
-  const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
+  await page.getByRole('button', { name: 'Models', exact: true }).click();
+  const settings = page.getByRole('region', { name: 'Models', exact: true });
   await settings.getByText('Models & advanced options', { exact: true }).click();
   await settings.getByRole('button', { name: 'Fetch from saved API key', exact: true }).click();
   await expect(settings.getByRole('alert')).toContainText('Listing models is not supported');
@@ -427,14 +429,14 @@ test('allows keyboard custom IDs on mobile and keeps provider lists usable when 
   await page.keyboard.press('Escape');
   await expect(page.locator('.react-flow__node-chat .model-selector')).toBeFocused();
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole('button', { name: 'AI provider settings', exact: true }).click();
+  await page.getByRole('button', { name: 'Models', exact: true }).click();
   await settings.getByLabel('Provider', { exact: true }).selectOption('ollama');
   await settings.getByText('Models & advanced options', { exact: true }).click();
   await settings.locator('.model-discovery-status').scrollIntoViewIfNeeded();
   const dialogBounds = await settings.boundingBox();
   const headingBounds = await settings
-    .getByRole('heading', { name: 'Settings', exact: true })
+    .getByRole('heading', { name: 'Models', exact: true })
     .boundingBox();
   expect(headingBounds!.y).toBeGreaterThanOrEqual(dialogBounds!.y + 8);
-  await expect(settings.getByRole('button', { name: 'Close dialog', exact: true })).toBeVisible();
+  await expect(settings.getByRole('button', { name: 'Back to canvas', exact: true })).toBeVisible();
 });

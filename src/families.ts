@@ -68,9 +68,7 @@ export function assignFamilies(nodes: BoardNode[], edges: Edge[]): BoardNode[] {
     if (node.type !== 'chat') return node;
     const familyId = familyOf(node.id) || node.id;
     const familyColor = familyColorFor(familyId);
-    const color = isFamilyColor(node.data.colorOverride)
-      ? node.data.colorOverride
-      : familyColor;
+    const color = isFamilyColor(node.data.colorOverride) ? node.data.colorOverride : familyColor;
     if (
       node.data.familyId === familyId &&
       node.data.familyColor === familyColor &&
@@ -85,7 +83,9 @@ export function assignFamilies(nodes: BoardNode[], edges: Edge[]): BoardNode[] {
 }
 
 export function familyName(node: BoardNode) {
-  return familyLabel(node.data.familyColor || (node.data.familyId ? familyColorFor(node.data.familyId) : undefined));
+  return familyLabel(
+    node.data.familyColor || (node.data.familyId ? familyColorFor(node.data.familyId) : undefined),
+  );
 }
 
 /** Ancestor family names provide a non-color cue in the node context inspector. */

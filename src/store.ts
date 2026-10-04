@@ -58,6 +58,7 @@ const blankBoard = (name = 'Untitled canvas'): Board => ({
   nodes: [],
   edges: [],
   updatedAt: Date.now(),
+  createdAt: Date.now(),
 });
 const makeNode = (type: BoardNode['type'], position: XYPosition): BoardNode => ({
   id: uid(),
@@ -276,6 +277,7 @@ export function validateBoard(input: unknown): Board {
     edges,
     viewport,
     updatedAt: Number(b.updatedAt) || Date.now(),
+    ...(finite(b.createdAt) && b.createdAt >= 0 ? { createdAt: b.createdAt } : {}),
     ...(b.annotations !== undefined ? { annotations: validateAnnotations(b.annotations) } : {}),
   };
 }
@@ -355,6 +357,7 @@ type State = {
   refreshModels: (id?: ProviderId, signal?: AbortSignal) => Promise<void>;
   settingsOpen: boolean;
   settingsProvider: ProviderId;
+  settingsSection: 'models' | 'workspace';
   streaming: Record<string, boolean>;
   composerDrafts: Record<string, string>;
   composerModels: Record<string, { provider: ProviderId; model: string }>;
@@ -381,7 +384,7 @@ type State = {
   newBoard: () => void;
   switchBoard: (id: string) => void;
   renameBoard: (name: string) => void;
-  deleteBoard: () => void;
+  deleteBoard: (id?: string) => void;
   nodesChange: (changes: NodeChange<BoardNode>[]) => void;
   settleNodes: (ids: string[]) => void;
   sizeToContent: (id: string, height: number) => void;
@@ -396,7 +399,7 @@ type State = {
   nodeClipboard: Board | null;
   copySelection: () => void;
   pasteSelection: (position?: XYPosition) => void;
-  removeSelected: () => void;
+  removeSelected: (selection?: { nodes: string[]; edges: string[] }) => void;
   group: () => void;
   ungroup: (id: string) => void;
   branch: (id: string) => string;
@@ -430,13 +433,14 @@ const remapContext = (data: NodeData, remap: Map<string, string>): NodeData => (
     ? { contextExclude: data.contextExclude.map((id) => remap.get(id) || id) }
     : {}),
 });
-function copyBoard(board: Board): Board {
+function copyBoard(board: Board, preserveCreation = false): Board {
   const b = structuredClone(board);
   const map = new Map(b.nodes.map((n) => [n.id, uid()]));
   const layers = new Map(b.annotations?.layers.map((l) => [l.id, uid()]));
   return {
     ...b,
     id: uid(),
+    ...(preserveCreation ? {} : { createdAt: Date.now() }),
     updatedAt: Date.now(),
     ...(b.annotations
       ? {
@@ -731,7 +735,7 @@ export const useStore = create<State>((set, get) => {
           ? target.node.data.model || state.model
           : selection?.model || state.model;
       if (!state.providers.find((p) => p.id === provider)?.configured) {
-        set({ settingsOpen: true, settingsProvider: provider });
+        set({ settingsOpen: true, settingsSection: 'models', settingsProvider: provider });
         return null;
       }
       if (target.kind === 'chat' && target.node.data.contextTokenLimit) {
@@ -1029,6 +1033,7 @@ export const useStore = create<State>((set, get) => {
     },
     settingsOpen: false,
     settingsProvider: 'openai',
+    settingsSection: 'models',
     streaming: {},
     toast: '',
     historyTarget: null,
@@ -1061,18 +1066,26 @@ export const useStore = create<State>((set, get) => {
         set({ currentId: id, past: [], future: [], historyTarget: null });
     },
     renameBoard: (name) => mutate((b) => ({ ...b, name })),
-    deleteBoard: () => {
-      const id = get().currentId;
-      currentBoard(get()).nodes.forEach((n) => controllers.get(n.id)?.abort());
+    deleteBoard: (id = get().currentId) => {
+      const target = get().boards.find((b) => b.id === id);
+      if (!target) return;
+      target.nodes.forEach((n) => controllers.get(n.id)?.abort());
       const boards = get().boards.filter((b) => b.id !== id);
       if (!boards.length) boards.push(blankBoard());
       const o = get().organization;
       set({
         boards,
-        currentId: boards[0].id,
-        past: [],
-        future: [],
-        historyTarget: null,
+        ...(get().currentId === id
+          ? { currentId: boards[0].id, past: [], future: [], historyTarget: null }
+          : {}),
+        composerDrafts: Object.fromEntries(
+          Object.entries(get().composerDrafts).filter(
+            ([key]) => !key.startsWith(`${JSON.stringify([id]).slice(0, -1)},`),
+          ),
+        ),
+        composerModels: Object.fromEntries(
+          Object.entries(get().composerModels).filter(([key]) => key !== id),
+        ),
         organization: {
           ...o,
           favoriteBoardIds: o.favoriteBoardIds.filter((favorite) => favorite !== id),
@@ -1306,10 +1319,14 @@ export const useStore = create<State>((set, get) => {
         ],
       }));
     },
-    removeSelected: () => {
+    removeSelected: (selection) => {
       const b = currentBoard(get()),
-        ids = descendants(b.nodes, new Set(b.nodes.filter((n) => n.selected).map((n) => n.id)));
-      if (!ids.size && !b.edges.some((e) => e.selected)) return;
+        ids = descendants(
+          b.nodes,
+          new Set(selection?.nodes || b.nodes.filter((n) => n.selected).map((n) => n.id)),
+        ),
+        edgeIds = new Set(selection?.edges || b.edges.filter((e) => e.selected).map((e) => e.id));
+      if (!ids.size && !edgeIds.size) return;
       checkpoint();
       ids.forEach((id) => controllers.get(id)?.abort());
       mutate((b) => ({
@@ -1328,7 +1345,9 @@ export const useStore = create<State>((set, get) => {
                 : {}),
             },
           })),
-        edges: b.edges.filter((e) => !e.selected && !ids.has(e.source) && !ids.has(e.target)),
+        edges: b.edges.filter(
+          (e) => !edgeIds.has(e.id) && !ids.has(e.source) && !ids.has(e.target),
+        ),
       }));
     },
     group: () => {
@@ -1439,7 +1458,7 @@ export const useStore = create<State>((set, get) => {
     },
     importWorkspace: (input) => {
       const backup = validateWorkspaceBackup(input);
-      const boards = backup.boards.map(copyBoard);
+      const boards = backup.boards.map((board) => copyBoard(board));
       const source = backup.organization;
       const folderIds = new Map(source.folders.map((f) => [f.id, uid()]));
       const boardIds = new Map(backup.boards.map((b, i) => [b.id, boards[i].id]));
@@ -1468,14 +1487,14 @@ export const useStore = create<State>((set, get) => {
         ],
         templates: [
           ...existing.templates,
-          ...source.templates.map((t) => ({ ...t, id: uid(), board: copyBoard(t.board) })),
+          ...source.templates.map((t) => ({ ...t, id: uid(), board: copyBoard(t.board, true) })),
         ],
       };
       validateOrganization(organization, [...get().boards, ...boards], validateBoard);
       const snapshots = backup.snapshots.map((snapshot) => ({
         ...snapshot,
         id: uid(),
-        board: copyBoard(snapshot.board),
+        board: copyBoard(snapshot.board, true),
       }));
       if (snapshots.length) writeSnapshots([...get().snapshots, ...snapshots]);
       protectSavedData = false;
@@ -1526,7 +1545,7 @@ export const useStore = create<State>((set, get) => {
       const provider = node.data.provider || 'openai';
       const model = node.data.model || get().model;
       if (!get().providers.find((p) => p.id === provider)?.configured) {
-        set({ settingsOpen: true, settingsProvider: provider });
+        set({ settingsOpen: true, settingsSection: 'models', settingsProvider: provider });
         return;
       }
       let messages = [...node.data.messages];

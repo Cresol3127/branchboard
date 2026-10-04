@@ -42,11 +42,9 @@ export function retentionPlan(versions: BoardVersion[], now = Date.now()) {
   for (const version of sorted)
     byBoard.set(version.boardId, [...(byBoard.get(version.boardId) || []), version]);
   for (const list of byBoard.values())
-    list
-      .slice(0, Math.max(0, list.length - VERSION_LIMITS.perBoard))
-      .forEach((version) => {
-        if (version.id !== newest.get(version.boardId)) remove.add(version.id);
-      });
+    list.slice(0, Math.max(0, list.length - VERSION_LIMITS.perBoard)).forEach((version) => {
+      if (version.id !== newest.get(version.boardId)) remove.add(version.id);
+    });
 
   for (const version of sorted) {
     if (version.id === newest.get(version.boardId)) continue;
@@ -96,7 +94,11 @@ export async function saveVersion(
   const now = options.now ?? Date.now();
   const database = await openLocalDatabase();
   const existing = await requestResult<BoardVersion[]>(
-    database.transaction('versions', 'readonly').objectStore('versions').index('boardId').getAll(board.id),
+    database
+      .transaction('versions', 'readonly')
+      .objectStore('versions')
+      .index('boardId')
+      .getAll(board.id),
   );
   const latest = existing.sort((a, b) => b.createdAt - a.createdAt)[0];
   const coalesce =
@@ -139,6 +141,8 @@ export async function recoveryCandidates(
   const current = new Map(boards.map((board) => [board.id, board.updatedAt]));
   return latestByBoard(versions).filter((version) => {
     const updated = current.get(version.boardId);
-    return updated === undefined || version.board.updatedAt > updated || version.createdAt > updated;
+    return (
+      updated === undefined || version.board.updatedAt > updated || version.createdAt > updated
+    );
   });
 }

@@ -41,10 +41,10 @@ async function setup(page: Page) {
 async function open(page: Page, name: string) {
   await page.locator('.canvas-area').click({ position: { x: 10, y: 10 } });
   await command(page, name);
-  return page.getByRole('dialog', { name, exact: true });
+  return page.getByRole('region', { name, exact: true });
 }
 async function createFolder(page: Page, name: string, parent?: string) {
-  const dialog = page.getByRole('dialog', { name: 'Projects & folders' });
+  const dialog = page.getByRole('region', { name: 'Projects & folders' });
   await dialog.getByLabel('Project or folder name', { exact: true }).fill(name);
   if (parent)
     await dialog
@@ -135,7 +135,7 @@ test('favorites filter and command actions survive reload and work on the mobile
   const templates = await open(page, 'Canvas templates');
   await expect(templates.getByLabel('Template name', { exact: true })).toBeFocused();
   await page.keyboard.press('Shift+Tab');
-  await expect(templates.getByRole('button', { name: 'Close dialog' })).toBeFocused();
+  await expect(templates.getByRole('button', { name: 'Back to canvas' })).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(templates).not.toBeVisible();
   await expect

@@ -1,10 +1,10 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import type { XYPosition } from '@xyflow/react';
-import { ArrowUp, GitBranch, MessageCircle, Square } from 'lucide-react';
+import { ArrowUp, MessageCircle, Square } from 'lucide-react';
 import { composerTarget, draftKey } from '../composer';
-import { contextFor, contextNodesFor, estimateTokens } from '../graph';
+import { contextFor, estimateTokens } from '../graph';
 import { currentBoard, useStore } from '../store';
-import { ContextInspector } from './ContextInspector';
+import { nodeLabel } from '../nodeLabel';
 import { ModelSelector } from './ModelSelector';
 import { IconButton } from './ui';
 
@@ -26,14 +26,11 @@ export function MessageBar({
   const selection =
     node?.data || state.composerModels[board.id] || state.modelPreferences.recent[0];
   const provider = state.providers.find((p) => p.id === (selection?.provider || 'openai'));
-  const messages = node ? contextFor(node.id, board.nodes, board.edges) : [];
-  const inherited = node ? contextNodesFor(node.id, board.nodes, board.edges, false).length : 0;
+  const limit = node?.data.contextTokenLimit;
+  const messages = node && limit ? contextFor(node.id, board.nodes, board.edges) : [];
   if (draft.trim()) messages.push({ id: 'draft', role: 'user', content: draft.trim() });
   const tokens = estimateTokens(messages);
-  const limit = node?.data.contextTokenLimit;
   const overBudget = Boolean(limit && tokens > limit);
-  const [contextId, setContextId] = useState<string | null>(null);
-  const contextNode = board.nodes.find((n) => n.id === contextId);
   const input = useRef<HTMLTextAreaElement>(null);
   const bar = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
@@ -104,22 +101,11 @@ export function MessageBar({
               .filter((n) => n.type === 'chat')
               .map((n) => (
                 <option key={n.id} value={n.id}>
-                  {n.data.title || 'Untitled conversation'}
+                  {nodeLabel(n)}
                   {state.streaming[n.id] ? ' · generating' : ''}
                 </option>
               ))}
           </select>
-          {node && (
-            <button
-              className={`composer-context ${overBudget ? 'over-budget' : ''}`}
-              aria-label="Review message context"
-              title={`${inherited} connected context nodes · ~${tokens.toLocaleString()}${limit ? ` / ${limit.toLocaleString()}` : ''} tokens`}
-              onClick={() => setContextId(node.id)}
-            >
-              <GitBranch size={12} />
-              <span>{inherited} connected</span>
-            </button>
-          )}
           {!ambiguous && (
             <ModelSelector
               key={`${board.id}:${node?.id || 'new'}`}
@@ -194,7 +180,7 @@ export function MessageBar({
           {ambiguous
             ? 'Multiple nodes selected — choose one destination. No broadcast.'
             : overBudget
-              ? 'Over budget — adjust context before sending.'
+              ? 'An old input limit blocks this message. Your draft is kept.'
               : streaming
                 ? 'Generating… Draft your next message or stop.'
                 : !provider?.configured
@@ -203,16 +189,18 @@ export function MessageBar({
                     ? 'Creates a separate chat · no inherited context'
                     : 'Enter to send · Shift+Enter for a new line'}
         </span>
+        {node && overBudget && (
+          <button
+            className="text-button"
+            onClick={() =>
+              state.updateNode(node.id, { contextTokenLimit: undefined, error: undefined }, true)
+            }
+          >
+            Remove old input limit
+          </button>
+        )}
         {node?.data.error && <p className="composer-error error">{node.data.error}</p>}
       </div>
-      {contextNode && (
-        <ContextInspector
-          key={contextNode.id}
-          node={contextNode}
-          draft={state.composerDrafts[draftKey(board.id, contextNode.id)] || ''}
-          onClose={() => setContextId(null)}
-        />
-      )}
     </section>
   );
 }

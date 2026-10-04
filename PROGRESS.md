@@ -1,5 +1,40 @@
 # Progress
 
+## Docked workspace — 1.8.0 (2026-10-24)
+
+- One docked nonmodal panel replaces floating workspace windows. Desktop retains an
+  interactive canvas; narrow layouts provide Back to canvas. Navigation guards retain
+  unsaved keys, drafts, pinned editor sources, zoom/position and return focus.
+- Titleless cards retain legacy title metadata while navigation derives useful labels.
+  Quiet bottom actions, a right-mounted expandable creation toolbar and reduced header/
+  canvas clutter preserve real save/storage warnings, ports, menus and text selection.
+- Explicit model tests reuse production adapters with output/time/concurrency bounds,
+  cancellation and server-held credentials. They send only the chosen model ID and a
+  fixed small prompt, never workspace content. Empty/interrupted output cannot pass.
+- Original-order canvas numbers and integrated ID-pinned confirmations; deleting an
+  inactive canvas preserves active drafts, viewport, history and streams. Ctrl/Command
+  selection is rectangle-only, Shift-click toggles, Space/middle-drag pans. Existing
+  groups can be read/ungrouped, context still inherits, and old limits can be reset.
+- Screenshot review exposed toolbar/annotation and Favorite/delete collisions, a
+  stale annotation-draft race and clipped exported Markdown tables. These were fixed;
+  export cells now recompute natural widths and retain all rows. Mobile layer names
+  occupy a full line. The export regression samples actual generated image pixels.
+- External checkpoint: `../branchboard-backups/20261024T042350Z-before-sidebar-redesign/`
+  with 1,644 matching files. All **61 original tagged-release checksum entries** still
+  match; protected data, original payloads/tags and real provider settings are unchanged.
+- Seven separately derived cleanup editions retain archive hashes and source commits.
+  Their build/unit counts are **64, 72, 78, 119, 137, 141 and 163**, respectively;
+  each passed **three dedicated production Chromium tests** and HTTP checks. All
+  **28 historical preview captures** were inspected. No historical full-suite pass
+  is claimed, and the docked redesign was not backported.
+- Final current production frontend/server build, **181 unit/HTTP tests in 20 files**
+  and **95 full-suite Chromium tests** passed. All **104 desktop/mobile screenshots**
+  and the generated PNG were inspected after fixes (PDF shares the same raster).
+  Exact archive-specific extracted-install evidence is recorded alongside each
+  download in `verification.json`; packaging is finalized only after that gate passes.
+- No paid AI request, workspace migration, public hosting or license selection.
+  Attachments, usage accounting, RAG/workflows and collaboration remain outside scope.
+
 ## Design improvements — 1.7.0 (2026-10-23)
 
 - Minimal configured-provider model picker with five persistent recent choices,

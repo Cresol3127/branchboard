@@ -1,31 +1,36 @@
 import { useState } from 'react';
-import { currentBoard, useStore } from '../store';
+import { useStore } from '../store';
 import { Modal } from './ui';
 
 export function MessageHistory({
+  boardId,
   nodeId,
   messageId,
   mode,
   onClose,
 }: {
+  boardId: string;
   nodeId: string;
   messageId: string;
   mode: 'edit' | 'delete';
   onClose: () => void;
 }) {
   const state = useStore();
-  const message = currentBoard(state)
-    .nodes.find((n) => n.id === nodeId)
+  const message = state.boards
+    .find((b) => b.id === boardId)
+    ?.nodes.find((n) => n.id === nodeId)
     ?.data.messages.find((m) => m.id === messageId);
   const [content, setContent] = useState(message?.content || '');
   const [error, setError] = useState('');
   const busy = Object.values(state.streaming).some(Boolean);
   const editing = mode === 'edit';
+  const targetActive = state.currentId === boardId;
   return (
     <Modal
       title={editing ? 'Edit message' : 'Delete message'}
       onClose={onClose}
       className="message-history"
+      kind="message"
     >
       <p className="muted">
         {editing
@@ -35,8 +40,10 @@ export function MessageHistory({
         can undo this change.
       </p>
       <form
+        data-dirty={editing && content !== message?.content}
         onSubmit={(e) => {
           e.preventDefault();
+          if (!targetActive || !message) return;
           const success = editing
             ? state.editMessage(nodeId, messageId, content)
             : state.deleteMessage(nodeId, messageId);
@@ -63,6 +70,14 @@ export function MessageHistory({
           </blockquote>
         )}
         {busy && <p role="alert">Stop active generations before changing saved history.</p>}
+        {!targetActive && (
+          <p role="status">
+            This edit belongs to another canvas.{' '}
+            <button type="button" onClick={() => state.switchBoard(boardId)}>
+              Return to original canvas
+            </button>
+          </p>
+        )}
         {!message && <p role="alert">This message no longer exists.</p>}
         {error && (
           <p className="error" role="alert">
@@ -76,7 +91,7 @@ export function MessageHistory({
           <button
             className={editing ? 'primary' : 'danger'}
             type="submit"
-            disabled={busy || !message || (editing && !content.trim())}
+            disabled={busy || !targetActive || !message || (editing && !content.trim())}
           >
             {editing ? 'Save changes' : 'Delete message'}
           </button>

@@ -67,7 +67,7 @@ test('Markdown notes render safely and checklists toggle exact source items with
   await expect(
     note.getByRole('checkbox', { name: 'Task: Nested task', exact: true }),
   ).toBeChecked();
-  await note.locator('.node-type-dot').click();
+  await note.locator('.node-bottom-actions').click({ position: { x: 5, y: 12 } });
   const editor = note.getByRole('textbox', { name: 'Note content' });
   await editor.fill(
     '<script>window.bad = true</script>\n\n[unsafe](javascript:alert(1))\n\n- [ ] Safe task',
@@ -83,7 +83,7 @@ test('formatting toolbar changes saved Markdown and toggles a working rendered p
 }) => {
   await workspace(page, 'Choose an approach');
   const note = page.locator('[data-id="a"]');
-  await note.locator('.node-type-dot').click();
+  await note.locator('.node-bottom-actions').click({ position: { x: 5, y: 12 } });
   const editor = note.getByRole('textbox', { name: 'Note content' });
   await editor.focus();
   await editor.evaluate((input: HTMLTextAreaElement) => input.setSelectionRange(0, 6));
@@ -109,7 +109,7 @@ test('automatic content sizing grows, caps, shrinks, persists and yields to manu
 }) => {
   await workspace(page, Array.from({ length: 18 }, (_, i) => `Line ${i + 1}`).join('\n\n'));
   const note = page.locator('[data-id="a"]');
-  await note.locator('.node-type-dot').click();
+  await note.locator('.node-bottom-actions').click({ position: { x: 5, y: 12 } });
   await note.getByRole('button', { name: 'Node actions', exact: true }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Automatic content sizing' }).click();
   await expect
@@ -132,7 +132,7 @@ test('automatic content sizing grows, caps, shrinks, persists and yields to manu
     .poll(() => page.evaluate(() => localStorage.getItem('branchboard.workspace.v1')))
     .toContain('"autoSize":true');
   await page.reload();
-  await note.locator('.node-type-dot').click();
+  await note.locator('.node-bottom-actions').click({ position: { x: 5, y: 12 } });
   const handle = (await note
     .locator('.react-flow__resize-control.handle.bottom.right')
     .boundingBox())!;
@@ -195,7 +195,7 @@ test('automatic conversation sizing follows saved message edits and respects col
     .locator('[data-message-id="long"]')
     .getByRole('button', { name: 'Edit message', exact: true })
     .click();
-  const dialog = page.getByRole('dialog', { name: 'Edit message', exact: true });
+  const dialog = page.getByRole('region', { name: 'Edit message', exact: true });
   await dialog.getByRole('textbox').fill('A short saved message.');
   await dialog.getByRole('button', { name: 'Save changes' }).click();
   await expect
@@ -218,7 +218,7 @@ test('drag and resize settle collisions without moving neighbors and undo the wh
   const a = page.locator('[data-id="a"]'),
     b = page.locator('[data-id="b"]');
   const beforeB = (await b.boundingBox())!;
-  const heading = (await a.locator('.node-type-dot').boundingBox())!;
+  const heading = (await a.locator('.node-bottom-actions').boundingBox())!;
   await page.keyboard.down('Shift');
   await page.mouse.move(heading.x + 5, heading.y + 5);
   await page.mouse.down();
@@ -232,7 +232,7 @@ test('drag and resize settle collisions without moving neighbors and undo the wh
   expect(neighbor.x).toBeCloseTo(beforeB.x, 0);
   await command(page, 'Undo');
   await expect(a).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 60, 100)');
-  await a.locator('.node-type-dot').click();
+  await a.locator('.node-bottom-actions').click({ position: { x: 5, y: 12 } });
   const handle = (await a
     .locator('.react-flow__resize-control.handle.bottom.right')
     .boundingBox())!;

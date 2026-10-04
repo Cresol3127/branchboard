@@ -65,7 +65,7 @@ try {
   await command('Auto-arrange nodes');
   await capture('03-connected.png');
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'Settings', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Settings', exact: true })).toBeVisible();
   await capture('04-settings.png');
   await page.keyboard.press('Escape');
   await nodes
@@ -75,13 +75,16 @@ try {
   await expect(page.getByRole('dialog', { name: 'Model selector' })).toBeVisible();
   await capture('05-model-selector.png');
   await page.keyboard.press('Escape');
-  await nodes.first().locator('.node-heading').click({ button: 'right' });
+  await nodes
+    .first()
+    .locator('.board-node')
+    .click({ button: 'right', position: { x: 12, y: 12 } });
   await expect(page.getByRole('menu', { name: 'Node actions' })).toBeVisible();
   await capture('06-context-menu.png');
   await page.keyboard.press('Escape');
   await command('Fit canvas');
   await page.keyboard.press('ControlOrMeta+k');
-  await expect(page.getByRole('dialog', { name: 'Command palette' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Command palette' })).toBeVisible();
   await capture('07-command-palette.png');
   await page.keyboard.press('Escape');
   await command('Theme: dark');
@@ -133,7 +136,6 @@ try {
   });
   await command('New canvas');
   await command('New note');
-  await page.getByRole('textbox', { name: 'Node title', exact: true }).fill('Project constraints');
   await page
     .getByRole('textbox', { name: 'Note content', exact: true })
     .fill(
@@ -141,37 +143,28 @@ try {
     );
   await command('New conversation');
   const conversation = page.locator('.react-flow__node-chat');
-  await conversation
-    .getByRole('textbox', { name: 'Node title', exact: true })
-    .fill('Implementation plan');
   await page
     .getByRole('textbox', { name: 'Message', exact: true })
     .fill('How should we structure the next feature?');
-  await conversation.getByRole('button', { name: 'Inspect AI context', exact: true }).click();
-  const inspector = page.getByRole('dialog', { name: 'What the AI sees' });
-  await inspector
-    .getByLabel('Context for Project constraints', { exact: true })
-    .selectOption('include');
-  await inspector.getByLabel('Estimated input budget (tokens, optional)').fill('1000');
-  await inspector.getByRole('button', { name: 'Save budget' }).click();
-  await expect(inspector.locator('.context-list')).toContainText('Use TypeScript');
-  await capture('16-context-sources.png');
-  await inspector.getByLabel('Estimated input budget (tokens, optional)').fill('1');
-  await inspector.getByRole('button', { name: 'Save budget' }).click();
-  await expect(inspector.getByRole('alert')).toContainText('Over budget');
-  await capture('17-context-budget.png');
+  await expect(conversation.locator('.node-title')).toHaveCount(0);
+  await capture('16-titleless-conversation.png');
+  await page.getByRole('button', { name: 'Models', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Models', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Test model', exact: true })).toBeVisible();
+  // Never run a paid model test from the screenshot script.
+  await capture('17-models-and-explicit-test.png');
   await page.keyboard.press('Escape');
   await command('Theme: dark');
-  await conversation.getByRole('button', { name: 'Inspect AI context', exact: true }).click();
-  await capture('18-dark-context.png');
+  await page.getByRole('button', { name: 'Models', exact: true }).click();
+  await capture('18-dark-models-panel.png');
   await page.keyboard.press('Escape');
   await command('Theme: light');
   await page.setViewportSize({ width: 390, height: 844 });
-  await conversation.getByRole('button', { name: 'Inspect AI context', exact: true }).click();
-  await capture('19-mobile-context.png');
+  await page.getByRole('button', { name: 'Models', exact: true }).click();
+  await capture('19-mobile-models-panel.png');
   await page.keyboard.press('Escape');
   await command('Fit canvas');
-  await capture('20-mobile-token-counts.png');
+  await capture('20-mobile-quiet-canvas.png');
 
   // Import our own saved user text through the real backup UI. No synthetic AI replies.
   await page.setViewportSize({ width: 1440, height: 960 });
@@ -214,7 +207,7 @@ try {
   await expect(saved).toBeVisible();
   await capture('21-history-controls.png');
   await saved.getByRole('button', { name: 'Edit message', exact: true }).click();
-  const editor = page.getByRole('dialog', { name: 'Edit message', exact: true });
+  const editor = page.getByRole('region', { name: 'Edit message', exact: true });
   await editor.getByRole('textbox').fill('Review the history tools, then record the next steps.');
   await capture('22-edit-message.png');
   await editor.getByRole('button', { name: 'Save changes' }).click();
@@ -223,7 +216,7 @@ try {
   await capture('23-delete-message.png');
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
   await command('Search saved content');
-  const historySearch = page.getByRole('dialog', { name: 'Search saved content', exact: true });
+  const historySearch = page.getByRole('region', { name: 'Search saved content', exact: true });
   await historySearch.getByRole('searchbox').fill('history tools');
   await expect(historySearch.locator('.history-search-results button')).toHaveCount(1);
   await capture('24-history-search.png');
@@ -256,14 +249,13 @@ try {
   await page
     .locator('.react-flow__node-chat')
     .last()
-    .getByRole('button', { name: 'Inspect AI context' })
-    .click();
-  await expect(inspector.locator('.context-list')).toContainText('next steps');
-  await inspector.locator('.context-list').scrollIntoViewIfNeeded();
-  await capture('31-historical-context.png');
+    .locator('.node-bottom-actions')
+    .click({ position: { x: 5, y: 12 } });
+  await page.getByRole('button', { name: /^Message model:/ }).click();
+  await capture('31-historical-branch-model-picker.png');
   await page.keyboard.press('Escape');
   await command('Backups & snapshots');
-  const backups = page.getByRole('dialog', { name: 'Backups & snapshots', exact: true });
+  const backups = page.getByRole('region', { name: 'Backups & snapshots', exact: true });
   await backups.getByLabel(/Snapshot name for/).fill('Before the next revision');
   await backups.getByRole('button', { name: 'Save snapshot' }).click();
   await expect(backups.locator('.snapshot-item')).toHaveCount(1);
@@ -348,11 +340,11 @@ try {
     ),
   });
   const richNote = page.locator('.react-flow__node-note').first();
-  await richNote.locator('.node-type-dot').click();
+  await richNote.locator('.node-bottom-actions').click({ position: { x: 5, y: 12 } });
   await richNote.getByRole('button', { name: 'Node actions', exact: true }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Automatic content sizing' }).click();
   await command('Fit canvas');
-  await richNote.locator('.node-type-dot').click();
+  await richNote.locator('.node-bottom-actions').click({ position: { x: 5, y: 12 } });
   await capture('38-auto-sized-markdown-editor.png');
   await richNote.getByRole('button', { name: 'Preview', exact: true }).click();
   await richNote
@@ -371,12 +363,12 @@ try {
   await page.getByRole('button', { name: 'Expand sidebar', exact: true }).click();
   await command('Fit canvas');
   const neighbor = page.locator('.react-flow__node-note').last();
-  await neighbor.locator('.node-type-dot').click();
+  await neighbor.locator('.node-bottom-actions').click({ position: { x: 5, y: 12 } });
   const beforeDrag = await neighbor.evaluate((el) => getComputedStyle(el).transform);
-  const heading = await neighbor.locator('.node-type-dot').boundingBox();
+  const heading = await neighbor.locator('.node-bottom-actions').boundingBox();
   const plan = await richNote.boundingBox();
   await page.keyboard.down('Shift');
-  await page.mouse.move(heading.x + 5, heading.y + 5);
+  await page.mouse.move(heading.x + 5, heading.y + 12);
   await page.mouse.down();
   await page.mouse.move(plan.x + plan.width - 50, plan.y + 25, { steps: 20 });
   await page.mouse.up();
@@ -390,6 +382,8 @@ try {
   await command('New canvas');
   await expect(page.locator('.react-flow__node')).toHaveCount(0);
   await page.getByRole('textbox', { name: 'Canvas name', exact: true }).fill('Visual planning');
+  if (await page.getByRole('button', { name: 'Expand creation tools' }).count())
+    await page.getByRole('button', { name: 'Expand creation tools' }).click();
   await page.getByRole('button', { name: 'Drawing & annotations', exact: true }).click();
   async function drawAnnotation(tool, points) {
     await page.getByRole('button', { name: tool, exact: true }).click();
@@ -409,8 +403,8 @@ try {
   ]);
   await capture('44-freehand.png');
   await drawAnnotation('Rectangle', [
-    [120, 180],
-    [330, 310],
+    [120, 230],
+    [330, 360],
   ]);
   await drawAnnotation('Ellipse', [
     [520, 180],
@@ -429,7 +423,7 @@ try {
   await page.getByRole('button', { name: 'Select annotations', exact: true }).click();
   await capture('45-shapes-highlighting.png');
   await page.getByRole('button', { name: 'Annotation layers', exact: true }).click();
-  const annotationLayers = page.getByRole('dialog', { name: 'Annotation layers', exact: true });
+  const annotationLayers = page.getByRole('region', { name: 'Annotation layers', exact: true });
   await annotationLayers.getByLabel('Layer name 1').fill('Planning marks');
   await annotationLayers.getByLabel('Layer name 1').press('Enter');
   await annotationLayers.getByRole('button', { name: 'Add annotation layer' }).click();
@@ -515,7 +509,6 @@ try {
     'Research notes',
   );
   await page.getByRole('button', { name: 'Add note', exact: true }).click();
-  await page.getByRole('textbox', { name: 'Node title', exact: true }).fill('Release plan');
   await page
     .getByRole('textbox', { name: 'Note content', exact: true })
     .fill(
@@ -530,14 +523,16 @@ try {
     .poll(() =>
       page.locator('.react-flow__node-note').evaluate((n) => n.getBoundingClientRect().height),
     )
-    .toBeGreaterThan(500);
+    .toBeGreaterThan(450);
   const fitRichNote = async () => {
-    await page.locator('.react-flow__node-note .node-heading').click();
+    // Reveal the note before selecting it; the composer partially covers the initial position.
+    await command('Fit canvas');
+    await page
+      .locator('.react-flow__node-note .node-bottom-actions')
+      .click({ position: { x: 5, y: 12 } });
     await page.waitForTimeout(300);
     // Keep the note selected so automatic sizing includes the editor controls.
-    await page.keyboard.press('ControlOrMeta+k');
-    await page.getByRole('combobox', { name: 'Search commands and nodes' }).fill('Fit canvas');
-    await page.getByRole('option', { name: 'Fit canvas', exact: true }).click();
+    await command('Fit canvas', true);
     await page.waitForTimeout(300);
   };
   await fitRichNote();
@@ -548,10 +543,12 @@ try {
   await fitRichNote();
   await capture('55-dark-rich-note.png');
   await command('Theme: light');
-  await page.locator('.react-flow__node-note .node-heading').click();
+  await page
+    .locator('.react-flow__node-note .node-bottom-actions')
+    .click({ position: { x: 5, y: 12 } });
   await page.getByRole('button', { name: 'Preview', exact: true }).click();
   await command('Export canvas (PNG)');
-  let exportDialog = page.getByRole('dialog', { name: 'Export canvas', exact: true });
+  let exportDialog = page.getByRole('region', { name: 'Export canvas', exact: true });
   await exportDialog.getByRole('button', { name: 'Generate preview', exact: true }).click();
   await expect(exportDialog.getByRole('img', { name: /^Export preview of/ })).toBeVisible();
   await capture('56-png-export-preview.png');
@@ -567,7 +564,9 @@ try {
   await command('Collapse sidebar');
   await page.setViewportSize({ width: 390, height: 844 });
   await command('Fit canvas');
-  await page.locator('.react-flow__node-note .node-heading').click();
+  await page
+    .locator('.react-flow__node-note .node-bottom-actions')
+    .click({ position: { x: 5, y: 12 } });
   await page.getByRole('button', { name: 'Rich text', exact: true }).click();
   await expect(richEditor).toBeVisible();
   await page.locator('.note-body').evaluate((body) => {
@@ -576,7 +575,7 @@ try {
   await fitRichNote();
   await capture('58-mobile-rich-note.png');
   await command('Export canvas (PDF)');
-  exportDialog = page.getByRole('dialog', { name: 'Export canvas', exact: true });
+  exportDialog = page.getByRole('region', { name: 'Export canvas', exact: true });
   await exportDialog.getByRole('button', { name: 'Generate preview', exact: true }).click();
   await expect(exportDialog.getByRole('img', { name: /^Export preview of/ })).toBeVisible();
   await capture('59-mobile-export-preview.png');
@@ -590,7 +589,7 @@ try {
   await page.setViewportSize({ width: 1440, height: 960 });
   await command('Theme: light');
   await command('Import conversations');
-  const importDialog = page.getByRole('dialog', { name: 'Import conversations', exact: true });
+  const importDialog = page.getByRole('region', { name: 'Import conversations', exact: true });
   await importDialog.getByLabel('Conversation JSON file').setInputFiles({
     name: 'planning-conversations.json',
     mimeType: 'application/json',
@@ -652,7 +651,7 @@ try {
   await capture('65-imported-conversation.png');
   await command('Expand sidebar');
   await command('Projects & folders');
-  const projects = page.getByRole('dialog', { name: 'Projects & folders', exact: true });
+  const projects = page.getByRole('region', { name: 'Projects & folders', exact: true });
   await projects.getByLabel('Project or folder name', { exact: true }).fill('Release planning');
   await projects.getByRole('button', { name: 'Create project / folder', exact: true }).click();
   await projects
@@ -672,7 +671,7 @@ try {
   await page.getByRole('button', { name: 'Favorites', exact: true }).click();
   await capture('67-folder-favorites-sidebar.png');
   await command('Canvas templates');
-  const templates = page.getByRole('dialog', { name: 'Canvas templates', exact: true });
+  const templates = page.getByRole('region', { name: 'Canvas templates', exact: true });
   await templates.getByLabel('Template name', { exact: true }).fill('Release checklist');
   await templates.getByRole('button', { name: 'Save template', exact: true }).click();
   await templates.getByLabel('Template name', { exact: true }).fill('Checklist with saved context');
@@ -725,19 +724,22 @@ try {
   await page.keyboard.press('Escape');
   const destination = page.getByLabel('Message destination', { exact: true });
   const message = page.getByRole('textbox', { name: 'Message', exact: true });
-  await destination.selectOption({ label: 'Imported release checklist' });
+  await destination.selectOption({
+    label: 'Review the editor and check the actual downloaded files.',
+  });
   await message.fill('What should we verify before the release?');
   await expect(message).toHaveCount(1);
   await expect(page.locator('.react-flow__node .composer')).toHaveCount(0);
   await capture('74-unified-message-bar.png');
-  await page.getByRole('button', { name: 'Review message context', exact: true }).click();
-  await expect(page.locator('.context-list')).toContainText('unsent draft');
-  await capture('75-unified-message-context.png');
+  await page.getByRole('button', { name: /^Message model:/ }).click();
+  await capture('75-unified-message-models.png');
   await page.keyboard.press('Escape');
   await destination.selectOption('');
   await message.fill('A separate conversation starts here.');
   await capture('76-new-conversation-composer.png');
-  await destination.selectOption({ label: 'Imported release checklist' });
+  await destination.selectOption({
+    label: 'Review the editor and check the actual downloaded files.',
+  });
   await expect(message).toHaveValue('What should we verify before the release?');
   await page.setViewportSize({ width: 390, height: 844 });
   await command('Fit canvas');
@@ -763,7 +765,10 @@ try {
   await page.getByRole('button', { name: 'Text selection mode', exact: true }).click();
   await capture('83-text-selection-mode.png');
   await page.getByRole('button', { name: 'Text selection mode', exact: true }).click();
-  await page.locator('.react-flow__node-chat .node-type-dot').first().click();
+  await page
+    .locator('.react-flow__node-chat .node-bottom-actions')
+    .first()
+    .click({ position: { x: 5, y: 12 } });
   await command('Duplicate selection', true);
   await expect(page.locator('.react-flow__node-chat')).toHaveCount(2);
   await command('Auto-arrange nodes');
@@ -833,8 +838,8 @@ try {
   await modelPicker.getByRole('textbox', { name: 'Search models' }).fill('my-exact-model');
   await capture('89-mobile-exact-model-id.png');
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'AI provider settings', exact: true }).click();
-  const providerSettings = page.getByRole('dialog', { name: 'Settings', exact: true });
+  await page.getByRole('button', { name: 'Models', exact: true }).click();
+  const providerSettings = page.getByRole('region', { name: 'Models', exact: true });
   await providerSettings.getByLabel('Provider', { exact: true }).selectOption('ollama');
   await providerSettings.getByText('Models & advanced options', { exact: true }).click();
   await providerSettings.locator('.model-discovery-status').scrollIntoViewIfNeeded();

@@ -1,0 +1,19 @@
+/* Only this refreshed edition; original source remains unchanged. */
+:root, :root[data-theme='dark'] { --purple: var(--primary); }
+.workspace-header { background: var(--app-bg); }
+.offline-dot { background: var(--muted); }
+.active-dot, .react-flow__handle { background: var(--primary); }
+.edition-badge { display: block; color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+.canvas-caption { max-width: calc(100% - 340px); }
+.workspace-sidebar > .search-button { margin-bottom: 16px; width: 100%; }
+.workspace-sidebar { overflow-y: auto; }
+.canvas-caption h1 { font-size: 18px; }
+.board-tools { top: 24px; }
+.composer .icon-button { color: var(--md-sys-color-on-primary); }
+.local-status { font-size: 11px; }
+.node-heading { height: 44px; min-height: 44px; }
+@media (max-width: 700px) {
+  .workspace-sidebar > .search-button { padding: 12px; margin-bottom: 8px; }
+  .workspace-sidebar > .search-button span, .workspace-sidebar > .search-button kbd { display: none; }
+  .canvas-caption { display: none; }
+}

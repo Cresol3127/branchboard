@@ -17,7 +17,10 @@ import {
   ArrowDownToLine,
   ArrowUpFromLine,
   Blocks,
-  Check,
+  ChevronLeft,
+  ChevronRight,
+  Trash2,
+  Bot,
   FolderOpen,
   GitBranch,
   Grid2X2,
@@ -26,7 +29,6 @@ import {
   LayoutGrid,
   Map,
   Maximize,
-  MousePointer2,
   Moon,
   Sun,
   PanelLeftClose,
@@ -46,7 +48,11 @@ import {
   Type,
   Unlink,
 } from 'lucide-react';
-import { absolutePosition, canConnect, workspaceTokenCounts, contextNodesFor } from './graph';
+import { absolutePosition, canConnect } from './graph';
+import { nodeLabel } from './nodeLabel';
+import { useWorkspacePanels } from './workspacePanels';
+import { WorkspacePanelHost } from './components/WorkspacePanelHost';
+import { MessageHistory } from './components/MessageHistory';
 import { currentBoard, saveWorkspace, useStore, workspaceBackup } from './store';
 import { CanvasNode } from './components/Nodes';
 import { MessageBar } from './components/MessageBar';
@@ -87,7 +93,8 @@ function Workspace() {
   const nodesInitialized = useNodesInitialized();
   const initiallyFitted = useRef(new Set<string>());
   const hasSelection = board.nodes.some((n) => n.selected);
-  const tokenCounts = workspaceTokenCounts(board.nodes);
+  const panelState = useWorkspacePanels();
+  const [toolsExpanded, setToolsExpanded] = useState(false);
   const hasDeletion = hasSelection || board.edges.some((e) => e.selected);
   const generating = Object.values(state.streaming).some(Boolean);
   const canUndo = Boolean(state.past.length) && !generating;
@@ -158,10 +165,10 @@ function Workspace() {
   const dragStart = useRef<XYPosition | null>(null);
   const file = useRef<HTMLInputElement>(null),
     canvas = useRef<HTMLElement>(null);
-  useCanvasLayout(canvas, minimap, board.id);
+  useCanvasLayout(canvas, minimap, board.id, annotationsOpen);
   const fitPadding = useCallback(
     () => ({
-      top: '88px' as const,
+      top: `${parseFloat(canvas.current?.style.getPropertyValue('--canvas-top-reserved') || '') || 88}px` as const,
       bottom:
         `${Number.parseFloat(canvas.current?.style.getPropertyValue('--canvas-bottom-reserved') || '') || (canvas.current?.querySelector<HTMLElement>('.message-bar')?.offsetHeight || 90) + 104}px` as `${number}px`,
       left: '32px' as const,
@@ -444,7 +451,6 @@ function Workspace() {
       run: () => setTextSelection((value) => !value),
     },
     { label: 'Reset zoom', run: () => void flow.zoomTo(1, { duration: 180 }) },
-    { label: 'Group selection', run: state.group, available: hasSelection },
     { label: 'Duplicate selection', run: state.duplicate, available: hasSelection },
     { label: 'Copy selected nodes', run: state.copySelection, available: hasSelection },
     {
@@ -480,7 +486,14 @@ function Workspace() {
       label: sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar',
       run: () => setSidebarCollapsed((value) => !value),
     },
-    { label: 'Settings', run: () => useStore.setState({ settingsOpen: true }) },
+    {
+      label: 'Models',
+      run: () => useStore.setState({ settingsOpen: true, settingsSection: 'models' }),
+    },
+    {
+      label: 'Settings',
+      run: () => useStore.setState({ settingsOpen: true, settingsSection: 'workspace' }),
+    },
     { label: 'Keyboard shortcuts & help', run: () => setHelp(true) },
     { label: 'Export board backup (JSON)', run: exportJSON },
     { label: 'Backups & snapshots', run: () => setBackups(true) },
@@ -496,12 +509,7 @@ function Workspace() {
     })),
     {
       label: 'Delete current canvas',
-      run: () => {
-        if (
-          confirm('Delete this canvas and its conversations? Export a backup first if you need it.')
-        )
-          state.deleteBoard();
-      },
+      run: () => confirmDeleteBoard(board.id),
     },
     ...state.boards
       .filter((b) => b.id !== board.id)
@@ -511,7 +519,7 @@ function Workspace() {
         category: 'Canvas',
       })),
     ...board.nodes.map((n) => ({
-      label: `Find node: ${n.data.title}`,
+      label: `Find node: ${nodeLabel(n)}`,
       category: 'Node',
       run: () => {
         state.nodesChange(
@@ -543,11 +551,35 @@ function Workspace() {
   };
   function removeSelection() {
     const selected = board.nodes.filter((n) => n.selected);
-    if (
-      (selected.length < 5 && !selected.some((n) => n.type === 'group')) ||
-      confirm('Delete the selected nodes and their connected content?')
-    )
-      state.removeSelected();
+    if (selected.length < 5 && !selected.some((n) => n.type === 'group')) state.removeSelected();
+    else {
+      const selection = {
+        nodes: selected.map((n) => n.id),
+        edges: board.edges.filter((e) => e.selected).map((e) => e.id),
+      };
+      useWorkspacePanels.setState({
+        confirmation: {
+          title: 'Delete selection',
+          description:
+            'Delete the selected nodes and their connected content? You can undo this change.',
+          run: () => {
+            if (useStore.getState().currentId === board.id)
+              useStore.getState().removeSelected(selection);
+          },
+        },
+      });
+    }
+  }
+  function confirmDeleteBoard(id: string) {
+    const target = state.boards.find((b) => b.id === id);
+    if (!target) return;
+    useWorkspacePanels.setState({
+      confirmation: {
+        title: 'Delete canvas',
+        description: `Delete “${target.name}” and its conversations? ${target.nodes.some((n) => state.streaming[n.id]) ? 'Its active generations will stop. ' : ''}Export a backup first if you need it.`,
+        run: () => useStore.getState().deleteBoard(id),
+      },
+    });
   }
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
@@ -560,7 +592,7 @@ function Workspace() {
       }
       if (
         (e.target as HTMLElement).closest(
-          'input, textarea, select, [contenteditable="true"], [role="dialog"], [role="menu"]',
+          'input, textarea, select, [contenteditable="true"], [role="dialog"], [role="menu"], .workspace-panel-host',
         )
       )
         return;
@@ -583,9 +615,6 @@ function Workspace() {
       } else if (mod && e.key.toLowerCase() === 'v' && state.nodeClipboard) {
         e.preventDefault();
         state.pasteSelection(positionFor('chat'));
-      } else if (mod && e.key.toLowerCase() === 'g') {
-        e.preventDefault();
-        state.group();
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault();
         removeSelection();
@@ -644,6 +673,7 @@ function Workspace() {
   return (
     <div
       className={`workspace ${textSelection ? 'text-selection-mode' : ''} ${spacePressed ? 'space-panning' : ''}`}
+      data-panel-open={Boolean(panelState.active)}
     >
       <div className="sidebar-shell" data-collapsed={sidebarCollapsed}>
         <aside
@@ -721,7 +751,9 @@ function Workspace() {
                   aria-current={b.id === board.id ? 'page' : undefined}
                   onClick={() => state.switchBoard(b.id)}
                 >
-                  <LayoutGrid size={16} />
+                  <span className="canvas-number" aria-hidden="true">
+                    {state.boards.findIndex((item) => item.id === b.id) + 1}
+                  </span>
                   <span>{b.name || 'Untitled canvas'}</span>
                   {b.id === board.id && <span className="active-dot" />}
                 </button>
@@ -735,6 +767,14 @@ function Workspace() {
                     fill={favoriteBoardIds.includes(b.id) ? 'currentColor' : 'none'}
                   />
                 </IconButton>
+                <button
+                  className="canvas-delete icon-button"
+                  aria-label={`Delete canvas: ${b.name || 'Untitled canvas'}`}
+                  title="Delete canvas"
+                  onClick={() => confirmDeleteBoard(b.id)}
+                >
+                  <Trash2 size={15} />
+                </button>
               </div>
             ))}
             {!visibleBoards.length && (
@@ -742,6 +782,14 @@ function Workspace() {
             )}
           </nav>
           <div className="sidebar-bottom">
+            <button
+              aria-label="Models"
+              title="Models"
+              onClick={() => useStore.setState({ settingsOpen: true, settingsSection: 'models' })}
+            >
+              <Bot size={18} />
+              <span>Models</span>
+            </button>
             <button
               aria-label="Workspace utilities"
               title="Workspace utilities"
@@ -764,15 +812,17 @@ function Workspace() {
             <button
               aria-label="Settings"
               title="Settings"
-              onClick={() => useStore.setState({ settingsOpen: true })}
+              onClick={() =>
+                useStore.setState({ settingsOpen: true, settingsSection: 'workspace' })
+              }
             >
               <SettingsIcon size={17} />
               <span>Settings</span>
             </button>
-            <p className="local-status">Local workspace · browser autosave</p>
           </div>
         </aside>
       </div>
+      <WorkspacePanelHost />
       <main className="workspace-main">
         <header className="workspace-header">
           <div className="header-left">
@@ -801,18 +851,6 @@ function Workspace() {
             <kbd>{shortcut}</kbd>
           </button>
           <div className="header-right">
-            <span className="saved">
-              {!state.storageError && <Check size={13} />}
-              {state.storageError ? 'Not saved' : 'Autosave enabled'}
-            </span>
-            <button
-              className="ai-status"
-              aria-label="AI provider settings"
-              onClick={() => useStore.setState({ settingsOpen: true })}
-            >
-              <span className={state.configured ? 'online-dot' : 'offline-dot'} />
-              {state.configured ? 'AI configured' : 'Connect AI'}
-            </button>
             <IconButton
               label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
               onClick={() => setTheme(dark ? 'light' : 'dark')}
@@ -822,64 +860,65 @@ function Workspace() {
           </div>
         </header>
         <section ref={canvas} className="canvas-area" aria-label="Infinite canvas">
-          <div className="canvas-caption">
-            <h1>{board.nodes.length ? 'Your ideas, connected.' : 'Make room for an idea.'}</h1>
-            <p>
-              {board.nodes.length
-                ? 'Connect nodes to share context.'
-                : 'Start with a conversation, or put a thought on a note.'}
-            </p>
-          </div>
-          <div className="board-tools" role="toolbar" aria-label="Board tools">
+          <div
+            className="board-tools"
+            role="toolbar"
+            aria-label="Board tools"
+            data-expanded={toolsExpanded}
+          >
             <button
               className="add-conversation"
               aria-label="Add conversation"
               onClick={() => add('chat')}
             >
               <Plus size={18} />
-              <span>Conversation</span>
+              <span>New conversation</span>
             </button>
-            <IconButton label="Add note" onClick={() => add('note')}>
-              <StickyNote size={19} />
-            </IconButton>
             <IconButton
-              label="Drawing & annotations"
-              aria-pressed={annotationsOpen}
-              onClick={() => setAnnotationsOpen((v) => !v)}
+              label={toolsExpanded ? 'Collapse creation tools' : 'Expand creation tools'}
+              aria-expanded={toolsExpanded}
+              onClick={() => setToolsExpanded((value) => !value)}
             >
-              <Pencil size={19} />
+              {toolsExpanded ? <ChevronRight size={17} /> : <ChevronLeft size={17} />}
             </IconButton>
-            <IconButton
-              label="Text selection mode"
-              title="Select and copy card text (T)"
-              aria-pressed={textSelection}
-              onClick={() => setTextSelection((value) => !value)}
-            >
-              <Type size={17} />
-            </IconButton>
-            {hasSelection && (
-              <IconButton label="Group selection" onClick={state.group}>
-                <Blocks size={19} />
+            <div className="creation-extra" hidden={!toolsExpanded}>
+              <IconButton label="Add note" onClick={() => add('note')}>
+                <StickyNote size={19} />
               </IconButton>
-            )}
-            {board.nodes.length > 1 && (
               <IconButton
-                label="Auto-arrange nodes"
-                onClick={() => {
-                  state.layout();
-                  setTimeout(fit, 50);
-                }}
+                label="Drawing & annotations"
+                aria-pressed={annotationsOpen}
+                onClick={() => setAnnotationsOpen((v) => !v)}
               >
-                <LayoutGrid size={19} />
+                <Pencil size={19} />
               </IconButton>
-            )}
-            <IconButton
-              label="Toggle minimap"
-              onClick={() => setMinimap((v) => !v)}
-              aria-pressed={minimap}
-            >
-              <Map size={19} />
-            </IconButton>
+              <IconButton
+                label="Text selection mode"
+                title="Select and copy card text (T)"
+                aria-pressed={textSelection}
+                onClick={() => setTextSelection((value) => !value)}
+              >
+                <Type size={17} />
+              </IconButton>
+              {board.nodes.length > 1 && (
+                <IconButton
+                  label="Auto-arrange nodes"
+                  onClick={() => {
+                    state.layout();
+                    setTimeout(fit, 50);
+                  }}
+                >
+                  <LayoutGrid size={19} />
+                </IconButton>
+              )}
+              <IconButton
+                label="Toggle minimap"
+                onClick={() => setMinimap((v) => !v)}
+                aria-pressed={minimap}
+              >
+                <Map size={19} />
+              </IconButton>
+            </div>
           </div>
           <div className="flow-viewport">
             <ReactFlow<BoardNode>
@@ -924,7 +963,7 @@ function Workspace() {
               nodesDraggable={!textSelection && !spacePressed}
               noPanClassName={spacePressed ? 'pan-lock' : 'nopan'}
               panOnDrag
-              selectionKeyCode="Shift"
+              selectionKeyCode={['Control', 'Meta']}
               selectionMode={SelectionMode.Partial}
               multiSelectionKeyCode="Shift"
               deleteKeyCode={null}
@@ -1042,10 +1081,11 @@ function Workspace() {
                 Minimap paused in this short viewport.
               </span>
             )}
-            <span className="canvas-hint">
-              <MousePointer2 size={13} />
-              Drag to pan<span>·</span>Shift-drag to select<span>·</span>/ to write
-            </span>
+            {!board.nodes.length && (
+              <span className="canvas-hint">
+                Start a conversation, or expand the tools to add a note.
+              </span>
+            )}
             <div className="view-controls">
               {canUndo && (
                 <IconButton label="Undo" onClick={state.undo}>
@@ -1137,8 +1177,6 @@ function Workspace() {
                 <strong>{board.nodes.find((n) => n.id === selectedEdge.source)?.data.title}</strong>{' '}
                 → {board.nodes.find((n) => n.id === selectedEdge.target)?.data.title}
                 <small>
-                  {contextNodesFor(selectedEdge.target, board.nodes, board.edges, false).length}{' '}
-                  context sources ·{' '}
                   {selectedEdge.data?.historyMessageIds
                     ? 'Through the branched turn'
                     : 'Live upstream context'}
@@ -1156,30 +1194,40 @@ function Workspace() {
             </div>
           )}
         </section>
-        <footer className="workspace-footer">
-          <span
-            className="workspace-token-counts"
-            title="Estimated tokens in local node content, counted once per node, not a sum of inherited branches. Selected groups include their descendants. Not billed usage."
-          >
-            Board ~{tokenCounts.board.toLocaleString()} tokens
-            {hasSelection && <> · Selected ~{tokenCounts.selected.toLocaleString()}</>}
-            <span className="token-estimate-label"> · estimated</span>
-          </span>
-          <span>
-            {board.nodes.filter((n) => n.type !== 'group').length}{' '}
-            {board.nodes.filter((n) => n.type !== 'group').length === 1 ? 'node' : 'nodes'}
-            <span className="footer-divider">·</span>
-            {board.edges.length} {board.edges.length === 1 ? 'connection' : 'connections'}
-            <button
-              aria-label="Open command palette"
-              title="Open command palette"
-              onClick={openPalette}
-            >
-              <kbd>{shortcut}</kbd>
-            </button>
-          </span>
-        </footer>
       </main>
+      {panelState.messageEditor && (
+        <MessageHistory
+          key={`${panelState.messageEditor.boardId}:${panelState.messageEditor.nodeId}:${panelState.messageEditor.messageId}`}
+          {...panelState.messageEditor}
+          onClose={() => useWorkspacePanels.setState({ messageEditor: null })}
+        />
+      )}
+      {panelState.confirmation && (
+        <Modal
+          title={panelState.confirmation.title}
+          kind="confirmation"
+          onClose={() => useWorkspacePanels.setState({ confirmation: null })}
+        >
+          <p>{panelState.confirmation.description}</p>
+          <div className="provider-actions">
+            <button
+              data-autofocus
+              onClick={() => useWorkspacePanels.setState({ confirmation: null })}
+            >
+              Cancel
+            </button>
+            <button
+              className="danger"
+              onClick={() => {
+                panelState.confirmation?.run();
+                useWorkspacePanels.setState({ confirmation: null });
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        </Modal>
+      )}
       {state.storageError && (
         <div className="storage-warning" role="alert">
           {state.storageError}
@@ -1211,12 +1259,14 @@ function Workspace() {
           e.target.value = '';
         }}
       />
-      {state.settingsOpen && <Settings />}
+      {state.settingsOpen && <Settings theme={theme} onThemeChange={setTheme} />}
       {conversationImport && <ConversationImport onClose={() => setConversationImport(false)} />}
       {exportFormat && (
         <CanvasExport key={board.id} format={exportFormat} onClose={() => setExportFormat(null)} />
       )}
-      {library && <WorkspaceLibrary section={library} onClose={() => setLibrary(null)} />}
+      {library && (
+        <WorkspaceLibrary key={library} section={library} onClose={() => setLibrary(null)} />
+      )}
       {backups && (
         <Backups
           onClose={() => setBackups(false)}
@@ -1234,6 +1284,7 @@ function Workspace() {
       )}
       {palette && (
         <Modal
+          kind="search"
           title="Command palette"
           onClose={() => setPalette(false)}
           className="command-palette"
@@ -1311,11 +1362,6 @@ function Workspace() {
           <button role="menuitem" onClick={() => add('note', flow.screenToFlowPosition(menu))}>
             New note
           </button>
-          {hasSelection && (
-            <button role="menuitem" onClick={state.group}>
-              Group selection
-            </button>
-          )}
           <button role="menuitem" onClick={() => file.current?.click()}>
             Import board backup
           </button>

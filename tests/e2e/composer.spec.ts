@@ -182,7 +182,7 @@ test('mobile message model hides unconfigured choices and opens setup without lo
   const dialog = page.getByRole('dialog', { name: 'Model selector', exact: true });
   await expect(dialog.getByRole('group', { name: 'OpenAI', exact: true })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Manage providers', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'Settings', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Models', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Back to canvas', exact: true }).click();
   await expect(page.getByRole('button', { name: /^Message model:/ })).toContainText('gpt-4o-mini');
   await expect(input).toHaveValue('Keep this until provider setup');
@@ -213,7 +213,9 @@ test('one unzoomed composer preserves per-node and per-board drafts and requires
   await command(page, 'Switch canvas: Composer board');
   await destination.selectOption('alpha');
   await expect(input).toHaveValue('Alpha draft\nSecond line');
-  await page.locator('[data-id="beta"] .node-type-dot').click({ modifiers: ['Shift'] });
+  await page
+    .locator('[data-id="beta"] .node-bottom-actions')
+    .click({ position: { x: 5, y: 12 }, modifiers: ['Shift'] });
   await expect(destination).toHaveValue('choose');
   await expect(input).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Send message', exact: true })).toBeDisabled();
@@ -260,7 +262,7 @@ test('unconfigured new messages keep the draft without adding empty nodes', asyn
   const input = page.getByRole('textbox', { name: 'Message', exact: true });
   await input.fill('Keep this until setup is finished');
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
-  await expect(page.getByRole('dialog', { name: 'Settings', exact: true })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Models', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Back to canvas', exact: true }).click();
   await expect(input).toHaveValue('Keep this until setup is finished');
   await expect(page.locator('.react-flow__node-chat')).toHaveCount(2);

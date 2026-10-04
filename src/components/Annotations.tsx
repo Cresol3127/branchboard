@@ -19,7 +19,13 @@ import type { Annotation, AnnotationLayer, AnnotationState } from '../types';
 import { IconButton, Modal } from './ui';
 
 type Point = { x: number; y: number };
-type Gesture = { start: Point; mark: Annotation; moving: boolean; pointerId: number };
+type Gesture = {
+  start: Point;
+  mark: Annotation;
+  points: Point[];
+  moving: boolean;
+  pointerId: number;
+};
 const tools = [MousePointer2, Pencil, Square, Circle, MoveUpRight, Highlighter];
 const kinds = ['select', ...annotationKinds] as const;
 const labels = [
@@ -118,7 +124,13 @@ export function Annotations({ open, onClose }: { open: boolean; onClose: () => v
       width,
       points: [p, p],
     };
-    gesture.current = { start: p, mark: next, moving: !!existing, pointerId: e.pointerId };
+    gesture.current = {
+      start: p,
+      mark: next,
+      points: next.points,
+      moving: !!existing,
+      pointerId: e.pointerId,
+    };
     setDraft(next);
     e.currentTarget.setPointerCapture(e.pointerId);
   };
@@ -140,6 +152,7 @@ export function Annotations({ open, onClose }: { open: boolean; onClose: () => v
       points = [...g.mark.points, p];
       g.mark = { ...g.mark, points };
     } else points = [g.start, p];
+    g.points = points;
     setDraft({ ...g.mark, points });
   };
   const finish = (e: PointerEvent) => {
@@ -147,22 +160,21 @@ export function Annotations({ open, onClose }: { open: boolean; onClose: () => v
     if (!g || g.pointerId !== e.pointerId) return;
     e.stopPropagation();
     gesture.current = null;
-    if (draft) {
-      const moved = draft.points.some(
-        (p) => Math.hypot(p.x - g.start.x, p.y - g.start.y) * flow.getZoom() >= 3,
-      );
-      const changed = g.moving && JSON.stringify(draft.points) !== JSON.stringify(g.mark.points);
-      if (
-        (g.moving ? changed : moved) &&
-        commit({
-          ...value,
-          items: g.moving
-            ? value.items.map((a) => (a.id === draft.id ? draft : a))
-            : [...value.items, draft],
-        })
-      )
-        setSelected(draft.id);
-    }
+    const finished = { ...g.mark, points: g.points };
+    const moved = g.points.some(
+      (p) => Math.hypot(p.x - g.start.x, p.y - g.start.y) * flow.getZoom() >= 3,
+    );
+    const changed = g.moving && JSON.stringify(g.points) !== JSON.stringify(g.mark.points);
+    if (
+      (g.moving ? changed : moved) &&
+      commit({
+        ...value,
+        items: g.moving
+          ? value.items.map((a) => (a.id === finished.id ? finished : a))
+          : [...value.items, finished],
+      })
+    )
+      setSelected(finished.id);
     setDraft(null);
   };
   const cancel = () => {
@@ -427,6 +439,7 @@ export function Annotations({ open, onClose }: { open: boolean; onClose: () => v
       )}
       {layersOpen && (
         <Modal
+          kind="layers"
           title="Annotation layers"
           onClose={() => setLayersOpen(false)}
           className="annotation-layers"
@@ -509,36 +522,37 @@ export function Annotations({ open, onClose }: { open: boolean; onClose: () => v
           >
             Add annotation layer
           </button>
+          {deleting && (
+            <section role="region" aria-label="Delete annotation layer?">
+              <h3>Delete annotation layer?</h3>
+              <p>
+                Delete “{deleting.name}” and its{' '}
+                {value.items.filter((a) => a.layerId === deleting.id).length} marks? You can undo
+                this change.
+              </p>
+              <div className="history-dialog-actions">
+                <button autoFocus onClick={() => setDeleting(null)}>
+                  Cancel
+                </button>
+                <button
+                  className="danger-button"
+                  disabled={busy}
+                  onClick={() => {
+                    if (
+                      commit({
+                        layers: value.layers.filter((l) => l.id !== deleting.id),
+                        items: value.items.filter((a) => a.layerId !== deleting.id),
+                      })
+                    )
+                      setDeleting(null);
+                  }}
+                >
+                  Delete layer
+                </button>
+              </div>
+            </section>
+          )}
           {error && <p role="alert">{error}</p>}
-        </Modal>
-      )}
-      {deleting && (
-        <Modal title="Delete annotation layer?" onClose={() => setDeleting(null)}>
-          <p>
-            Delete “{deleting.name}” and its{' '}
-            {value.items.filter((a) => a.layerId === deleting.id).length} marks? You can undo this
-            change.
-          </p>
-          <div className="history-dialog-actions">
-            <button data-autofocus onClick={() => setDeleting(null)}>
-              Cancel
-            </button>
-            <button
-              className="danger-button"
-              disabled={busy}
-              onClick={() => {
-                if (
-                  commit({
-                    layers: value.layers.filter((l) => l.id !== deleting.id),
-                    items: value.items.filter((a) => a.layerId !== deleting.id),
-                  })
-                )
-                  setDeleting(null);
-              }}
-            >
-              Delete layer
-            </button>
-          </div>
         </Modal>
       )}
     </>

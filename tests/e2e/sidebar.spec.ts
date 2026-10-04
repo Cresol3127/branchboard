@@ -31,7 +31,7 @@ for (const width of [1440, 390]) {
     await expect(page.locator('.sidebar-shell')).toHaveCSS('width', '64px');
     await expect(expand).toBeVisible();
     await command(page, 'Settings');
-    await expect(page.getByRole('dialog', { name: 'Settings', exact: true })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Settings', exact: true })).toBeVisible();
     await page.keyboard.press('Escape');
     await command(page, 'Expand sidebar');
     await expect(sidebar).toBeVisible();

@@ -64,6 +64,7 @@ export type Board = {
   nodes: BoardNode[];
   edges: Edge[];
   updatedAt: number;
+  createdAt?: number;
   viewport?: Viewport;
   annotations?: AnnotationState;
 };

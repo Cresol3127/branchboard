@@ -4,6 +4,7 @@
   "current": "1.7.0",
   "policy": "private local artifacts; preserve originals; refreshed editions have new versions",
   "externalBackup": "../../branchboard-backups/20261022T133446Z-before-material-redesign/",
+  "redesignBackup": "../../branchboard-backups/20261024T042350Z-before-sidebar-redesign/",
   "originals": [
     {
       "label": "v1.0",

@@ -42,7 +42,9 @@ export function openLocalDatabase(): Promise<IDBDatabase> {
     request.onerror = () =>
       reject(request.error || new Error('Browser storage could not be opened.'));
     request.onblocked = () =>
-      reject(new Error('Browser storage is blocked by another open tab. Close other tabs and retry.'));
+      reject(
+        new Error('Browser storage is blocked by another open tab. Close other tabs and retry.'),
+      );
   });
   return opening;
 }
@@ -54,9 +56,7 @@ export async function allRecords<T>(storeName: StoreName): Promise<T[]> {
 
 export async function getRecord<T>(storeName: StoreName, key: IDBValidKey): Promise<T | undefined> {
   const database = await openLocalDatabase();
-  return requestResult(
-    database.transaction(storeName, 'readonly').objectStore(storeName).get(key),
-  );
+  return requestResult(database.transaction(storeName, 'readonly').objectStore(storeName).get(key));
 }
 
 export async function putRecord<T>(storeName: StoreName, value: T): Promise<void> {

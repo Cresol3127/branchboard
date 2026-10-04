@@ -1,0 +1,37 @@
+{
+  "version": "1.4.2",
+  "title": "Canvas cleanup",
+  "date": "2026-10-24",
+  "derivedFrom": {
+    "version": "1.4.1",
+    "sourceArchiveSha256": "2cd4cbd8c94050278b55b9570dbf318ae652d8b2925e4a009640a1e618563842",
+    "sourceCommit": "649446f31ecf714cb806fae8a492dd01e07fb0d6"
+  },
+  "build": "passed",
+  "unitAndHttp": {
+    "status": "passed",
+    "tests": 119,
+    "files": 12
+  },
+  "browser": {
+    "status": "passed",
+    "tests": 3,
+    "scope": "production Chromium: four real layouts, settings, removed controls, note editing/reload, native rectangle selection and legacy parent-group preservation; HTTP API 404/origin rejection",
+    "historicalFullSuite": "replaced obsolete UI tests with dedicated cleanup smoke",
+    "pageErrors": []
+  },
+  "screenshots": {
+    "count": 4,
+    "inspected": true,
+    "directory": "/tmp/opencode/branchboard-cleanup-qa"
+  },
+  "cleanInstall": {
+    "status": "pending"
+  },
+  "runtimeExpectations": {
+    "starterNodes": 3,
+    "settingsRole": "dialog",
+    "settingsName": "Settings"
+  },
+  "paidProviderRequests": false
+}

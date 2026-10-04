@@ -39,12 +39,42 @@ async function importJSON(page: Page, value: unknown) {
 }
 async function openBackups(page: Page) {
   await command(page, 'Backups & snapshots');
-  return page.getByRole('dialog', { name: 'Backups & snapshots', exact: true });
+  return page.getByRole('region', { name: 'Backups & snapshots', exact: true });
 }
 
 test('historical branching uses only chosen turns, remains live, undoes, and persists', async ({
   page,
 }) => {
+  const requests: { role: string; content: string }[][] = [];
+  await page.route('**/api/config', (route) =>
+    route.fulfill({
+      json: {
+        configured: true,
+        model: 'gpt-4o-mini',
+        providers: [
+          {
+            id: 'openai',
+            configured: true,
+            hasKey: true,
+            baseURL: 'https://api.openai.com/v1',
+            models: ['gpt-4o-mini'],
+            extraModels: [],
+            defaultModel: 'gpt-4o-mini',
+          },
+        ],
+      },
+    }),
+  );
+  await page.route('**/api/models/catalog*', (route) =>
+    route.fulfill({ json: { version: 1, providers: {} } }),
+  );
+  await page.route('**/api/chat', async (route) => {
+    requests.push(route.request().postDataJSON().messages);
+    await route.fulfill({
+      contentType: 'text/event-stream',
+      body: 'data: {"token":"Verified response"}\n\ndata: {"done":true}\n\n',
+    });
+  });
   await page.goto('/');
   await importJSON(page, backup);
   const original = page.locator('.react-flow__node-chat').first();
@@ -58,27 +88,40 @@ test('historical branching uses only chosen turns, remains live, undoes, and per
   await command(page, 'Redo');
   await expect(page.locator('.react-flow__node-chat')).toHaveCount(2);
   const child = page.locator('.react-flow__node-chat').last();
-  await child.getByRole('button', { name: 'Inspect AI context' }).click();
-  let inspector = page.getByRole('dialog', { name: 'What the AI sees' });
-  await expect(inspector.locator('.context-list')).toContainText('First saved reply');
-  await expect(inspector.locator('.context-list')).not.toContainText('Later question');
-  await page.keyboard.press('Escape');
+  const childId = (await child.getAttribute('data-id'))!;
+  await page.getByLabel('Message destination', { exact: true }).selectOption(childId);
+  await page.getByRole('textbox', { name: 'Message', exact: true }).fill('First branch probe');
+  await page.getByRole('button', { name: 'Send message', exact: true }).click();
+  await expect(child).toContainText('Verified response');
+  expect(requests[0].map((m) => m.content)).toEqual([
+    'First saved question',
+    'First saved reply',
+    'First branch probe',
+  ]);
   await command(page, 'Fit canvas');
   await original
     .locator('[data-message-id="first"]')
     .getByRole('button', { name: 'Edit message', exact: true })
     .click();
-  const editor = page.getByRole('dialog', { name: 'Edit message', exact: true });
+  const editor = page.getByRole('region', { name: 'Edit message', exact: true });
   await editor.getByRole('textbox').fill('Live corrected question');
   await editor.getByRole('button', { name: 'Save changes' }).click();
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem('branchboard.workspace.v1')))
     .toContain('Live corrected question');
   await page.reload();
-  await child.getByRole('button', { name: 'Inspect AI context' }).click();
-  inspector = page.getByRole('dialog', { name: 'What the AI sees' });
-  await expect(inspector.locator('.context-list')).toContainText('Live corrected question');
-  await expect(inspector.locator('.context-list')).not.toContainText('Later question');
+  await page.getByLabel('Message destination', { exact: true }).selectOption(childId);
+  await page.getByRole('textbox', { name: 'Message', exact: true }).fill('Reloaded branch probe');
+  await page.getByRole('button', { name: 'Send message', exact: true }).click();
+  await expect.poll(() => requests.length).toBe(2);
+  expect(requests[1].map((m) => m.content)).toEqual([
+    'Live corrected question',
+    'First saved reply',
+    'First branch probe',
+    'Verified response',
+    'Reloaded branch probe',
+  ]);
+  await expect(page.getByRole('button', { name: 'Inspect AI context' })).toHaveCount(0);
 });
 
 test('snapshots survive reload and canvas deletion, restore a new copy and confirm deletion safely', async ({
@@ -91,8 +134,11 @@ test('snapshots survive reload and canvas deletion, restore a new copy and confi
   await dialog.getByRole('button', { name: 'Save snapshot' }).click();
   await expect(dialog.getByRole('region', { name: 'Snapshot Before revision' })).toHaveCount(1);
   await page.keyboard.press('Escape');
-  page.once('dialog', (d) => d.accept());
   await command(page, 'Delete current canvas');
+  await page
+    .getByRole('region', { name: 'Delete canvas', exact: true })
+    .getByRole('button', { name: 'Delete', exact: true })
+    .click();
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem('branchboard.workspace.v1')))
     .not.toContain('Branch review');

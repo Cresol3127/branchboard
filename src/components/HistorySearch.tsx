@@ -17,10 +17,9 @@ export function HistorySearch({
   const list = useRef<HTMLDivElement>(null);
   const { results, hasMore } = useMemo(() => searchWorkspace(boards, query), [boards, query]);
   return (
-    <Modal title="Search saved content" onClose={onClose} className="history-search">
+    <Modal title="Search saved content" kind="search" onClose={onClose} className="history-search">
       <p className="muted">
-        Search message text, notes, and node titles across all canvases. Nothing is sent to an AI
-        provider.
+        Search conversations and notes across all canvases. Nothing is sent to an AI provider.
       </p>
       <label htmlFor="history-query">Search saved content</label>
       <input
@@ -66,7 +65,7 @@ export function HistorySearch({
           >
             <strong>{result.nodeTitle || 'Untitled node'}</strong>
             <small>
-              {result.boardName} · {result.source === 'title' ? 'Node title' : result.source}
+              {result.boardName} · {result.source === 'title' ? 'Saved label' : result.source}
             </small>
             <span>{result.snippet}</span>
           </button>

@@ -103,11 +103,16 @@ export function ModelSelector({
         setOpen(false);
     };
     window.addEventListener('pointerdown', close);
+    const observer = new ResizeObserver(positionMenu);
+    const canvas = trigger.current?.closest('.canvas-area');
+    if (canvas) observer.observe(canvas);
+    if (trigger.current) observer.observe(trigger.current);
     window.addEventListener('resize', positionMenu);
     window.visualViewport?.addEventListener('resize', positionMenu);
     window.visualViewport?.addEventListener('scroll', positionMenu);
     return () => {
       window.removeEventListener('pointerdown', close);
+      observer.disconnect();
       window.removeEventListener('resize', positionMenu);
       window.visualViewport?.removeEventListener('resize', positionMenu);
       window.visualViewport?.removeEventListener('scroll', positionMenu);
@@ -312,7 +317,11 @@ export function ModelSelector({
                 className="text-button"
                 onClick={() => {
                   setOpen(false);
-                  useStore.setState({ settingsOpen: true, settingsProvider: provider });
+                  useStore.setState({
+                    settingsOpen: true,
+                    settingsSection: 'models',
+                    settingsProvider: provider,
+                  });
                 }}
               >
                 Manage providers

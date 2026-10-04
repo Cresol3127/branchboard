@@ -50,6 +50,7 @@ for (const width of [1440, 390]) {
       composer = page.locator('.message-bar');
     const initial = (await controls.boundingBox())!;
     expect(await overlaps(controls, composer)).toBe(false);
+    await page.getByRole('button', { name: 'Expand creation tools', exact: true }).click();
     await page.getByRole('button', { name: 'Toggle minimap', exact: true }).click();
     const map = page.locator('.react-flow__minimap');
     await expect(map).toBeVisible();
@@ -84,9 +85,9 @@ for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 844 });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
-    await page.getByRole('button', { name: 'Settings', exact: true }).click();
-    const settings = page.getByRole('dialog', { name: 'Settings', exact: true });
-    await expect(settings.getByRole('heading', { name: 'Settings', exact: true })).toHaveCSS(
+    await page.getByRole('button', { name: 'Models', exact: true }).click();
+    const settings = page.getByRole('region', { name: 'Models', exact: true });
+    await expect(settings.getByRole('heading', { name: 'Models', exact: true })).toHaveCSS(
       'font-size',
       '24px',
     );
@@ -99,11 +100,12 @@ for (const width of [1440, 390]) {
     await expect(settings.getByLabel('Additional models (one per line)')).toBeVisible();
     await settings.getByLabel('Additional models (one per line)').fill('only-a-draft');
     await expect(
-      settings.getByRole('button', { name: 'Close dialog', exact: true }),
+      settings.getByRole('button', { name: 'Back to canvas', exact: true }),
     ).toBeInViewport();
     await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Discard changes', exact: true }).click();
     await page.getByRole('button', { name: 'Tips & shortcuts', exact: true }).click();
-    const help = page.getByRole('dialog', { name: 'Help', exact: true });
+    const help = page.getByRole('region', { name: 'Help', exact: true });
     await expect(help.getByRole('heading', { level: 3 })).toHaveCount(3);
     await expect(help.getByRole('heading', { name: 'Capture a thought' })).toHaveCSS(
       'font-size',

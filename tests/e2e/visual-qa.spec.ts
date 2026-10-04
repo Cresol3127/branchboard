@@ -63,7 +63,7 @@ test('repeated additions do not overlap and empty palettes omit unavailable acti
 }) => {
   await page.goto('/');
   await command(page, 'New canvas');
-  await page.getByRole('button', { name: 'Open command palette' }).click();
+  await page.getByRole('button', { name: 'Search', exact: true }).click();
   for (const name of [
     'Undo',
     'Redo',
@@ -94,7 +94,7 @@ test('repeated additions do not overlap and empty palettes omit unavailable acti
   await expect(page.getByRole('button', { name: 'Send message', exact: true })).toBeDisabled();
   await expect(page.locator('.react-flow__node .composer')).toHaveCount(0);
   await page.locator('.react-flow__pane').click({ position: await emptyCanvasPoint(page) });
-  await page.getByRole('button', { name: 'Open command palette' }).click();
+  await page.getByRole('button', { name: 'Search', exact: true }).click();
   const search = page.getByRole('combobox', { name: 'Search commands and nodes' });
   for (let i = 0; i < 18; i++) await search.press('ArrowDown');
   const selected = page.getByRole('listbox').getByRole('option', { selected: true });
@@ -105,7 +105,9 @@ test('repeated additions do not overlap and empty palettes omit unavailable acti
   );
 });
 
-test('whole-node menus support keys, empty context, and visible note colors', async ({ page }) => {
+test('whole-node menus support keys, omit removed controls, and preserve note colors', async ({
+  page,
+}) => {
   await page.goto('/');
   await command(page, 'New canvas');
   await page.getByRole('button', { name: 'Add conversation', exact: true }).click();
@@ -116,11 +118,13 @@ test('whole-node menus support keys, empty context, and visible note colors', as
   await expect(menu.getByRole('menuitem', { name: 'Branch conversation' })).toBeFocused();
   await page.keyboard.press('End');
   await expect(menu.getByRole('menuitem', { name: 'Delete selection' })).toBeFocused();
-  await page.keyboard.press('ArrowUp');
-  await page.keyboard.press('Enter');
-  const context = page.getByRole('dialog', { name: 'What the AI sees' });
-  await expect(context).toContainText('No messages yet.');
+  await expect(menu.getByRole('menuitem', { name: 'Inspect AI context' })).toHaveCount(0);
+  await expect(menu.getByRole('menuitem', { name: 'Group selection' })).toHaveCount(0);
+  await page.keyboard.press('Home');
+  await page.keyboard.press('ArrowDown');
+  await expect(menu.getByRole('menuitem', { name: 'Duplicate selection' })).toBeFocused();
   await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Expand creation tools', exact: true }).click();
   await page.getByRole('button', { name: 'Add note', exact: true }).click();
   const note = page.locator('.react-flow__node-note .board-node');
   await page
@@ -170,8 +174,8 @@ test('mobile settings exposes Save and closes even if focus leaves a busy form',
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: 'Settings', exact: true });
+  await page.getByRole('button', { name: 'Models', exact: true }).click();
+  const dialog = page.getByRole('region', { name: 'Models', exact: true });
   const save = dialog.getByRole('button', { name: 'Save settings', exact: true });
   const dialogBox = await dialog.boundingBox();
   const saveBox = await save.boundingBox();
