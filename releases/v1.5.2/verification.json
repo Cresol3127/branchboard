@@ -26,7 +26,44 @@
     "directory": "/tmp/opencode/branchboard-cleanup-qa"
   },
   "cleanInstall": {
-    "status": "pending"
+    "status": "passed",
+    "evidenceDirectory": "/tmp/opencode/branchboard-release-verify-RkbbSw",
+    "runtimeScreenshot": "1.5.2-runtime.png",
+    "runtimeScreenshotInspected": true,
+    "node": "v24.19.0",
+    "platform": "linux",
+    "source": {
+      "status": "passed",
+      "artifactSha256": "fe93dee21e62cde8b45240b18b1ebc188daa7cbc45fb6fd7ebd74c747444cd52",
+      "commands": [
+        "npm ci",
+        "npm run build",
+        "npm test"
+      ],
+      "tests": 137,
+      "extractedInventory": "matched manifest"
+    },
+    "runtime": {
+      "status": "passed",
+      "artifactSha256": "84628fb35e779868442cc8ad1f55f82e0e971ee53ca005bb4040c196c6cb47f9",
+      "commands": [
+        "npm ci --omit=dev",
+        "npm start"
+      ],
+      "developmentDependenciesAbsent": true,
+      "extractedInventory": "matched manifest",
+      "http": [
+        "frontend",
+        "public config",
+        "JSON API 404",
+        "origin rejection"
+      ],
+      "chromium": "rendered 3 starter cards, local assets/fonts and working settings dialog",
+      "pageErrors": [],
+      "unavailableProviders": [
+        "Ollama model discovery: local service unavailable (HTTP 502)"
+      ]
+    }
   },
   "runtimeExpectations": {
     "starterNodes": 3,

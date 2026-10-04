@@ -20,12 +20,52 @@
     "inspected": true,
     "directory": "/tmp/opencode/branchboard-sidebar-redesign-verified",
     "contactSheets": "/tmp/opencode/branchboard-contact-verified",
-    "exportedArtifacts": ["canvas-export.png", "canvas-export.pdf"],
+    "exportedArtifacts": [
+      "canvas-export.png",
+      "canvas-export.pdf"
+    ],
     "inspection": "All captures inspected through nine desktop/mobile contact sheets; exported PNG also inspected at full resolution. Docked panels, themes, selection, annotations, provider controls, Help, mobile layer names and full exported Markdown table reviewed after fixes.",
     "pageErrors": []
   },
   "cleanInstall": {
-    "status": "pending"
+    "status": "passed",
+    "evidenceDirectory": "/tmp/opencode/branchboard-release-verify-RkbbSw",
+    "runtimeScreenshot": "1.8.0-runtime.png",
+    "runtimeScreenshotInspected": true,
+    "node": "v24.19.0",
+    "platform": "linux",
+    "source": {
+      "status": "passed",
+      "artifactSha256": "84142de3364a2069578257972515c60ae5029788d8979cb2b85f9fedf0342e48",
+      "commands": [
+        "npm ci",
+        "npm run build",
+        "npm test"
+      ],
+      "tests": 181,
+      "extractedInventory": "matched manifest"
+    },
+    "runtime": {
+      "status": "passed",
+      "artifactSha256": "70cb3cdf1f15f5954e076a6fbc9463eb14f358d253be9f203193804dc77e9c05",
+      "commands": [
+        "npm ci --omit=dev",
+        "npm start"
+      ],
+      "developmentDependenciesAbsent": true,
+      "extractedInventory": "matched manifest",
+      "http": [
+        "frontend",
+        "public config",
+        "JSON API 404",
+        "origin rejection"
+      ],
+      "chromium": "rendered 3 starter cards, local assets/fonts and working settings region",
+      "pageErrors": [],
+      "unavailableProviders": [
+        "Ollama model discovery: local service unavailable (HTTP 502)"
+      ]
+    }
   },
   "runtimeExpectations": {
     "starterNodes": 3,
@@ -36,6 +76,14 @@
   "originalArtifactChecksums": {
     "status": "passed",
     "entries": 61,
-    "versions": ["1.1.1", "1.2.1", "1.3.1", "1.4.1", "1.5.1", "1.6.0", "1.7.0"]
+    "versions": [
+      "1.1.1",
+      "1.2.1",
+      "1.3.1",
+      "1.4.1",
+      "1.5.1",
+      "1.6.0",
+      "1.7.0"
+    ]
   }
 }
