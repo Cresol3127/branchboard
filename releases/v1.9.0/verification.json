@@ -54,5 +54,58 @@
       "1.7.1",
       "1.8.0"
     ]
+  },
+  "cleanInstall": {
+    "status": "passed",
+    "node": "v24.19.0",
+    "platform": "linux",
+    "source": {
+      "status": "passed",
+      "artifactSha256": "7beec41347eef28eca4db661e79de46532e386bb48e4b828461b67d6bf5e9600",
+      "commands": [
+        "npm ci",
+        "npm run build",
+        "npm test"
+      ],
+      "tests": 224,
+      "extractedInventory": "matched manifest"
+    },
+    "runtime": {
+      "status": "passed",
+      "artifactSha256": "ebcbc596dffb530e0e8c64e95c9634e6544cdcf523e55e44c82fda9a25812bc2",
+      "commands": [
+        "npm ci --omit=dev",
+        "npm start"
+      ],
+      "developmentDependenciesAbsent": true,
+      "extractedInventory": "matched manifest",
+      "http": [
+        "frontend",
+        "public config",
+        "JSON API 404",
+        "origin rejection"
+      ],
+      "chromium": "rendered 3 starter cards, local assets/fonts and working settings region",
+      "pageErrors": [],
+      "unavailableProviders": [
+        "Ollama model discovery: local service unavailable (HTTP 502)"
+      ],
+      "motion": {
+        "entry": {
+          "running": true,
+          "easing": "cubic-bezier(0.16, 1, 0.3, 1), cubic-bezier(0.16, 1, 0.3, 1)"
+        },
+        "exit": {
+          "running": true,
+          "inert": true,
+          "hidden": true,
+          "roleRemoved": true
+        },
+        "reducedMotion": {
+          "animations": 0,
+          "immediateClose": true
+        }
+      }
+    }
   }
 }
