@@ -24,6 +24,8 @@ import { currentBoard, useStore } from '../store';
 import { nodeLabel } from '../nodeLabel';
 import type { BoardNode } from '../types';
 import { IconButton, Menu } from './ui';
+import { Presence } from './Motion';
+import { motion } from '../motion';
 import { ModelSelector } from './ModelSelector';
 import { useWorkspacePanels } from '../workspacePanels';
 import { NoteContent } from './NoteContent';
@@ -362,74 +364,76 @@ export function CanvasNode({ id, data, selected, type }: NodeProps<BoardNode>) {
         </div>
       )}
       {type !== 'group' && <Ports id={id} data={data} />}
-      {menu && (
-        <Menu x={menu.x} y={menu.y} label="Node actions" onClose={() => setMenu(null)}>
-          {type !== 'group' && (
-            <button role="menuitem" onClick={() => state.branch(id)}>
-              Branch conversation
+      <Presence duration={motion.duration.menu}>
+        {menu && (
+          <Menu x={menu.x} y={menu.y} label="Node actions" onClose={() => setMenu(null)}>
+            {type !== 'group' && (
+              <button role="menuitem" onClick={() => state.branch(id)}>
+                Branch conversation
+              </button>
+            )}
+            <button role="menuitem" onClick={state.duplicate}>
+              Duplicate selection
             </button>
-          )}
-          <button role="menuitem" onClick={state.duplicate}>
-            Duplicate selection
-          </button>
-          {type !== 'group' && (
+            {type !== 'group' && (
+              <button
+                role="menuitemcheckbox"
+                aria-checked={Boolean(data.autoSize)}
+                onClick={() => update({ autoSize: !data.autoSize }, true)}
+              >
+                Automatic content sizing
+              </button>
+            )}
+            {type === 'group' && (
+              <button role="menuitem" onClick={() => state.ungroup(id)}>
+                Ungroup
+              </button>
+            )}
+            {type === 'note' && (
+              <div className="color-options" role="group" aria-label="Note color">
+                {['purple', 'amber', 'sage', 'blue', 'rose'].map((color) => (
+                  <button
+                    key={color}
+                    aria-label={`Color ${color}`}
+                    title={`Color ${color}`}
+                    aria-pressed={data.color === color}
+                    className={`swatch color-${color}`}
+                    onClick={() => update({ color }, true)}
+                  />
+                ))}
+              </div>
+            )}
             <button
-              role="menuitemcheckbox"
-              aria-checked={Boolean(data.autoSize)}
-              onClick={() => update({ autoSize: !data.autoSize }, true)}
-            >
-              Automatic content sizing
-            </button>
-          )}
-          {type === 'group' && (
-            <button role="menuitem" onClick={() => state.ungroup(id)}>
-              Ungroup
-            </button>
-          )}
-          {type === 'note' && (
-            <div className="color-options" role="group" aria-label="Note color">
-              {['purple', 'amber', 'sage', 'blue', 'rose'].map((color) => (
-                <button
-                  key={color}
-                  aria-label={`Color ${color}`}
-                  title={`Color ${color}`}
-                  aria-pressed={data.color === color}
-                  className={`swatch color-${color}`}
-                  onClick={() => update({ color }, true)}
-                />
-              ))}
-            </div>
-          )}
-          <button
-            role="menuitem"
-            className="danger"
-            onClick={() => {
-              const selected = board.nodes.filter((n) => n.selected);
-              if (selected.length < 5 && !selected.some((n) => n.type === 'group'))
-                state.removeSelected();
-              else {
-                const selection = {
-                  nodes: selected.map((n) => n.id),
-                  edges: board.edges.filter((e) => e.selected).map((e) => e.id),
-                };
-                useWorkspacePanels.setState({
-                  confirmation: {
-                    title: 'Delete selection',
-                    description:
-                      'Delete these nodes and their connected content? You can undo this change.',
-                    run: () => {
-                      if (useStore.getState().currentId === board.id)
-                        useStore.getState().removeSelected(selection);
+              role="menuitem"
+              className="danger"
+              onClick={() => {
+                const selected = board.nodes.filter((n) => n.selected);
+                if (selected.length < 5 && !selected.some((n) => n.type === 'group'))
+                  state.removeSelected();
+                else {
+                  const selection = {
+                    nodes: selected.map((n) => n.id),
+                    edges: board.edges.filter((e) => e.selected).map((e) => e.id),
+                  };
+                  useWorkspacePanels.setState({
+                    confirmation: {
+                      title: 'Delete selection',
+                      description:
+                        'Delete these nodes and their connected content? You can undo this change.',
+                      run: () => {
+                        if (useStore.getState().currentId === board.id)
+                          useStore.getState().removeSelected(selection);
+                      },
                     },
-                  },
-                });
-              }
-            }}
-          >
-            Delete selection
-          </button>
-        </Menu>
-      )}
+                  });
+                }
+              }}
+            >
+              Delete selection
+            </button>
+          </Menu>
+        )}
+      </Presence>
     </div>
   );
 }

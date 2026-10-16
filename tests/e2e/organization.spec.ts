@@ -115,19 +115,20 @@ test('favorites filter and command actions survive reload and work on the mobile
   page,
 }) => {
   await setup(page);
-  await page.getByRole('button', { name: 'Favorite canvas: Research', exact: true }).click();
+  await page.getByRole('button', { name: 'Research', exact: true }).click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Favorite', exact: true }).click();
   await page.getByRole('button', { name: 'Favorites', exact: true }).click();
   await expect(page.locator('.board-link:not(.new-board)')).toHaveCount(1);
-  await expect(
-    page.getByRole('button', { name: 'Unfavorite canvas: Research', exact: true }),
-  ).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Research', exact: true }).click({ button: 'right' });
+  await expect(page.getByRole('menuitem', { name: 'Unfavorite', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
   await expect
     .poll(async () => (await workspace(page)).organization?.favoriteBoardIds)
     .toEqual(['research']);
   await page.reload();
-  await expect(
-    page.getByRole('button', { name: 'Unfavorite canvas: Research', exact: true }),
-  ).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Research', exact: true }).click({ button: 'right' });
+  await expect(page.getByRole('menuitem', { name: 'Unfavorite', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
   await page.setViewportSize({ width: 390, height: 844 });
   await open(page, 'Unfavorite current canvas');
   await expect.poll(async () => (await workspace(page)).organization?.favoriteBoardIds).toEqual([]);
@@ -204,7 +205,8 @@ test('workspace backup round trip remaps folders, favorites and templates while 
   await createFolder(page, 'Work');
   await projects.getByLabel('Current canvas folder').selectOption({ label: 'Work' });
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'Favorite canvas: Research', exact: true }).click();
+  await page.getByRole('button', { name: 'Research', exact: true }).click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Favorite', exact: true }).click();
   const templates = await open(page, 'Canvas templates');
   await templates.getByLabel('Template name', { exact: true }).fill('Reusable');
   await templates.getByRole('button', { name: 'Save template', exact: true }).click();

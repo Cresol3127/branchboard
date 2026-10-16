@@ -7,6 +7,8 @@ import { MODEL_REFRESH_INTERVAL } from '../src/modelDiscovery';
 
 const textModel = (id: string, extra = {}) => ({
   id,
+  family: 'gpt',
+  release_date: '2026-01-01',
   modalities: { input: ['text'], output: ['text'] },
   ...extra,
 });
@@ -16,8 +18,11 @@ const registry = () =>
       id === 'ollama_cloud' ? 'ollama-cloud' : id,
       {
         models: {
-          current: textModel(`${id}-new`),
-          duplicate: textModel(`${id}-new`),
+          current: textModel('gpt-6.1'),
+          duplicate: textModel('gpt-6.1'),
+          older: textModel('gpt-5.2'),
+          unknown: textModel('unreviewed-new'),
+          guard: textModel('gpt-oss-safeguard-20b', { release_date: '2026-10-01' }),
           old: textModel('retired', { status: 'deprecated' }),
           embedding: textModel('embedding', { type: 'embedding' }),
           image: { id: 'image', modalities: { input: ['text'], output: ['image'] } },
@@ -28,7 +33,12 @@ const registry = () =>
 const router = {
   data: [
     {
-      id: 'provider/current',
+      id: 'gpt-6.1',
+      architecture: { input_modalities: ['text'], output_modalities: ['text'] },
+    },
+    { id: 'gpt-5.2', architecture: { input_modalities: ['text'], output_modalities: ['text'] } },
+    {
+      id: 'unreviewed-new',
       architecture: { input_modalities: ['text'], output_modalities: ['text'] },
     },
     {
@@ -48,10 +58,11 @@ describe('keyless public model catalog', () => {
     const fetcher = successfulFetch();
     const service = publicModelCatalog({ fetcher });
     const result = await service.get();
-    expect(result.providers.openai?.models).toEqual(['openai-new']);
-    expect(result.providers.ollama_cloud?.models).toEqual(['ollama_cloud-new']);
+    expect(result.version).toBe(2);
+    expect(result.providers.openai?.models).toEqual(['gpt-6.1']);
+    expect(result.providers.ollama_cloud?.models).toEqual(['gpt-6.1']);
     expect(result.providers.openrouter).toMatchObject({
-      models: ['provider/current'],
+      models: ['gpt-6.1'],
       source: 'openrouter',
     });
     expect(result.errors).toEqual({});
@@ -69,7 +80,7 @@ describe('keyless public model catalog', () => {
   });
 
   it('deduplicates requests, caches automatic checks and bounds manual refresh frequency', async () => {
-    let now = 100;
+    let now = Date.parse('2026-10-24');
     const fetcher = successfulFetch();
     const service = publicModelCatalog({ fetcher, now: () => now });
     const [first, second] = await Promise.all([service.get(), service.get(true)]);
@@ -86,7 +97,7 @@ describe('keyless public model catalog', () => {
   });
 
   it('keeps last successful lists and timestamps through failures without hiding partial source errors', async () => {
-    let now = 100;
+    let now = Date.parse('2026-10-24');
     const fetcher = successfulFetch();
     const service = publicModelCatalog({ fetcher, now: () => now });
     const original = await service.get();
@@ -132,7 +143,7 @@ describe('keyless public model catalog', () => {
       const response = await fetch(`${url}/api/models/catalog`);
       expect(response.status).toBe(200);
       expect(response.headers.get('cache-control')).toBe('no-store');
-      expect((await response.json()).providers.openai.models).toEqual(['openai-new']);
+      expect((await response.json()).providers.openai.models).toEqual(['gpt-6.1']);
       expect(JSON.stringify(fetcher.mock.calls)).not.toContain('private-test-key');
       const noKey = createServer(createApp({ catalog: { fetcher } }));
       await new Promise<void>((resolve) => noKey.listen(0, '127.0.0.1', resolve));

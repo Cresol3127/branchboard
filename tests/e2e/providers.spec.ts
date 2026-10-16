@@ -4,7 +4,7 @@ import { command } from './helpers';
 import { catalogProviderIds } from '../../src/modelCatalog';
 
 const publicCatalog = (openaiModels?: string[]) => ({
-  version: 1,
+  version: 2,
   providers: Object.fromEntries(
     catalogProviderIds.map((id) => [
       id,
@@ -80,7 +80,7 @@ test('lists only connected providers, remembers selections and retains independe
   const selector = page.getByRole('dialog', { name: 'Model selector', exact: true });
   await expect(selector.getByRole('group', { name: 'Anthropic', exact: true })).toHaveCount(0);
   await expect(
-    selector.getByRole('option', { name: 'claude-sonnet-4-5', exact: true }),
+    selector.getByRole('option', { name: 'claude-sonnet-4-5 · Anthropic', exact: true }),
   ).toHaveCount(0);
   await selector.getByRole('button', { name: 'Manage providers', exact: true }).click();
   const settings = page.getByRole('region', { name: 'Models', exact: true });
@@ -101,7 +101,9 @@ test('lists only connected providers, remembers selections and retains independe
   await expect(settings.getByLabel('API key', { exact: true })).toHaveValue('');
   await page.keyboard.press('Escape');
   await first.getByRole('button', { name: /^Select model:/ }).click();
-  await selector.getByRole('option', { name: 'claude-user-model', exact: true }).click();
+  await selector
+    .getByRole('option', { name: 'claude-user-model · Anthropic', exact: true })
+    .click();
   await page.getByRole('textbox', { name: 'Message', exact: true }).fill('Hello Claude');
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
   await expect(first.locator('.message.assistant')).toContainText('Reply from anthropic');
@@ -110,8 +112,10 @@ test('lists only connected providers, remembers selections and retains independe
   const second = page.locator('.react-flow__node-chat').last();
   await expect(second.locator('.model-selector')).toContainText('claude-user-model');
   await second.getByRole('button', { name: /^Select model:/ }).click();
-  await selector.getByRole('option', { name: 'gpt-4o-mini', exact: true }).click();
-  await expect(second.locator('.model-selector')).toContainText('OpenAI');
+  await selector.getByRole('option', { name: 'gpt-4o-mini · OpenAI', exact: true }).click();
+  await expect(second.locator('.model-selector')).toHaveAttribute('aria-label', /OpenAI/);
+  await expect(second.locator('.model-selector .provider-icon')).toHaveCount(1);
+  await expect(selector.getByRole('group', { name: 'OpenAI', exact: true })).toHaveCount(0);
   await page.getByRole('textbox', { name: 'Message', exact: true }).fill('Hello OpenAI');
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
   await expect(second.locator('.message.assistant')).toContainText('Reply from openai');
@@ -157,7 +161,10 @@ test('supports Ollama connection testing, custom settings, key removal and node 
   await settings.getByLabel('Provider', { exact: true }).selectOption('custom');
   await settings.getByLabel('Base URL', { exact: true }).fill('http://localhost:1234/v1');
   await settings.getByLabel('API key', { exact: true }).fill('custom-fixture-secret');
-  await settings.getByLabel('Model name', { exact: true }).fill('custom-model');
+  await settings.getByRole('button', { name: /^Model name:/ }).click();
+  await page.getByRole('button', { name: 'Add model by ID…', exact: true }).click();
+  await page.getByLabel('Exact model ID', { exact: true }).fill('custom-model');
+  await page.getByRole('button', { name: 'Use custom model', exact: true }).click();
   await settings.getByRole('button', { name: 'Save settings', exact: true }).click();
   await expect(settings.getByRole('status')).toContainText('Settings saved');
   expect(changes.at(-1)).toMatchObject({
@@ -169,7 +176,7 @@ test('supports Ollama connection testing, custom settings, key removal and node 
   await page.keyboard.press('Escape');
   const chat = page.locator('.react-flow__node-chat').first();
   await chat.getByRole('button', { name: /^Select model:/ }).click();
-  await page.getByRole('option', { name: 'custom-model', exact: true }).click();
+  await page.getByRole('option', { name: 'custom-model · Custom endpoint', exact: true }).click();
   await page.getByRole('textbox', { name: 'Message', exact: true }).fill('fail');
   await page.getByRole('button', { name: 'Send message', exact: true }).click();
   await expect(chat.getByRole('alert')).toContainText('Provider quota exceeded');
@@ -186,7 +193,9 @@ test('supports Ollama connection testing, custom settings, key removal and node 
   expect(changes.at(-1)).toMatchObject({ provider: 'custom', apiKey: '' });
   await page.keyboard.press('Escape');
   await chat.getByRole('button', { name: /^Select model:/ }).click();
-  await expect(page.getByRole('option', { name: 'custom-model', exact: true })).toHaveCount(0);
+  await expect(
+    page.getByRole('option', { name: 'custom-model · Custom endpoint', exact: true }),
+  ).toHaveCount(0);
   await expect(chat.locator('.model-selector')).toContainText('custom-model');
   await page.getByRole('button', { name: 'Manage providers', exact: true }).click();
   await expect(settings).toBeVisible();
@@ -200,7 +209,10 @@ test('selects an exact model ID from text, preserves it through refresh, and rou
   const chat = page.locator('.react-flow__node-chat').first();
   await chat.getByRole('button', { name: /^Select model:/ }).click();
   const selector = page.getByRole('dialog', { name: 'Model selector', exact: true });
-  await selector.getByRole('textbox', { name: 'Search models' }).fill('private/exact-version:2026');
+  await selector
+    .getByRole('combobox', { name: 'Search models' })
+    .fill('private/exact-version:2026');
+  await selector.getByRole('button', { name: 'Add model by ID…', exact: true }).click();
   await selector.getByLabel('Custom model provider').selectOption('openai');
   await selector.getByRole('button', { name: 'Use custom model', exact: true }).click();
   await expect(chat.locator('.model-selector')).toContainText('private/exact-version:2026');
@@ -214,17 +226,19 @@ test('selects an exact model ID from text, preserves it through refresh, and rou
   await chat.getByRole('button', { name: /^Select model:/ }).click();
   await selector.getByRole('button', { name: 'Check for updates', exact: true }).click();
   await expect(
-    selector.getByRole('option', { name: 'brand-new-model', exact: true }),
+    selector.getByRole('option', { name: 'brand-new-model · OpenAI', exact: true }),
   ).toBeVisible();
   await expect(
-    selector.getByRole('option', { name: 'private/exact-version:2026', exact: true }),
+    selector.getByRole('option', { name: 'private/exact-version:2026 · OpenAI', exact: true }),
   ).toHaveAttribute('aria-selected', 'true');
   await expect(chat.locator('.model-selector')).toContainText('private/exact-version:2026');
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Add conversation', exact: true }).click();
   const second = page.locator('.react-flow__node-chat').last();
   await second.getByRole('button', { name: /^Select model:/ }).click();
-  await selector.getByRole('option', { name: 'private/exact-version:2026', exact: true }).click();
+  await selector
+    .getByRole('option', { name: 'private/exact-version:2026 · OpenAI', exact: true })
+    .click();
   await expect(second.locator('.model-selector')).toContainText('private/exact-version:2026');
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem('branchboard.workspace.v1')))
@@ -245,8 +259,10 @@ test('automatically refreshes keyless public catalogs, keeps offline choices and
   const chat = page.locator('.react-flow__node-chat').first();
   await chat.getByRole('button', { name: /^Select model:/ }).click();
   const selector = page.getByRole('dialog', { name: 'Model selector', exact: true });
-  const openai = selector.getByRole('group', { name: 'OpenAI', exact: true });
-  await expect(openai.getByRole('option', { name: 'gpt-4o-mini', exact: true })).toBeVisible();
+  const openai = selector;
+  await expect(
+    openai.getByRole('option', { name: 'gpt-4o-mini · OpenAI', exact: true }),
+  ).toBeVisible();
   let publicCalls = 0;
   let keyCalls = 0;
   let ollamaCalls = 0;
@@ -268,7 +284,7 @@ test('automatically refreshes keyless public catalogs, keeps offline choices and
   });
   await page.clock.fastForward(15 * 60 * 1000);
   await expect(
-    openai.getByRole('option', { name: 'auto-latest-model', exact: true }),
+    openai.getByRole('option', { name: 'auto-latest-model · OpenAI', exact: true }),
   ).toBeVisible();
   await expect.poll(() => ollamaCalls).toBe(1);
   await expect(chat.locator('.model-selector')).toContainText('gpt-4o-mini');
@@ -278,11 +294,11 @@ test('automatically refreshes keyless public catalogs, keeps offline choices and
   await page.clock.fastForward(16 * 60 * 1000);
   await expect(selector).toContainText('Public model catalog is unavailable');
   await expect(
-    openai.getByRole('option', { name: 'auto-latest-model', exact: true }),
+    openai.getByRole('option', { name: 'auto-latest-model · OpenAI', exact: true }),
   ).toBeVisible();
-  await expect(selector.getByRole('group', { name: 'Ollama', exact: true })).not.toContainText(
-    'Refresh failed',
-  );
+  await expect(
+    selector.getByRole('option', { name: 'local-auto-latest · Ollama', exact: true }),
+  ).toBeVisible();
   const count = publicCalls;
   await page.evaluate(() => window.dispatchEvent(new Event('focus')));
   expect(publicCalls).toBe(count);
@@ -360,27 +376,25 @@ test('updates public catalogs before keys, shows no unconfigured choices, and re
   await expect(settings.getByRole('status')).toContainText('Settings saved');
   await page.keyboard.press('Escape');
   await trigger.click();
-  await selector.getByRole('option', { name: 'new-keyless-model', exact: true }).click();
+  await selector.getByRole('option', { name: 'new-keyless-model · OpenAI', exact: true }).click();
   await expect(trigger).toContainText('new-keyless-model');
   await expect
     .poll(() => page.evaluate(() => localStorage.getItem('branchboard.workspace.v1')))
     .toContain('new-keyless-model');
   await page.reload();
   await trigger.click();
+  await expect(selector.locator('.model-section-label').first()).toHaveText(
+    'Recent · saved choices',
+  );
   await expect(
-    selector
-      .getByRole('group', { name: 'Recent models', exact: true })
-      .getByRole('option', { name: 'new-keyless-model', exact: true }),
-  ).toHaveAttribute('aria-selected', 'true');
-  await expect(
-    selector.getByRole('option', { name: 'new-keyless-model', exact: true }),
+    selector.getByRole('option', { name: 'new-keyless-model · OpenAI', exact: true }),
   ).toHaveAttribute('aria-selected', 'true');
   expect(publicCalls).toBe(2); // A fresh cache survives reload without another network check.
   unavailable = true;
   await selector.getByRole('button', { name: 'Check for updates', exact: true }).click();
   await expect(selector).toContainText('Public model catalog is unavailable');
   await expect(
-    selector.getByRole('option', { name: 'new-keyless-model', exact: true }),
+    selector.getByRole('option', { name: 'new-keyless-model · OpenAI', exact: true }),
   ).toHaveAttribute('aria-selected', 'true');
   expect(keyCalls).toBe(0);
 });
@@ -402,16 +416,17 @@ test('allows keyboard custom IDs on mobile and keeps provider lists usable when 
   await page.keyboard.press('Escape');
   await page.locator('.react-flow__node-chat .model-selector').click();
   const selector = page.getByRole('dialog', { name: 'Model selector', exact: true });
-  await selector.getByRole('textbox', { name: 'Search models' }).fill('manually-entered-id');
+  await selector.getByRole('combobox', { name: 'Search models' }).fill('manually-entered-id');
   // A mobile keyboard changes the visible viewport; it must not dismiss the picker.
   await page.setViewportSize({ width: 390, height: 420 });
   await expect(selector).toBeVisible();
-  await expect(selector.getByRole('textbox', { name: 'Search models' })).toHaveValue(
+  await expect(selector.getByRole('combobox', { name: 'Search models' })).toHaveValue(
     'manually-entered-id',
   );
   const bounds = await selector.boundingBox();
   expect(bounds!.y).toBeGreaterThanOrEqual(8);
   expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(412);
+  await selector.getByRole('button', { name: 'Add model by ID…', exact: true }).click();
   await selector.getByLabel('Custom model provider').focus();
   await page.keyboard.press('ArrowDown');
   await expect(selector.getByLabel('Custom model provider')).toHaveValue('ollama');
@@ -420,11 +435,11 @@ test('allows keyboard custom IDs on mobile and keeps provider lists usable when 
   await page.keyboard.press('Enter');
   await expect(selector).not.toBeVisible();
   await expect(page.locator('.react-flow__node-chat .model-selector')).toContainText(
-    'Ollama · manually-entered-id',
+    'manually-entered-id',
   );
   await page.keyboard.press('Enter');
   await expect(
-    selector.getByRole('option', { name: 'manually-entered-id', exact: true }),
+    selector.getByRole('option', { name: 'manually-entered-id · Ollama', exact: true }),
   ).toHaveAttribute('aria-selected', 'true');
   await page.keyboard.press('Escape');
   await expect(page.locator('.react-flow__node-chat .model-selector')).toBeFocused();

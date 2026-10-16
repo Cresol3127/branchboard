@@ -4,6 +4,9 @@ import { useStore } from '../store';
 import { Modal } from './ui';
 import { useWorkspacePanels } from '../workspacePanels';
 import { ModelTest } from './ModelTest';
+import { PaletteSettings } from './PaletteSettings';
+import { ModelDropdown, type ModelOption } from './ModelDropdown';
+import { useAddedModels } from '../addedModels';
 import type { ProviderId, PublicProvider } from '../providers';
 type Theme = 'light' | 'dark' | 'system';
 import { ProviderSetup } from './ProviderSetup';
@@ -82,7 +85,7 @@ export function Settings({
         {section === 'workspace' ? (
           <section>
             <h3>Appearance</h3>
-            <label>
+            <label className="appearance-field">
               Color theme
               <select
                 aria-label="Color theme"
@@ -94,6 +97,7 @@ export function Settings({
                 <option value="dark">Dark</option>
               </select>
             </label>
+            <PaletteSettings />
             <p className="muted">
               Canvases stay in this browser. Use Backups before changing browser or origin.
             </p>
@@ -136,6 +140,7 @@ function ProviderSettings({ provider }: { provider: PublicProvider }) {
   const catalog = useStore((s) => s.modelCatalog);
   const publicCatalog = hasPublicCatalog(provider.id);
   const choices = catalogModelChoices(provider, catalog, discovery);
+  const added = useAddedModels((s) => s.models);
   const [key, setKey] = useState('');
   const [baseURL, setBaseURL] = useState(provider.baseURL);
   const [model, setModel] = useState(provider.defaultModel);
@@ -143,6 +148,23 @@ function ProviderSettings({ provider }: { provider: PublicProvider }) {
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
+  const options: ModelOption[] = choices.map((id) => ({
+    provider: provider.id,
+    model: id,
+    section: provider.id === 'ollama' ? 'Installed locally' : 'Latest generation',
+  }));
+  for (const id of [
+    ...models.split('\n'),
+    ...added.filter((c) => c.provider === provider.id).map((c) => c.model),
+    model,
+  ]) {
+    if (id.trim() && !options.some((o) => o.model === id.trim()))
+      options.push({
+        provider: provider.id,
+        model: id.trim(),
+        section: id === model ? 'Current · saved selection' : 'Added by ID',
+      });
+  }
   const local = provider.id === 'ollama';
   const custom = provider.id === 'custom';
   const report = (err: unknown) =>
@@ -152,6 +174,8 @@ function ProviderSettings({ provider }: { provider: PublicProvider }) {
     setError('');
     setStatus('');
     try {
+      if (!removeKey && custom && !model.trim())
+        throw new Error('Choose a model or add its exact ID before saving.');
       const response = await fetch('/api/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -246,20 +270,26 @@ function ProviderSettings({ provider }: { provider: PublicProvider }) {
         </>
       )}
       <label htmlFor="provider-model">{custom ? 'Model name' : 'Default model'}</label>
-      <input
-        id="provider-model"
-        list={`provider-model-options-${provider.id}`}
-        value={model}
-        onChange={(e) => setModel(e.target.value)}
-        required={custom}
+      <ModelDropdown
+        controlId="provider-model"
+        label={custom ? 'Model name' : 'Default model'}
+        className="settings-model-dropdown"
+        value={{ provider: provider.id, model }}
+        providers={[provider]}
+        options={options}
         disabled={busy}
-        maxLength={512}
+        onSelect={(_, id) => {
+          setModel(id);
+          return true;
+        }}
+        onAdd={(_, id) => {
+          setModel(id);
+          setModels((previous) =>
+            [...new Set([...previous.split('\n').filter(Boolean), id])].join('\n'),
+          );
+          return true;
+        }}
       />
-      <datalist id={`provider-model-options-${provider.id}`}>
-        {choices.map((id) => (
-          <option key={id} value={id} />
-        ))}
-      </datalist>
       <ModelTest
         provider={provider.id}
         model={model}

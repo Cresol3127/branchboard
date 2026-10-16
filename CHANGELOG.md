@@ -1,110 +1,104 @@
 # Changelog
 
-## 1.8.0 — Docked workspace — 2026-10-24
+Notable changes, newest first. See the [release catalog](releases/README.md) for
+artifacts, provenance and verification. Early entries were reconstructed from preserved
+sources; original v1.1–v1.5 release dates are unknown.
 
-### Changed
+## 1.9.0 — 2026-10-25
 
-- Settings, Models, Help, history, backups and editors now share one docked workspace
-  panel. On narrow screens, Back to canvas returns to the preserved canvas view.
-- Conversation and note cards are titleless, with derived navigation labels and quiet
-  contextual actions. Removed Inspector and persistent group-creation controls.
-- Ctrl/Command-drag selects a rectangle; Shift-click toggles individual selection.
-  Space/middle-drag pans. Existing groups remain readable and can be ungrouped.
-- Creation tools dock at the right, collapsed to New conversation and an expand control.
-  Removed routine autosave/header status, canvas token clutter and permanent hints.
-- Canvas numbers follow original creation order. Delete controls appear on hover/focus;
-  deleting another canvas preserves the active canvas, draft, viewport and history.
+- Added shared cubic-bezier motion for panel opening/closing, menus, model dropdowns,
+  toolbar reveals and node feedback, with immediate reduced-motion behavior.
+- Kept closing UI inert, preserved focus and drafts, prevented discarded-form revival,
+  and cancelled explicit model tests before their panel's visual exit finishes.
+- Replaced sidebar Favorite/Delete buttons with an icon-based canvas context menu for
+  favorites, project moves and confirmed deletion; supports keyboard and touch.
+- Kept collapsed canvas numbers centered without horizontal scrolling or overlapping controls.
+- Centered workspace search on the window, adapting to sidebar motion, open panels and
+  narrow layouts; restored opener focus after closing full-view panels.
+- Added 12 complete UI palettes and named custom palettes with live preview, light/dark
+  tuning, contrast warnings, reset controls and safe local persistence.
+- Limited automatic model suggestions to the latest known generation per supported
+  family; retained saved selections and persistent exact-ID additions separately.
+- Unified model dropdowns across settings, cards and the message bar; replaced provider
+  headings with local accent-tinted logos and fallback icons.
+- Improved appearance-label spacing, keyboard/mobile selection and unsaved-preview handling.
+- Unified Settings header and action backgrounds with the panel instead of separate gray blocks.
 
-### Added
+## 1.8.0 — 2026-10-24
 
-- Explicit bounded, cancellable testing of a selected configured provider/model using
-  server-held credentials and no canvas content. Empty or interrupted output cannot pass.
-- Integrated, target-pinned confirmations and dirty-panel navigation guards, with draft
-  preservation, source-canvas return actions and keyboard focus restoration.
-- Separate cleanup editions 1.1.2, 1.2.2, 1.3.2, 1.4.2, 1.5.2, 1.6.1 and 1.7.1,
-  derived from verified originals with Inspector/group-creation entry points removed.
+- Added docked workspace panels, draft-safe navigation and integrated confirmations.
+- Simplified cards, creation tools and canvas navigation; removed Inspector and
+  persistent group-creation controls while preserving legacy data.
+- Added explicit, bounded and cancellable model testing without canvas content.
+- Made Ctrl/Command-drag rectangle-only; preserved active work when deleting other canvases.
+- Fixed annotation completion, exported Markdown tables, selection and mobile spacing.
 
-### Fixed
+## Historical cleanup editions — 2026-10-24
 
-- Annotation gesture completion no longer depends on a potentially stale rendered draft.
-- Markdown table export no longer wraps narrow cloned cells and clips the final row.
-- Canvas-name focus spacing, mobile layer-name fields, toolbar/annotation placement
-  and Favorite/delete hit targets are clearer without resetting canvas position.
+**1.1.2, 1.2.2, 1.3.2, 1.4.2, 1.5.2, 1.6.1, 1.7.1**
 
-### Compatibility
+- Removed Inspector and group-creation entry points; standardized rectangle selection.
+- Preserved each edition's feature set, legacy groups and inherited context without
+  backporting the docked redesign. Original artifacts and tags remain unchanged.
 
-- Workspace formats, historical titles, context inheritance, cutoffs and legacy input
-  limits remain compatible. Blocking legacy limits have an undoable reset.
-- Original tags and artifacts remain unchanged. No paid requests, hosting, authentication,
-  workspace migration or unfinished attachment/accounting features were introduced.
+## 1.7.0 — 2026-10-23
 
-## 1.7.0 — Design improvements — 2026-10-23
-
-### Changed
-
-- Minimal model picker: only configured/keyed providers and connected local Ollama;
-  recent choices first, search and progressive exact-ID entry, compact provider management.
-- Settings shows essential fields and Save first, with collapsed setup/advanced details.
-  Help separates a short guide from searchable, grouped keyboard shortcuts.
-- Canvas overlays coordinate measured composer, minimap, keyboard and sidebar bounds.
-  View controls move lower without the minimap and leave a 24px gap above it when shown.
-  Layout changes preserve the graph viewport; collapsed-sidebar visuals are smaller
-  while retaining 44px targets.
-
-### Added
-
-- Automatic keyless public model-catalog updates from Models.dev and OpenRouter,
-  with manual checks before setup, source/update labels and an offline browser cache.
-- Public catalogs remain independent of credentials, workspace backups and selected
-  conversation models; authenticated listing is an explicit optional action.
-- The message bar now opens the shared model picker for both existing and new
-  conversations, including on mobile; drafts remain intact when changing models.
-- Five persistent recent provider/model choices, with the last choice used for new
-  conversations after reload. Existing conversations retain their own models.
-
-### Fixed
-
-- Both canvas top corners are rounded and clipped on desktop and mobile.
-- Canvas corner cutouts now reveal the surrounding app surface rather than the
-  identical canvas background, making both curves visible in light and dark themes.
-- API-key settings saves incorrectly rejected as cross-origin in development; the
-  Vite proxy now preserves the browser's host while the API keeps its origin checks.
-- Wrapped composer drafts resize when available width changes instead of clipping
-  extra lines; draft text and graph position remain unchanged.
-
-### Compatibility
-
-- Existing saved/default/custom IDs, installed local Ollama discovery and workspace
-  formats are preserved. Public metadata is not an account-access guarantee.
-- Released 1.6.0 and refreshed historical editions are unchanged.
+- Added keyless public model catalogs, offline caching and five persistent recent choices.
+- Shared the model picker with the message bar; simplified Settings and Help.
+- Improved responsive overlays, minimap clearance, sidebar targets and canvas corners.
+- Fixed development-proxy key saves and wrapped composer drafts; hardened release verification.
 
 ## 1.6.0 — 2026-10-22
 
-### Changed
+- Introduced Material surfaces, local Roboto, system theme defaults and readable mobile views.
+- Added Focus conversation and standalone production-server builds.
+- Fixed port serialization, branch routing, auto-layout, API 404s and install/build blockers.
+- Added verified source/runtime packages, inventories and preserved release provenance.
 
-- Material workspace: neutral semantic surfaces, local Roboto, softer sage accents,
-  prominent search, clearer canvas navigation, quieter cards and consistent controls.
-- Fresh installations follow system theme; mobile opens a readable conversation.
-- Production startup runs the built Node server, with no tsx runtime requirement.
+## Historical Material refreshes — 2026-10-22
 
-### Added
+**1.1.1, 1.2.1, 1.3.1, 1.4.1, 1.5.1**
 
-- Focus conversation view action.
-- Recoverable release provenance, inventories, independent refreshed historical editions.
+- Refreshed the corresponding v1.1–v1.5 snapshots with Material styling, clearer
+  navigation, mobile fitting and standalone production servers.
+- Simplified early prototypes to two starter cards; retained later feature sets.
+- Fixed port resets, shared-ancestor layout and unknown API responses without rewriting originals.
 
-### Fixed
+## v1.5 — Forest workspace
 
-- Port reset values breaking validated exports and snapshots.
-- Branches losing their source provider/model.
-- Auto-layout repeatedly traversing merged ancestor paths.
-- Unknown API routes returning successful HTML instead of JSON 404.
-- PDF.js lifecycle/type drift blocking the build in inactive attachment groundwork.
-- Unused native SQLite groundwork blocking installs without native build tools;
-  it remains available as an optional dependency, not a current runtime requirement.
+- Added a unified, zoom-independent message bar with separate session drafts.
+- Introduced charcoal/sage styling, an icon rail, quick creation and cross-canvas copy/paste.
+- Added automatic provider discovery, exact model IDs and refresh/error controls.
+- Improved card dragging, native text selection, edge actions and saved viewports;
+  fixed cancellation accidentally submitting drafts.
 
-### Compatibility
+## v1.4 — Canvas tools and recovery
 
-- Existing workspace/backup formats and saved viewports are retained. No storage
-  migration or unfinished attachment/recovery/accounting feature is enabled.
-- Original release labels and artifacts remain preserved. Refreshes 1.1.1–1.5.1
-  are new editions, not rewritten historical releases; see the release catalog.
+- Added historical-turn branching, workspace backups and named manual snapshots.
+- Added rich Markdown editing, interactive checklists, automatic sizing and collision handling.
+- Added drawings, shapes, annotation layers and PNG/PDF canvas export.
+- Added conversation imports, projects/folders, reusable templates and favorites.
+- Added Ollama Cloud and provider setup guides; improved validation and mobile dialogs.
+
+## v1.3 — History and search
+
+- Added saved-message editing/deletion with confirmation, persistence and undo.
+- Added cross-canvas content search with keyboard navigation and matching-turn focus.
+- Guarded history changes during generation and rejected duplicate imported message IDs.
+
+## v1.2 — Context controls
+
+- Added source inclusion/exclusion, ordered context previews and estimated input budgets.
+- Added heuristic token estimates, animated sidebar transitions and consistent rounded surfaces.
+
+## v1.1 — First recoverable implementation
+
+- Introduced connected chat/note/group cards, branching, merged context and streaming AI.
+- Added multi-provider routing, server-held credentials, model discovery and cancellation.
+- Added multiple canvases, autosave, undo/redo, JSON backups and Markdown export.
+- Included canvas navigation, movable ports, themes, responsive controls and automated QA.
+
+## v1.0 — Unavailable
+
+The preserved snapshot is empty; its implementation and original release date cannot
+be established. No features or verification results are attributed to it.

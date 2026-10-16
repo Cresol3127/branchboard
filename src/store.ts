@@ -881,7 +881,7 @@ export const useStore = create<State>((set, get) => {
           try {
             localStorage.setItem(
               MODEL_CATALOG_STORAGE_KEY,
-              JSON.stringify({ version: 1, providers }),
+              JSON.stringify({ version: 2, providers }),
             );
           } catch {
             set((s) => ({

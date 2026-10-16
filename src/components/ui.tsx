@@ -9,6 +9,7 @@ import {
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { closeWorkspacePanel, useWorkspacePanels, type PanelKind } from '../workspacePanels';
+import { useIsPresent } from './Motion';
 
 export function IconButton({
   label,
@@ -42,11 +43,16 @@ export function Modal({
   kind?: PanelKind;
 }) {
   const id = useId();
+  const present = useIsPresent();
   const ref = useRef<HTMLDivElement>(null);
+  const returnFocus = useRef<HTMLElement | null>(null);
   const close = useRef(onClose);
   close.current = onClose;
   const active = useWorkspacePanels((s) => s.active?.id === id);
   useLayoutEffect(() => {
+    if (!present) return;
+    // Capture the opener before the host makes the narrow canvas inert.
+    returnFocus.current ??= document.activeElement as HTMLElement | null;
     useWorkspacePanels.getState().activate({
       id,
       kind,
@@ -55,14 +61,14 @@ export function Modal({
       dirty: () => Boolean(ref.current?.querySelector('[data-dirty="true"]')),
     });
     return () => useWorkspacePanels.getState().release(id);
-  }, [id, kind, title]);
+  }, [id, kind, title, present]);
   useEffect(() => {
-    if (!active) return;
-    const previous = document.activeElement as HTMLElement | null;
+    if (!active || !present) return;
+    const previous = returnFocus.current;
     const el = ref.current!;
     (el.querySelector<HTMLElement>('[data-autofocus]') || el).focus();
     const key = (event: KeyboardEvent) => {
-      if (document.querySelector('[role="dialog"], [role="menu"]')) return;
+      if (document.querySelector('[role="dialog"], [role="menu"], [data-model-dropdown]')) return;
       if (event.key === 'Escape') {
         event.stopPropagation();
         closeWorkspacePanel();
@@ -71,14 +77,27 @@ export function Modal({
     document.addEventListener('keydown', key);
     return () => {
       document.removeEventListener('keydown', key);
-      if (previous?.isConnected) previous.focus();
+      requestAnimationFrame(() => {
+        // Wait for the host to remove inert, without stealing focus from a new
+        // panel or a command's destination control.
+        if (
+          !useWorkspacePanels.getState().active &&
+          previous?.isConnected &&
+          !previous.closest('[inert]') &&
+          (document.activeElement === document.body || el.contains(document.activeElement))
+        )
+          previous.focus({ preventScroll: true });
+      });
     };
-  }, [active]);
+  }, [active, present]);
   const host = document.getElementById('workspace-panel-host');
-  if (!active || !host) return null;
+  if ((!active && present) || !host) return null;
   return createPortal(
     <div
       className="workspace-panel-content"
+      data-motion-state={present ? 'open' : 'closing'}
+      inert={!present}
+      aria-hidden={!present}
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
       onDoubleClick={(e) => e.stopPropagation()}
@@ -86,7 +105,10 @@ export function Modal({
       onKeyDown={(e) => {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') return;
         e.stopPropagation();
-        if (e.key === 'Escape' && !document.querySelector('[role="dialog"], [role="menu"]')) {
+        if (
+          e.key === 'Escape' &&
+          !document.querySelector('[role="dialog"], [role="menu"], [data-model-dropdown]')
+        ) {
           e.preventDefault();
           closeWorkspacePanel();
         }
@@ -94,7 +116,7 @@ export function Modal({
     >
       <div
         ref={ref}
-        role="region"
+        role={present ? 'region' : undefined}
         aria-label={title}
         className={`modal docked-panel ${className}`}
         tabIndex={-1}
@@ -118,17 +140,21 @@ export function Menu({
   label,
   onClose,
   children,
+  className = '',
 }: {
   x: number;
   y: number;
   label: string;
   onClose: () => void;
   children: ReactNode;
+  className?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const present = useIsPresent();
   const close = useRef(onClose);
   close.current = onClose;
   useLayoutEffect(() => {
+    if (!present) return;
     const menu = ref.current!;
     const previous = document.activeElement as HTMLElement | null;
     const position = () => {
@@ -137,25 +163,34 @@ export function Menu({
         top = (viewport?.offsetTop || 0) + 8;
       const width = viewport?.width || window.innerWidth,
         height = viewport?.height || window.innerHeight;
-      menu.style.maxHeight = `${Math.max(80, height - 16)}px`;
+      menu.style.maxHeight = `${Math.max(80, height - 20)}px`;
+      menu.style.maxWidth = `${Math.max(160, width - 16)}px`;
       menu.style.overflowY = 'auto';
-      const rect = menu.getBoundingClientRect();
-      menu.style.left = `${Math.max(left, Math.min(x, left + width - rect.width - 16))}px`;
-      menu.style.top = `${Math.max(top, Math.min(y, top + height - rect.height - 16))}px`;
+      menu.style.left = `${Math.max(left, Math.min(x, left + width - menu.offsetWidth - 16))}px`;
+      menu.style.top = `${Math.max(top, Math.min(y, top + height - menu.offsetHeight - 20))}px`;
     };
     position();
+    const observer = new ResizeObserver(position);
+    observer.observe(menu);
     window.addEventListener('resize', position);
     window.visualViewport?.addEventListener('resize', position);
     window.visualViewport?.addEventListener('scroll', position);
     menu.querySelector<HTMLButtonElement>('button')?.focus();
     return () => {
+      observer.disconnect();
       window.removeEventListener('resize', position);
       window.visualViewport?.removeEventListener('resize', position);
       window.visualViewport?.removeEventListener('scroll', position);
-      previous?.focus();
+      if (
+        previous?.isConnected &&
+        !previous.closest('[inert]') &&
+        (document.activeElement === document.body || menu.contains(document.activeElement))
+      )
+        previous.focus({ preventScroll: true });
     };
-  }, [x, y]);
+  }, [x, y, present]);
   useEffect(() => {
+    if (!present) return;
     const dismiss = () => close.current();
     const key = (e: KeyboardEvent) => {
       if (e.key === 'Escape' || e.key === 'Tab') {
@@ -182,13 +217,16 @@ export function Menu({
       window.removeEventListener('pointerdown', dismiss);
       menu.removeEventListener('keydown', key);
     };
-  }, []);
+  }, [present]);
   return createPortal(
     <div
-      role="menu"
+      role={present ? 'menu' : undefined}
       ref={ref}
+      data-motion-state={present ? 'open' : 'closing'}
+      inert={!present}
+      aria-hidden={!present}
       aria-label={label}
-      className="context-menu nodrag nowheel"
+      className={`context-menu nodrag nowheel ${className}`}
       style={{
         left: x,
         top: y,

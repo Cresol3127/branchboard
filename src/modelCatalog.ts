@@ -20,12 +20,12 @@ export type CatalogEntry = {
   updatedAt: number;
 };
 export type ModelCatalog = {
-  version: 1;
+  version: 2;
   providers: Partial<Record<CatalogProviderId, CatalogEntry>>;
   errors?: Partial<Record<CatalogProviderId, string>>;
 };
 export type ModelCatalogState = ModelCatalog & ModelDiscovery & { cacheError?: string };
-export const MODEL_CATALOG_STORAGE_KEY = 'branchboard.model-catalog.v1';
+export const MODEL_CATALOG_STORAGE_KEY = 'branchboard.model-catalog.v2';
 export const validModelId = (value: unknown): value is string =>
   typeof value === 'string' &&
   Boolean(value.trim()) &&
@@ -39,7 +39,7 @@ export function validateModelCatalog(input: unknown): ModelCatalog {
   if (!input || typeof input !== 'object') throw new Error('Invalid public model catalog.');
   const value = input as ModelCatalog;
   if (
-    value.version !== 1 ||
+    value.version !== 2 ||
     !value.providers ||
     typeof value.providers !== 'object' ||
     Array.isArray(value.providers)
@@ -73,7 +73,7 @@ export function validateModelCatalog(input: unknown): ModelCatalog {
       errors[id] = value.errors[id];
     }
   }
-  return { version: 1, providers, errors };
+  return { version: 2, providers, errors };
 }
 
 export function loadModelCatalog(): ModelCatalogState {
@@ -91,7 +91,7 @@ export function loadModelCatalog(): ModelCatalogState {
   } catch {
     /* A broken cache must never affect workspace recovery or startup. */
   }
-  return { version: 1, providers: {}, loading: false };
+  return { version: 2, providers: {}, loading: false };
 }
 
 export function catalogIsStale(state: ModelCatalogState, now = Date.now()) {
@@ -104,17 +104,12 @@ export function catalogIsStale(state: ModelCatalogState, now = Date.now()) {
 export function catalogModelChoices(
   provider: PublicProvider,
   catalog: ModelCatalogState,
-  discovery?: ModelDiscovery,
+  _discovery?: ModelDiscovery,
 ) {
   const entry = hasPublicCatalog(provider.id) ? catalog.providers[provider.id] : undefined;
-  return [
-    ...new Set([
-      ...(entry?.models ?? provider.models),
-      ...(entry && discovery?.updatedAt ? provider.models : []),
-      ...provider.extraModels,
-      ...(provider.defaultModel ? [provider.defaultModel] : []),
-    ]),
-  ].sort();
+  // Cloud discovery/defaults/extras are NOT evidence that a model is current-generation.
+  // They stay selectable separately as saved/manual choices. Local discovery is installed-only.
+  return [...new Set(provider.id === 'ollama' ? provider.models : (entry?.models ?? []))].sort();
 }
 
 export function catalogLabel(state: ModelCatalogState, id: CatalogProviderId) {
@@ -128,5 +123,5 @@ export function catalogLabel(state: ModelCatalogState, id: CatalogProviderId) {
     return `Update failed — cached / suggested list kept · ${source}${time}`;
   return entry
     ? `${source}${time} · No key needed`
-    : 'Public catalog not checked · Suggested / saved IDs';
+    : 'Latest-generation catalog not checked · Add an exact ID or keep your saved selection';
 }

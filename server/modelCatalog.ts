@@ -5,6 +5,7 @@ import {
   type ModelCatalog,
 } from '../src/modelCatalog';
 import { MODEL_REFRESH_INTERVAL } from '../src/modelDiscovery';
+import { latestGenerationModels, type GenerationModel } from '../src/modelGeneration';
 
 const REGISTRY_URL = 'https://models.dev/api.json';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/models';
@@ -43,7 +44,7 @@ async function publicJSON(url: string, options: CatalogOptions) {
 
 export function publicModelCatalog(options: CatalogOptions = {}) {
   const now = options.now ?? Date.now;
-  let cached: ModelCatalog = { version: 1, providers: {} };
+  let cached: ModelCatalog = { version: 2, providers: {} };
   let checkedAt: number | undefined;
   let pending: Promise<ModelCatalog> | undefined;
   return {
@@ -55,6 +56,7 @@ export function publicModelCatalog(options: CatalogOptions = {}) {
       pending = (async () => {
         const providers = { ...cached.providers };
         const errors: NonNullable<ModelCatalog['errors']> = {};
+        let routerVerified = false;
         const [registry, router] = await Promise.allSettled([
           publicJSON(REGISTRY_URL, options),
           publicJSON(OPENROUTER_URL, options),
@@ -65,15 +67,7 @@ export function publicModelCatalog(options: CatalogOptions = {}) {
             const key = id === 'ollama_cloud' ? 'ollama-cloud' : id;
             const value = registry.value[key] as
               | {
-                  models?: Record<
-                    string,
-                    {
-                      id?: unknown;
-                      type?: string;
-                      status?: string;
-                      modalities?: { input?: string[]; output?: string[] };
-                    }
-                  >;
+                  models?: Record<string, GenerationModel>;
                 }
               | undefined;
             if (!value?.models || typeof value.models !== 'object' || Array.isArray(value.models))
@@ -81,18 +75,8 @@ export function publicModelCatalog(options: CatalogOptions = {}) {
             const entries = Object.values(value.models);
             if (entries.length > 3000 || entries.some((m) => !m || !validModelId(m.id)))
               throw new Error();
-            const models = entries
-              .filter(
-                (m) =>
-                  (!m.type || m.type === 'chat') &&
-                  !['deprecated', 'retired'].includes(m.status || '') &&
-                  Array.isArray(m.modalities?.input) &&
-                  m.modalities.input.includes('text') &&
-                  Array.isArray(m.modalities.output) &&
-                  m.modalities.output.includes('text'),
-              )
-              .map((m) => (m.id as string).trim());
-            if (!models.length) throw new Error();
+            const models = latestGenerationModels(entries, now());
+            if (id === 'openrouter') routerVerified = true;
             providers[id] = {
               models: [...new Set(models)].sort(),
               source: 'models.dev',
@@ -100,7 +84,7 @@ export function publicModelCatalog(options: CatalogOptions = {}) {
             };
           } catch {
             errors[id] =
-              'Models.dev could not be updated. The last catalog or built-in suggestions are still available.';
+              'Models.dev could not be updated. Last verified recommendations and saved exact IDs remain available.';
           }
         }
         try {
@@ -120,7 +104,7 @@ export function publicModelCatalog(options: CatalogOptions = {}) {
             (router.value.links as { next?: unknown } | undefined)?.next
           )
             throw new Error();
-          const models = entries
+          const listed = entries
             .filter(
               (m) =>
                 Array.isArray(m.architecture?.input_modalities) &&
@@ -129,7 +113,10 @@ export function publicModelCatalog(options: CatalogOptions = {}) {
                 m.architecture.output_modalities.includes('text'),
             )
             .map((m) => (m.id as string).trim());
-          if (!models.length) throw new Error();
+          // Native listing timestamps are not generation dates. Only join IDs verified
+          // by the same family policy; never replace them with an unfiltered native list.
+          if (!routerVerified) throw new Error();
+          const models = providers.openrouter!.models.filter((id) => listed.includes(id));
           const entry: CatalogEntry = {
             models: [...new Set(models)].sort(),
             source: 'openrouter',
@@ -142,7 +129,7 @@ export function publicModelCatalog(options: CatalogOptions = {}) {
             'OpenRouter public catalog could not be updated. Using the last catalog or Models.dev when available.';
         }
         checkedAt = now();
-        cached = { version: 1, providers, errors };
+        cached = { version: 2, providers, errors };
         return cached;
       })().finally(() => {
         pending = undefined;

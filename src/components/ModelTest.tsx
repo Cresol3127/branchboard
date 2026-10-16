@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import type { ProviderId } from '../providers';
+import { useIsPresent } from './Motion';
 
 export function ModelTest({
   provider,
@@ -12,6 +13,7 @@ export function ModelTest({
   savedSettings: string;
   disabled: boolean;
 }) {
+  const present = useIsPresent();
   const controller = useRef<AbortController | null>(null);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{
@@ -19,15 +21,16 @@ export function ModelTest({
     error?: string;
     elapsedMs?: number;
   } | null>(null);
-  useEffect(() => {
+  useLayoutEffect(() => {
     setResult(null);
     setBusy(false);
     return () => {
       controller.current?.abort();
       controller.current = null;
     };
-  }, [provider, model, savedSettings, disabled]);
+  }, [provider, model, savedSettings, disabled, present]);
   const test = async () => {
+    if (!present || disabled || busy || !model.trim()) return;
     const request = new AbortController();
     controller.current = request;
     const timer = setTimeout(() => request.abort(), 35_000);
@@ -76,7 +79,7 @@ export function ModelTest({
       <div className="provider-actions">
         <button
           type="button"
-          disabled={disabled || busy || !model.trim()}
+          disabled={!present || disabled || busy || !model.trim()}
           onClick={() => void test()}
         >
           {busy ? 'Testing…' : 'Test model'}

@@ -17,6 +17,8 @@ import { annotationKinds, annotationPath } from '../annotations';
 import { currentBoard, useStore } from '../store';
 import type { Annotation, AnnotationLayer, AnnotationState } from '../types';
 import { IconButton, Modal } from './ui';
+import { Presence, useMotionPresence } from './Motion';
+import { motion } from '../motion';
 
 type Point = { x: number; y: number };
 type Gesture = {
@@ -38,6 +40,7 @@ const labels = [
 ];
 
 export function Annotations({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const toolsRendered = useMotionPresence(open, motion.duration.standard);
   const state = useStore(),
     board = currentBoard(state),
     flow = useReactFlow();
@@ -328,10 +331,13 @@ export function Annotations({ open, onClose }: { open: boolean; onClose: () => v
           onDoubleClick={(e) => e.stopPropagation()}
         />
       )}
-      {open && (
+      {toolsRendered && (
         <Panel
           position="top-left"
           className="annotation-panel nodrag nopan nowheel"
+          data-motion-state={open ? 'open' : 'closing'}
+          inert={!open}
+          aria-hidden={!open}
           onKeyDown={(e) => {
             if (e.key === 'Delete' || e.key === 'Backspace') e.stopPropagation();
           }}
@@ -437,124 +443,126 @@ export function Annotations({ open, onClose }: { open: boolean; onClose: () => v
           {error && <p role="alert">{error}</p>}
         </Panel>
       )}
-      {layersOpen && (
-        <Modal
-          kind="layers"
-          title="Annotation layers"
-          onClose={() => setLayersOpen(false)}
-          className="annotation-layers"
-        >
-          <p>
-            Layers stack from bottom to top, above canvas nodes. Hidden layers stay in backups;
-            locked layers cannot be drawn on or edited.
-          </p>
-          {value.layers.map((l, i) => (
-            <div className="annotation-layer" key={l.id}>
-              <input
-                key={`${l.id}-${l.name}`}
-                aria-label={`Layer name ${i + 1}`}
-                defaultValue={l.name}
-                maxLength={80}
-                disabled={busy}
-                onBlur={(e) => {
-                  const name = e.target.value.trim();
-                  if (name && name !== l.name) updateLayer(l.id, { name });
-                  else e.target.value = l.name;
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') e.currentTarget.blur();
-                }}
-              />
-              <label>
-                <input
-                  type="checkbox"
-                  checked={l.visible}
-                  disabled={busy}
-                  onChange={(e) => updateLayer(l.id, { visible: e.target.checked })}
-                />
-                Visible
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={l.locked}
-                  disabled={busy}
-                  onChange={(e) => updateLayer(l.id, { locked: e.target.checked })}
-                />
-                Locked
-              </label>
-              <IconButton
-                label={`Lower ${l.name}`}
-                disabled={busy || i === 0}
-                onClick={() => reorder(i, -1)}
-              >
-                <ArrowDown size={16} />
-              </IconButton>
-              <IconButton
-                label={`Raise ${l.name}`}
-                disabled={busy || i === value.layers.length - 1}
-                onClick={() => reorder(i, 1)}
-              >
-                <ArrowUp size={16} />
-              </IconButton>
-              <IconButton
-                label={`Delete layer ${l.name}`}
-                disabled={busy || l.locked}
-                onClick={() => setDeleting(l)}
-              >
-                <Trash2 size={16} />
-              </IconButton>
-            </div>
-          ))}
-          {!value.layers.length && <p>No layers yet.</p>}
-          <button
-            className="annotation-add-layer"
-            disabled={busy || value.layers.length >= 30}
-            onClick={() => {
-              const next = {
-                id: crypto.randomUUID(),
-                name: `Layer ${value.layers.length + 1}`,
-                visible: true,
-                locked: false,
-              };
-              if (commit({ ...value, layers: [...value.layers, next] })) setLayerId(next.id);
-            }}
+      <Presence>
+        {layersOpen && (
+          <Modal
+            kind="layers"
+            title="Annotation layers"
+            onClose={() => setLayersOpen(false)}
+            className="annotation-layers"
           >
-            Add annotation layer
-          </button>
-          {deleting && (
-            <section role="region" aria-label="Delete annotation layer?">
-              <h3>Delete annotation layer?</h3>
-              <p>
-                Delete “{deleting.name}” and its{' '}
-                {value.items.filter((a) => a.layerId === deleting.id).length} marks? You can undo
-                this change.
-              </p>
-              <div className="history-dialog-actions">
-                <button autoFocus onClick={() => setDeleting(null)}>
-                  Cancel
-                </button>
-                <button
-                  className="danger-button"
+            <p>
+              Layers stack from bottom to top, above canvas nodes. Hidden layers stay in backups;
+              locked layers cannot be drawn on or edited.
+            </p>
+            {value.layers.map((l, i) => (
+              <div className="annotation-layer" key={l.id}>
+                <input
+                  key={`${l.id}-${l.name}`}
+                  aria-label={`Layer name ${i + 1}`}
+                  defaultValue={l.name}
+                  maxLength={80}
                   disabled={busy}
-                  onClick={() => {
-                    if (
-                      commit({
-                        layers: value.layers.filter((l) => l.id !== deleting.id),
-                        items: value.items.filter((a) => a.layerId !== deleting.id),
-                      })
-                    )
-                      setDeleting(null);
+                  onBlur={(e) => {
+                    const name = e.target.value.trim();
+                    if (name && name !== l.name) updateLayer(l.id, { name });
+                    else e.target.value = l.name;
                   }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') e.currentTarget.blur();
+                  }}
+                />
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={l.visible}
+                    disabled={busy}
+                    onChange={(e) => updateLayer(l.id, { visible: e.target.checked })}
+                  />
+                  Visible
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={l.locked}
+                    disabled={busy}
+                    onChange={(e) => updateLayer(l.id, { locked: e.target.checked })}
+                  />
+                  Locked
+                </label>
+                <IconButton
+                  label={`Lower ${l.name}`}
+                  disabled={busy || i === 0}
+                  onClick={() => reorder(i, -1)}
                 >
-                  Delete layer
-                </button>
+                  <ArrowDown size={16} />
+                </IconButton>
+                <IconButton
+                  label={`Raise ${l.name}`}
+                  disabled={busy || i === value.layers.length - 1}
+                  onClick={() => reorder(i, 1)}
+                >
+                  <ArrowUp size={16} />
+                </IconButton>
+                <IconButton
+                  label={`Delete layer ${l.name}`}
+                  disabled={busy || l.locked}
+                  onClick={() => setDeleting(l)}
+                >
+                  <Trash2 size={16} />
+                </IconButton>
               </div>
-            </section>
-          )}
-          {error && <p role="alert">{error}</p>}
-        </Modal>
-      )}
+            ))}
+            {!value.layers.length && <p>No layers yet.</p>}
+            <button
+              className="annotation-add-layer"
+              disabled={busy || value.layers.length >= 30}
+              onClick={() => {
+                const next = {
+                  id: crypto.randomUUID(),
+                  name: `Layer ${value.layers.length + 1}`,
+                  visible: true,
+                  locked: false,
+                };
+                if (commit({ ...value, layers: [...value.layers, next] })) setLayerId(next.id);
+              }}
+            >
+              Add annotation layer
+            </button>
+            {deleting && (
+              <section role="region" aria-label="Delete annotation layer?">
+                <h3>Delete annotation layer?</h3>
+                <p>
+                  Delete “{deleting.name}” and its{' '}
+                  {value.items.filter((a) => a.layerId === deleting.id).length} marks? You can undo
+                  this change.
+                </p>
+                <div className="history-dialog-actions">
+                  <button autoFocus onClick={() => setDeleting(null)}>
+                    Cancel
+                  </button>
+                  <button
+                    className="danger-button"
+                    disabled={busy}
+                    onClick={() => {
+                      if (
+                        commit({
+                          layers: value.layers.filter((l) => l.id !== deleting.id),
+                          items: value.items.filter((a) => a.layerId !== deleting.id),
+                        })
+                      )
+                        setDeleting(null);
+                    }}
+                  >
+                    Delete layer
+                  </button>
+                </div>
+              </section>
+            )}
+            {error && <p role="alert">{error}</p>}
+          </Modal>
+        )}
+      </Presence>
     </>
   );
 }

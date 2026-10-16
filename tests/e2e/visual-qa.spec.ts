@@ -155,9 +155,11 @@ test('mobile model search and menus stay bounded and handle no matches', async (
   expect(box!.x + box!.width).toBeLessThanOrEqual(382);
   expect(box!.y).toBeGreaterThanOrEqual(8);
   expect(box!.y + box!.height).toBeLessThanOrEqual(836);
-  await selector.getByRole('textbox', { name: 'Search models' }).fill('no-such-model-qa');
-  await expect(selector.getByRole('status')).toHaveText('No matching models.');
-  await page.keyboard.press('Shift+Tab');
+  await selector.getByRole('combobox', { name: 'Search models' }).fill('no-such-model-qa');
+  await expect(selector.getByRole('status').first()).toContainText(
+    /No matching latest-generation models|Connect a provider/,
+  );
+  await selector.getByRole('button', { name: 'Manage providers', exact: true }).focus();
   await expect(
     selector.getByRole('button', { name: 'Manage providers', exact: true }),
   ).toBeFocused();

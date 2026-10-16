@@ -50,7 +50,7 @@ test.beforeEach(async ({ page }) => {
     }),
   );
   await page.route('**/api/models/catalog*', (route) =>
-    route.fulfill({ json: { version: 1, providers: {} } }),
+    route.fulfill({ json: { version: 2, providers: {} } }),
   );
 });
 for (const width of [1440, 390]) {
@@ -147,8 +147,11 @@ test('numbering follows creation order and deleting an inactive canvas preserves
   const input = page.getByRole('textbox', { name: 'Message', exact: true });
   await input.fill('Do not lose this');
   const before = await page.locator('.react-flow__viewport').getAttribute('style');
-  await page.getByRole('button', { name: 'Second canvas', exact: true }).hover();
-  await page.getByRole('button', { name: 'Delete canvas: Second canvas', exact: true }).click();
+  await page.getByRole('button', { name: 'Second canvas', exact: true }).click({ button: 'right' });
+  await page
+    .getByRole('menu', { name: 'Canvas actions: Second canvas', exact: true })
+    .getByRole('menuitem', { name: 'Delete', exact: true })
+    .click();
   await page
     .getByRole('region', { name: 'Delete canvas', exact: true })
     .getByRole('button', { name: 'Delete', exact: true })
@@ -157,6 +160,283 @@ test('numbering follows creation order and deleting an inactive canvas preserves
   await expect(input).toHaveValue('Do not lose this');
   await expect(page.locator('.react-flow__viewport')).toHaveAttribute('style', before!);
   await expect(page.getByRole('button', { name: 'Second canvas', exact: true })).toHaveCount(0);
+});
+
+for (const width of [1440, 390]) {
+  test(`collapsed canvas context menus keep numbers clear and delete inactive canvases safely at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 960 });
+    await page.addInitScript(() => {
+      localStorage.setItem('branchboard.sidebarCollapsed', 'true');
+      localStorage.setItem('branchboard.theme', 'dark');
+    });
+    await page.goto('/');
+    const nav = page.getByRole('navigation', { name: 'Boards', exact: true });
+    const first = nav.getByRole('button', { name: 'First canvas', exact: true });
+    const input = page.getByRole('textbox', { name: 'Message', exact: true });
+    await input.fill('Keep this rail draft');
+    const transform = await page.locator('.react-flow__viewport').getAttribute('style');
+    await first.focus();
+    await expect(first).toHaveAttribute('aria-current', 'page');
+    const number = (await first.locator('.canvas-number').boundingBox())!;
+    const link = (await first.boundingBox())!;
+    expect(link.width).toBe(44);
+    expect(link.height).toBeGreaterThanOrEqual(44);
+    expect(Math.abs(number.x + number.width / 2 - (link.x + link.width / 2))).toBeLessThan(1);
+    await expect(nav.locator('.board-row > button:not(.board-link)')).toHaveCount(0);
+    await page.keyboard.press('Shift+F10');
+    const menu = page.getByRole('menu', { name: 'Canvas actions: First canvas', exact: true });
+    await expect(menu.getByRole('menuitem')).toHaveText(['Favorite', 'Move to project', 'Delete']);
+    await expect(menu.getByRole('menuitem', { name: 'Favorite', exact: true })).toBeFocused();
+    expect(await menu.locator('button > svg').count()).toBe(3);
+    for (const action of await menu.getByRole('menuitem').all())
+      expect(
+        await action.evaluate((el) => (el as HTMLElement).offsetHeight),
+      ).toBeGreaterThanOrEqual(44);
+    const rect = (await menu.boundingBox())!;
+    expect(rect.x).toBeGreaterThanOrEqual(8);
+    expect(rect.x + rect.width).toBeLessThanOrEqual(width - 8);
+    await page.keyboard.press('End');
+    await expect(menu.getByRole('menuitem', { name: 'Delete', exact: true })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(first).toBeFocused();
+    expect(
+      await nav.evaluate((el) => el.scrollWidth === el.clientWidth && el.scrollLeft === 0),
+    ).toBe(true);
+    await nav.getByRole('button', { name: 'Second canvas', exact: true }).focus();
+    await page.keyboard.press('Shift+F10');
+    await page.keyboard.press('End');
+    await page.keyboard.press('Enter');
+    const confirmation = page.getByRole('region', { name: 'Delete canvas', exact: true });
+    await expect(confirmation).toContainText('Second canvas');
+    await confirmation.getByRole('button', { name: 'Delete', exact: true }).click();
+    await expect(first).toHaveAttribute('aria-current', 'page');
+    await expect(input).toHaveValue('Keep this rail draft');
+    await expect(page.locator('.react-flow__viewport')).toHaveAttribute('style', transform!);
+    expect(await nav.evaluate((el) => el.scrollWidth === el.clientWidth)).toBe(true);
+  });
+}
+
+for (const width of [1440, 390]) {
+  test(`canvas-menu deletion respects unsaved provider drafts and confirmation cancellation at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 960 });
+    await page.goto('/');
+    const input = page.getByRole('textbox', { name: 'Message', exact: true });
+    await input.fill('Keep this confirmation draft');
+    const transform = await page.locator('.react-flow__viewport').getAttribute('style');
+    await page.getByRole('button', { name: 'Models', exact: true }).click();
+    const panel = page.getByRole('region', { name: 'Models', exact: true });
+    await panel.getByLabel('API key', { exact: true }).fill('unsaved-menu-fixture');
+    const second = page.getByRole('button', { name: 'Second canvas', exact: true });
+    await second.click({ button: 'right' });
+    await page.getByRole('menuitem', { name: 'Delete', exact: true }).click();
+    await expect(page.getByRole('alert', { name: 'Unsaved changes' })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Delete canvas', exact: true })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Keep editing', exact: true }).click();
+    await expect(panel.getByLabel('API key', { exact: true })).toHaveValue('unsaved-menu-fixture');
+    await second.click({ button: 'right' });
+    await page.getByRole('menuitem', { name: 'Delete', exact: true }).click();
+    await page.getByRole('button', { name: 'Discard changes', exact: true }).click();
+    const confirmation = page.getByRole('region', { name: 'Delete canvas', exact: true });
+    await expect(confirmation).toContainText('Second canvas');
+    await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(second).toBeVisible();
+    await expect(page.getByRole('button', { name: 'First canvas', exact: true })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    await expect(input).toHaveValue('Keep this confirmation draft');
+    await expect(page.locator('.react-flow__viewport')).toHaveAttribute('style', transform!);
+    expect(await page.evaluate(() => JSON.stringify(localStorage))).not.toContain(
+      'unsaved-menu-fixture',
+    );
+  });
+}
+
+test('a long collapsed canvas list opens a bounded project menu with keyboard focus restoration', async ({
+  page,
+}) => {
+  await page.addInitScript((base) => {
+    localStorage.setItem('branchboard.sidebarCollapsed', 'true');
+    localStorage.setItem(
+      'branchboard.workspace.v1',
+      JSON.stringify({
+        ...base,
+        organization: {
+          folders: Array.from({ length: 30 }, (_, i) => ({
+            id: `folder-${i}`,
+            name: `Project ${i}`,
+          })),
+          boardFolders: {},
+          favoriteBoardIds: [],
+          templates: [],
+        },
+        boards: [
+          ...base.boards,
+          ...Array.from({ length: 24 }, (_, i) => ({
+            id: `extra-${i}`,
+            name: `Extra canvas ${i}`,
+            updatedAt: i,
+            nodes: [],
+            edges: [],
+          })),
+        ],
+      }),
+    );
+  }, workspace);
+  await page.goto('/');
+  const nav = page.getByRole('navigation', { name: 'Boards', exact: true });
+  const last = nav.getByRole('button', { name: 'Extra canvas 23', exact: true });
+  await last.focus();
+  expect(await nav.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+  expect(await nav.evaluate((el) => el.scrollWidth === el.clientWidth)).toBe(true);
+  await page.keyboard.press('Shift+F10');
+  await page.getByRole('menuitem', { name: 'Move to project', exact: true }).click();
+  const menu = page.getByRole('menu', {
+    name: 'Move canvas to project: Extra canvas 23',
+    exact: true,
+  });
+  await expect(menu.getByRole('menuitem', { name: 'Back', exact: true })).toBeFocused();
+  await expect(async () => {
+    const rect = (await menu.boundingBox())!;
+    expect(rect.y).toBeGreaterThanOrEqual(8);
+    expect(rect.y + rect.height).toBeLessThanOrEqual(952);
+  }).toPass();
+  await page.keyboard.press('End');
+  await expect(menu.getByRole('menuitemradio', { name: 'Project 9', exact: true })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(last).toBeFocused();
+  await expect(page.getByRole('textbox', { name: 'Canvas name' })).toHaveValue('First canvas');
+});
+
+test('inactive canvas menu favorites and nested project moves persist without selecting the canvas', async ({
+  page,
+}) => {
+  await page.addInitScript((base) => {
+    localStorage.setItem(
+      'branchboard.workspace.v1',
+      JSON.stringify({
+        ...base,
+        organization: {
+          folders: [
+            { id: 'work', name: 'Work' },
+            { id: 'sources', name: 'Sources', parentId: 'work' },
+          ],
+          boardFolders: {},
+          favoriteBoardIds: [],
+          templates: [],
+        },
+      }),
+    );
+  }, workspace);
+  let writes = 0;
+  page.on('request', (request) => {
+    if (request.method() !== 'GET' && request.url().includes('/api/')) writes++;
+  });
+  await page.goto('/');
+  const input = page.getByRole('textbox', { name: 'Message', exact: true });
+  await input.fill('Pinned to First canvas');
+  const transform = await page.locator('.react-flow__viewport').getAttribute('style');
+  const undoCount = await page.getByRole('button', { name: 'Undo', exact: true }).count();
+  const second = page.getByRole('button', { name: 'Second canvas', exact: true });
+  await second.click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Favorite', exact: true }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          JSON.parse(localStorage.getItem('branchboard.workspace.v1')!).organization
+            .favoriteBoardIds,
+      ),
+    )
+    .toEqual(['second']);
+  await second.click({ button: 'right' });
+  await expect(page.getByRole('menuitem', { name: 'Unfavorite', exact: true })).toBeVisible();
+  await page.getByRole('menuitem', { name: 'Move to project', exact: true }).click();
+  await page.getByRole('menuitemradio', { name: 'Work / Sources', exact: true }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          JSON.parse(localStorage.getItem('branchboard.workspace.v1')!).organization.boardFolders
+            .second,
+      ),
+    )
+    .toBe('sources');
+  await expect(page.getByRole('textbox', { name: 'Canvas name' })).toHaveValue('First canvas');
+  await expect(input).toHaveValue('Pinned to First canvas');
+  await expect(page.locator('.react-flow__viewport')).toHaveAttribute('style', transform!);
+  await expect(page.getByRole('button', { name: 'Undo', exact: true })).toHaveCount(undoCount);
+  await second.click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Move to project', exact: true }).click();
+  await expect(
+    page.getByRole('menuitemradio', { name: 'Work / Sources', exact: true }),
+  ).toHaveAttribute('aria-checked', 'true');
+  await page.getByRole('menuitemradio', { name: 'Unfiled', exact: true }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          JSON.parse(localStorage.getItem('branchboard.workspace.v1')!).organization.boardFolders
+            .second,
+      ),
+    )
+    .toBeUndefined();
+  await page.getByRole('button', { name: 'Favorites', exact: true }).click();
+  await expect(page.locator('.canvas-number')).toHaveText(['2']);
+  await second.click({ button: 'right' });
+  await page.getByRole('menuitem', { name: 'Unfavorite', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Favorites', exact: true })).toBeFocused();
+  await expect(input).toHaveValue('Pinned to First canvas');
+  expect(writes).toBe(0);
+});
+
+test('touch long-press opens canvas actions without switching canvases or activating on release', async ({
+  browser,
+  baseURL,
+}) => {
+  const context = await browser.newContext({
+    baseURL,
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+  });
+  const page = await context.newPage();
+  try {
+    await page.addInitScript(
+      (base) => localStorage.setItem('branchboard.workspace.v1', JSON.stringify(base)),
+      workspace,
+    );
+    await page.goto('/');
+    const second = page.getByRole('button', { name: 'Second canvas', exact: true });
+    const rect = (await second.boundingBox())!;
+    const session = await context.newCDPSession(page);
+    const point = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+    await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
+    const menu = page.getByRole('menu', { name: 'Canvas actions: Second canvas', exact: true });
+    await expect(menu).toBeVisible();
+    await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await expect(page.getByRole('button', { name: 'First canvas', exact: true })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    await expect(menu).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(second).toBeFocused();
+    await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
+    await session.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      touchPoints: [{ x: point.x, y: point.y + 35 }],
+    });
+    await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await expect(menu).toHaveCount(0);
+    await second.tap();
+    await expect(second).toHaveAttribute('aria-current', 'page');
+  } finally {
+    await context.close();
+  }
 });
 
 for (const kind of ['template', 'snapshot'] as const) {

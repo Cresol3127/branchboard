@@ -12,11 +12,13 @@ const page = await browser.newPage({
   reducedMotion: 'reduce',
 });
 const errors = [];
+let captureCount = 0;
 page.on('pageerror', (error) => errors.push(error.message));
 async function capture(name) {
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(400);
   await page.screenshot({ path: path.join(directory, name), fullPage: true });
+  captureCount++;
 }
 async function command(name, preserveSelection = false) {
   if (!preserveSelection) {
@@ -809,6 +811,7 @@ try {
     path: path.join(directory, '86-mobile-first-open.png'),
     fullPage: true,
   });
+  captureCount++;
   await phone.close();
   await page.setViewportSize({ width: 1440, height: 960 });
   await command('Fit canvas');
@@ -819,14 +822,14 @@ try {
   if (await firstModel.count()) {
     await firstModel.click();
     await page.locator('.react-flow__node-chat .model-selector').first().click();
-    await expect(
-      modelPicker.getByRole('group', { name: 'Recent models', exact: true }),
-    ).toBeVisible();
+    await expect(modelPicker.locator('.model-section-label').first()).toBeVisible();
   }
   await capture('87-provider-model-refresh-status.png');
   await modelPicker
-    .getByRole('textbox', { name: 'Search models' })
+    .getByRole('combobox', { name: 'Search models' })
     .fill('my-provider/exact-model-id');
+  if (await modelPicker.getByRole('button', { name: 'Add model by ID…', exact: true }).isEnabled())
+    await modelPicker.getByRole('button', { name: 'Add model by ID…', exact: true }).click();
   if (await modelPicker.getByLabel('Custom model provider').count())
     await expect(
       modelPicker.getByRole('button', { name: 'Use custom model', exact: true }),
@@ -835,7 +838,9 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   await command('Fit canvas');
   await page.locator('.model-selector').first().click();
-  await modelPicker.getByRole('textbox', { name: 'Search models' }).fill('my-exact-model');
+  await modelPicker.getByRole('combobox', { name: 'Search models' }).fill('my-exact-model');
+  if (await modelPicker.getByRole('button', { name: 'Add model by ID…', exact: true }).isEnabled())
+    await modelPicker.getByRole('button', { name: 'Add model by ID…', exact: true }).click();
   await capture('89-mobile-exact-model-id.png');
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Models', exact: true }).click();
@@ -899,10 +904,183 @@ try {
   await capture('103-mobile-overlay-spacing.png');
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await capture('104-minimal-mobile-settings.png');
+  // Exercise every palette through the real UI, without changing saved card colors.
+  await page.setViewportSize({ width: 1440, height: 960 });
+  const appearance = page.getByRole('region', { name: 'Settings', exact: true });
+  const paletteControl = appearance.getByLabel('UI palette', { exact: true });
+  const paletteIds = await paletteControl
+    .locator('optgroup[label="Built-in palettes"] option')
+    .evaluateAll((options) => options.map((o) => o.value));
+  let paletteShot = 105;
+  for (const id of paletteIds) {
+    await paletteControl.selectOption(id);
+    for (const mode of ['light', 'dark']) {
+      await appearance.getByLabel('Color theme', { exact: true }).selectOption(mode);
+      await paletteControl.scrollIntoViewIfNeeded();
+      await capture(`${paletteShot++}-palette-${id}-${mode}.png`);
+    }
+  }
+  await paletteControl.selectOption('catppuccin');
+  await appearance.getByRole('button', { name: 'Customize palette', exact: true }).click();
+  await appearance
+    .getByRole('textbox', { name: 'Palette name', exact: true })
+    .fill('My midnight palette');
+  await appearance.getByRole('textbox', { name: 'Background hex', exact: true }).fill('#182132');
+  await capture('129-custom-palette-preview.png');
+  await appearance.getByRole('textbox', { name: 'Text hex', exact: true }).fill('#182132');
+  await appearance.locator('.palette-contrast-warning').scrollIntoViewIfNeeded();
+  await capture('130-custom-palette-contrast-warning.png');
+  await appearance.getByRole('button', { name: 'Reset Text', exact: true }).click();
+  await appearance.getByRole('button', { name: 'Save palette', exact: true }).click();
+  await paletteControl.scrollIntoViewIfNeeded();
+  await capture('131-saved-personal-palette.png');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await appearance.getByRole('button', { name: 'Edit palette', exact: true }).click();
+  await appearance
+    .getByRole('textbox', { name: 'Background hex', exact: true })
+    .scrollIntoViewIfNeeded();
+  await capture('132-mobile-palette-editor.png');
+  await appearance.getByRole('button', { name: 'Revert preview', exact: true }).click();
+  await page.keyboard.press('Escape');
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.getByRole('button', { name: 'Models', exact: true }).click();
+  const modelsPanel = page.getByRole('region', { name: 'Models', exact: true });
+  await modelsPanel.getByLabel('Provider', { exact: true }).selectOption('openai');
+  await modelsPanel.getByRole('button', { name: /^Default model:/ }).click();
+  await capture('133-provider-model-dropdown.png');
+  await page
+    .getByRole('dialog', { name: 'Model selector', exact: true })
+    .getByRole('button', { name: 'Add model by ID…', exact: true })
+    .click();
+  await capture('134-provider-exact-model-entry.png');
+  await page.setViewportSize({ width: 390, height: 700 });
+  await capture('135-mobile-provider-model-entry.png');
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await page.setViewportSize({ width: 1440, height: 960 });
+  if (await page.getByRole('button', { name: 'Expand sidebar', exact: true }).count())
+    await page.getByRole('button', { name: 'Expand sidebar', exact: true }).click();
+  await capture('136-window-centered-search-expanded-sidebar.png');
+  await page.getByRole('button', { name: 'Collapse sidebar', exact: true }).click();
+  await capture('137-window-centered-search-collapsed-sidebar.png');
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await capture('138-search-with-docked-panel.png');
+  await page.keyboard.press('Escape');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await capture('139-mobile-compact-search.png');
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.locator('.board-row .board-link').first().hover();
+  await capture('140-clean-collapsed-rail.png');
+  await page.locator('.board-row .board-link').first().focus();
+  await page.keyboard.press('Shift+F10');
+  await capture('141-canvas-actions-menu.png');
+  await page.getByRole('menuitem', { name: 'Move to project', exact: true }).click();
+  await capture('142-canvas-project-menu.png');
+  await page.keyboard.press('Escape');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('.board-row .board-link').first().focus();
+  await page.keyboard.press('Shift+F10');
+  await capture('143-mobile-canvas-actions.png');
+  await page.keyboard.press('Escape');
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.getByRole('button', { name: 'Expand sidebar', exact: true }).click();
+  await page.locator('.board-row .board-link').first().click({ button: 'right' });
+  await capture('144-expanded-canvas-actions.png');
+
+  // Freeze real CSS transitions halfway through; the isolated clock prevents an
+  // exiting subtree's cleanup timer from racing its screenshot under CPU load.
+  const motionPage = await browser.newPage({
+    viewport: { width: 1440, height: 960 },
+    colorScheme: 'light',
+    reducedMotion: 'no-preference',
+  });
+  motionPage.on('pageerror', (error) => errors.push(error.message));
+  await motionPage.clock.install();
+  await motionPage.goto('http://localhost:3000');
+  await expect(motionPage.locator('.react-flow__node')).toHaveCount(3);
+  await motionPage.evaluate(() => document.fonts.ready);
+  await motionPage.clock.pauseAt(new Date((await motionPage.evaluate(() => Date.now())) + 100));
+  const motionSamples = [];
+  async function captureMotion(name, selector) {
+    // React's default-priority context-menu update may commit after the fake clock.
+    await motionPage.locator(selector).waitFor({ state: 'attached' });
+    await motionPage.clock.runFor(48);
+    const sample = await motionPage.evaluate((target) => {
+      const element = document.querySelector(target);
+      if (!element) throw new Error(`Missing motion capture target: ${target}`);
+      const animations = element.getAnimations({ subtree: true });
+      for (const animation of animations) {
+        const duration = animation.effect?.getTiming().duration;
+        if (typeof duration === 'number' && duration > 0) {
+          animation.pause();
+          animation.currentTime = duration / 2;
+        }
+      }
+      return {
+        target,
+        animations: animations.length,
+        state: element.getAttribute('data-motion-state'),
+        opacity: getComputedStyle(element).opacity,
+      };
+    }, selector);
+    motionSamples.push({ name, ...sample });
+    await motionPage.screenshot({ path: path.join(directory, name), fullPage: true });
+    captureCount++;
+    await motionPage.evaluate(() => {
+      for (const animation of document.getAnimations()) animation.play();
+    });
+    await motionPage.clock.runFor(350);
+  }
+  await motionPage
+    .getByRole('button', { name: 'Settings', exact: true })
+    .evaluate((el) => el.click());
+  await captureMotion('145-panel-opening-midpoint.png', '#workspace-panel-host');
+  await motionPage
+    .getByRole('button', { name: 'Back to canvas', exact: true })
+    .evaluate((el) => el.click());
+  await captureMotion('146-panel-closing-midpoint.png', '.workspace-panel-content');
+  await motionPage
+    .getByRole('button', { name: 'Expand creation tools', exact: true })
+    .evaluate((el) => el.click());
+  await captureMotion('147-toolbar-expanding-midpoint.png', '.creation-extra');
+  await motionPage
+    .locator('.board-row .board-link')
+    .first()
+    .evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      el.dispatchEvent(
+        new MouseEvent('contextmenu', { bubbles: true, clientX: r.right + 4, clientY: r.top + 8 }),
+      );
+    });
+  await captureMotion('148-canvas-menu-opening-midpoint.png', '.canvas-actions-menu');
+  await motionPage.keyboard.press('Escape');
+  await motionPage.clock.runFor(350);
+  await motionPage.setViewportSize({ width: 390, height: 844 });
+  await motionPage.clock.runFor(350);
+  await motionPage
+    .getByRole('button', { name: 'Settings', exact: true })
+    .evaluate((el) => el.click());
+  await captureMotion('149-mobile-panel-opening-midpoint.png', '.workspace-panel-content');
+  await motionPage
+    .getByRole('button', { name: 'Back to canvas', exact: true })
+    .evaluate((el) => el.click());
+  await motionPage.clock.runFor(350);
+  await motionPage.emulateMedia({ reducedMotion: 'reduce' });
+  await motionPage.clock.runFor(32);
+  await motionPage
+    .getByRole('button', { name: 'Settings', exact: true })
+    .evaluate((el) => el.click());
+  await captureMotion('150-mobile-reduced-motion.png', '.workspace-panel-content');
+  expect(motionSamples.at(-1).animations).toBe(0);
+  await writeFile(
+    path.join(directory, 'motion-samples.json'),
+    JSON.stringify(motionSamples, null, 2),
+  );
+  await motionPage.close();
   await writeFile(path.join(directory, 'browser-errors.json'), JSON.stringify(errors, null, 2));
   expect(errors).toEqual([]);
   console.log(
-    `Saved 104 desktop/mobile screenshots and PNG/PDF downloads to ${directory}; no browser errors.`,
+    `Saved ${captureCount} desktop/mobile screenshots and PNG/PDF downloads to ${directory}; no browser errors.`,
   );
 } catch (error) {
   await page.screenshot({ path: path.join(directory, 'failure.png'), fullPage: true });

@@ -1,0 +1,58 @@
+{
+  "version": "1.9.0",
+  "title": "Fluid workspace",
+  "date": "2026-10-25",
+  "build": "passed",
+  "unitAndHttp": {
+    "status": "passed",
+    "tests": 224,
+    "files": 25,
+    "log": "/tmp/opencode/branchboard-motion-tests.log"
+  },
+  "browser": {
+    "status": "passed",
+    "tests": 119,
+    "scope": "full Chromium suite, including real motion entry/exit/reversal, inert logical close, focus restoration, rapid discarded-draft reopening, reduced motion, explicit model-test abort, palette/model/search/canvas-menu regressions, annotations, resizing and real PNG/PDF downloads",
+    "log": "/tmp/opencode/branchboard-motion-e2e.log"
+  },
+  "screenshots": {
+    "count": 150,
+    "inspected": true,
+    "directory": "/tmp/opencode/branchboard-motion-verified",
+    "contactSheets": "/tmp/opencode/branchboard-contact-motion-verified",
+    "exportedArtifacts": [
+      "canvas-export.png",
+      "canvas-export.pdf"
+    ],
+    "inspection": "All 150 captures inspected through six desktop/mobile contact sheets; the canvas export was inspected at full resolution. The motion captures show real mid-transition states: panel opening, panel closing at opacity 0.656, toolbar reveal, canvas menu opening at opacity 0.972, mobile panel opening and an instant reduced-motion panel with zero running animations. Closing surfaces clip and fade without moving canvas geometry; 44px actions, focus rings and viewport bounds remained correct.",
+    "pageErrors": []
+  },
+  "runtimeExpectations": {
+    "starterNodes": 3,
+    "settingsRole": "region",
+    "settingsName": "Settings",
+    "motion": true
+  },
+  "paidProviderRequests": false,
+  "originalArtifactChecksums": {
+    "status": "passed",
+    "entries": 138,
+    "versions": [
+      "1.1.1",
+      "1.1.2",
+      "1.2.1",
+      "1.2.2",
+      "1.3.1",
+      "1.3.2",
+      "1.4.1",
+      "1.4.2",
+      "1.5.1",
+      "1.5.2",
+      "1.6.0",
+      "1.6.1",
+      "1.7.0",
+      "1.7.1",
+      "1.8.0"
+    ]
+  }
+}

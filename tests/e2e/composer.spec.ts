@@ -75,7 +75,7 @@ async function setup(page: Page, configured = true) {
   await page.route('**/api/models/catalog*', (route) =>
     route.fulfill({
       json: {
-        version: 1,
+        version: 2,
         providers: {
           openai: {
             models: ['gpt-4o-mini', 'gpt-4.1-nano'],
@@ -112,7 +112,7 @@ for (const width of [1440, 390]) {
     await expect(picker).toBeInViewport();
     await picker.click();
     const dialog = page.getByRole('dialog', { name: 'Model selector', exact: true });
-    await expect(dialog.getByRole('textbox', { name: 'Search models' })).toBeFocused();
+    await expect(dialog.getByRole('combobox', { name: 'Search models' })).toBeFocused();
     const box = (await dialog.boundingBox())!;
     expect(box.x).toBeGreaterThanOrEqual(8);
     expect(box.x + box.width).toBeLessThanOrEqual(width - 8);
@@ -120,9 +120,10 @@ for (const width of [1440, 390]) {
     await page.keyboard.press('Escape');
     await expect(picker).toBeFocused();
     await picker.click();
-    await dialog.getByRole('textbox', { name: 'Search models' }).fill('qwen3:8b');
-    await dialog.getByRole('option', { name: 'qwen3:8b', exact: true }).click();
-    await expect(picker).toContainText('Ollama (local) · qwen3:8b');
+    await dialog.getByRole('combobox', { name: 'Search models' }).fill('qwen3:8b');
+    await dialog.getByRole('option', { name: 'qwen3:8b · Ollama', exact: true }).click();
+    await expect(picker).toContainText('qwen3:8b');
+    await expect(picker).toHaveAttribute('aria-label', /Ollama/);
     await expect(page.locator('[data-id="alpha"] .model-selector')).toContainText('qwen3:8b');
     await expect(page.locator('[data-id="beta"] .model-selector')).toContainText('gpt-4o-mini');
     await expect(input).toHaveValue('Use the model I chose here');
@@ -149,12 +150,12 @@ test('new-conversation model choice creates no empty node and sends with the cho
   await picker.click();
   await page
     .getByRole('dialog', { name: 'Model selector', exact: true })
-    .getByRole('option', { name: 'qwen3:8b', exact: true })
+    .getByRole('option', { name: 'qwen3:8b · Ollama', exact: true })
     .click();
   await expect(page.locator('.react-flow__node-chat')).toHaveCount(2);
   await expect(input).toHaveValue('New chat, chosen model');
   await command(page, 'Switch canvas: Other board');
-  await expect(picker).toContainText('Ollama (local) · qwen3:8b');
+  await expect(picker).toContainText('qwen3:8b');
   await command(page, 'Switch canvas: Composer board');
   await expect(picker).toContainText('qwen3:8b');
   await expect(input).toHaveValue('New chat, chosen model');

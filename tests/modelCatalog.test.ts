@@ -12,7 +12,7 @@ import type { PublicProvider } from '../src/providers';
 let store: typeof import('../src/store');
 let memory: Map<string, string>;
 const catalog = (models = ['public-new']) => ({
-  version: 1,
+  version: 2,
   providers: {
     openai: { models, source: 'models.dev', updatedAt: Date.now() },
   },
@@ -59,11 +59,7 @@ describe('public catalog state', () => {
     await state.refreshModelCatalog();
     const result = store.useStore.getState();
     expect(request.mock.calls[0][0]).toBe('/api/models/catalog');
-    expect(catalogModelChoices(provider, result.modelCatalog)).toEqual([
-      'public-new',
-      'saved-custom',
-      'saved-default',
-    ]);
+    expect(catalogModelChoices(provider, result.modelCatalog)).toEqual(['public-new']);
     expect(result.boards).toBe(original.boards);
     expect(result.past).toBe(original.past);
     expect(memory.get('branchboard.workspace.v1')).toContain('private-exact-selection');
@@ -80,7 +76,7 @@ describe('public catalog state', () => {
     expect(request).toHaveBeenCalledTimes(1);
     expect(loadModelCatalog().providers.openai?.models).toEqual(['public-new']);
     request.mockResolvedValue(
-      Response.json({ version: 1, providers: {}, errors: { openai: 'Unavailable' } }),
+      Response.json({ version: 2, providers: {}, errors: { openai: 'Unavailable' } }),
     );
     await state.refreshModelCatalog(true);
     expect(store.useStore.getState().modelCatalog.providers.openai?.models).toEqual(['public-new']);
@@ -97,7 +93,7 @@ describe('public catalog state', () => {
     memory.set(MODEL_CATALOG_STORAGE_KEY, 'broken JSON');
     expect(loadModelCatalog().providers).toEqual({});
     expect(() => validateModelCatalog(catalog(['bad\nID']))).toThrow('Invalid');
-    expect(() => validateModelCatalog({ ...catalog(), version: 2 })).toThrow('Invalid');
+    expect(() => validateModelCatalog({ ...catalog(), version: 1 })).toThrow('Invalid');
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(catalog())));
     await store.useStore.getState().refreshModelCatalog();
     vi.stubGlobal(
@@ -105,7 +101,7 @@ describe('public catalog state', () => {
       vi
         .fn()
         .mockResolvedValue(
-          Response.json({ version: 1, providers: { openai: { models: [null] } } }),
+          Response.json({ version: 2, providers: { openai: { models: [null] } } }),
         ),
     );
     await expect(store.useStore.getState().refreshModelCatalog()).rejects.toThrow('Invalid');
@@ -136,9 +132,7 @@ describe('public catalog state', () => {
     await vi.advanceTimersByTimeAsync(20_000);
     await timeout;
     expect(store.useStore.getState().modelCatalog.loading).toBe(false);
-    expect(catalogModelChoices(provider, store.useStore.getState().modelCatalog)).toContain(
-      'old-suggestion',
-    );
+    expect(catalogModelChoices(provider, store.useStore.getState().modelCatalog)).toEqual([]);
   });
 
   it('keeps fresh choices usable when the disposable offline cache exceeds storage quota', async () => {

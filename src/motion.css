@@ -1,0 +1,166 @@
+/* Only presentation is eased. React Flow positions, ports and resizing stay direct. */
+.sidebar-shell {
+  transition: width var(--motion-standard) var(--ease-standard);
+}
+button,
+.board-node {
+  transition-timing-function: var(--ease-standard);
+}
+.message-tools {
+  transition: opacity var(--motion-fast) var(--ease-standard);
+}
+.workspace-panel-host {
+  display: flex;
+  flex-basis: 0;
+  overflow: hidden;
+  border-right-width: 0;
+}
+.workspace-panel-host[data-open='true'] {
+  flex-basis: 360px;
+  border-right-width: 1px;
+}
+.workspace-panel-host[data-present='false'] {
+  visibility: hidden;
+}
+.workspace-panel-host[data-open='false'] {
+  pointer-events: none;
+  background: transparent;
+}
+.workspace-panel-host[data-open='false'][data-present='true'] {
+  /* Keep the exiting surface visible without moving the canvas during a gesture. */
+  overflow: visible;
+}
+.workspace-panel-content {
+  position: absolute;
+  width: 360px;
+  inset: 0 auto 0 0;
+  opacity: 1;
+  translate: none;
+  clip-path: inset(0);
+  transition:
+    opacity var(--motion-panel) var(--ease-enter),
+    clip-path var(--motion-panel) var(--ease-enter);
+}
+.workspace[data-panel-overlay='true'] .workspace-panel-host[data-present='true'] {
+  position: absolute;
+  left: var(--panel-sidebar-width);
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: auto;
+}
+.workspace[data-panel-overlay='true'] .workspace-panel-content {
+  width: 100%;
+}
+.context-menu,
+.model-menu {
+  opacity: 1;
+  translate: 0 0;
+  transition:
+    opacity var(--motion-menu) var(--ease-enter),
+    translate var(--motion-menu) var(--ease-enter);
+}
+[data-motion-state='closing'] {
+  pointer-events: none !important;
+  opacity: 0;
+  translate: 0 4px;
+  transition-timing-function: var(--ease-exit);
+}
+.workspace-panel-content[data-motion-state='closing'] {
+  translate: none;
+  clip-path: inset(0 12px 0 0);
+}
+@starting-style {
+  .workspace-panel-content {
+    opacity: 0;
+    clip-path: inset(0 12px 0 0);
+  }
+  .context-menu,
+  .model-menu {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+.creation-extra {
+  display: block;
+  flex: 0 0 auto;
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    width var(--motion-standard) var(--ease-standard),
+    opacity var(--motion-fast) var(--ease-standard);
+}
+.creation-extra[data-open='true'] {
+  width: var(--reveal-width);
+  opacity: 1;
+}
+.creation-extra-inner {
+  display: flex;
+  gap: 2px;
+  width: max-content;
+}
+.creation-toggle svg {
+  rotate: 0deg;
+  transition: rotate var(--motion-standard) var(--ease-standard);
+}
+.board-tools[data-expanded='true'] .creation-toggle svg {
+  rotate: 180deg;
+}
+.board-node {
+  animation: motion-card-enter var(--motion-node) var(--ease-enter);
+  transition:
+    border-color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard);
+}
+.board-node > .node-heading,
+.board-node > .note-body,
+.board-node > .messages,
+.board-node > .conversation-bottom {
+  animation: motion-content-enter var(--motion-node) var(--ease-enter);
+}
+.annotation-panel {
+  opacity: 1;
+  clip-path: inset(0);
+  transition:
+    opacity var(--motion-standard) var(--ease-enter),
+    clip-path var(--motion-standard) var(--ease-enter);
+}
+.annotation-panel[data-motion-state='closing'] {
+  translate: none;
+  clip-path: inset(0 8px 0 0);
+}
+@starting-style {
+  .annotation-panel {
+    opacity: 0;
+    clip-path: inset(0 8px 0 0);
+  }
+}
+@keyframes motion-card-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes motion-content-enter {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 6px);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

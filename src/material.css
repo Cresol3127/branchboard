@@ -9,7 +9,10 @@
   --hover: var(--md-sys-color-surface-container-high, #e6ebf2);
   --text: var(--md-sys-color-on-surface, #202124);
   --muted: var(--md-sys-color-on-surface-variant, #444746);
-  --line: color-mix(in srgb, var(--md-sys-color-outline-variant, #c4c7c5) 65%, transparent);
+  --line: var(
+    --palette-border,
+    color-mix(in srgb, var(--md-sys-color-outline-variant, #c4c7c5) 65%, transparent)
+  );
   --node-border: var(--line);
   --primary: var(--md-sys-color-primary, #3d684b);
   --primary-hover: color-mix(in srgb, var(--primary) 88%, var(--text));

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   Background,
   BackgroundVariant,
@@ -18,8 +18,6 @@ import {
   ArrowUpFromLine,
   Blocks,
   ChevronLeft,
-  ChevronRight,
-  Trash2,
   Bot,
   FolderOpen,
   GitBranch,
@@ -52,6 +50,8 @@ import { absolutePosition, canConnect } from './graph';
 import { nodeLabel } from './nodeLabel';
 import { useWorkspacePanels } from './workspacePanels';
 import { WorkspacePanelHost } from './components/WorkspacePanelHost';
+import { CanvasListItem } from './components/CanvasListItem';
+import { CanvasActionsMenu } from './components/CanvasActionsMenu';
 import { MessageHistory } from './components/MessageHistory';
 import { currentBoard, saveWorkspace, useStore, workspaceBackup } from './store';
 import { CanvasNode } from './components/Nodes';
@@ -59,8 +59,11 @@ import { MessageBar } from './components/MessageBar';
 import { useModelDiscovery } from './components/useModelDiscovery';
 import { Help, Settings } from './components/Settings';
 import { useCanvasLayout } from './components/useCanvasLayout';
+import { useHeaderSearchLayout } from './components/useHeaderSearchLayout';
 import { IconButton, Menu, Modal } from './components/ui';
-import { colorTokens } from './theme';
+import { MotionReveal, Presence } from './components/Motion';
+import { motion } from './motion';
+import { applyAppearance, useAppearance } from './appearance';
 import type { BoardNode } from './types';
 import type { SearchResult } from './search';
 import { HistorySearch } from './components/HistorySearch';
@@ -109,6 +112,9 @@ function Workspace() {
   const [textSelection, setTextSelection] = useState(false);
   const [spacePressed, setSpacePressed] = useState(false);
   const [utilities, setUtilities] = useState<{ x: number; y: number } | null>(null);
+  const [canvasMenu, setCanvasMenu] = useState<{ boardId: string; x: number; y: number } | null>(
+    null,
+  );
   const [historySearch, setHistorySearch] = useState(false);
   const [historyQuery, setHistoryQuery] = useState('');
   const [backups, setBackups] = useState(false);
@@ -143,6 +149,7 @@ function Workspace() {
     }
   });
   const [dark, setDark] = useState(false);
+  const appearance = useAppearance();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
       return localStorage.getItem('branchboard.sidebarCollapsed') === 'true';
@@ -165,6 +172,8 @@ function Workspace() {
   const dragStart = useRef<XYPosition | null>(null);
   const file = useRef<HTMLInputElement>(null),
     canvas = useRef<HTMLElement>(null);
+  const header = useRef<HTMLElement>(null);
+  useHeaderSearchLayout(header);
   useCanvasLayout(canvas, minimap, board.id, annotationsOpen);
   const fitPadding = useCallback(
     () => ({
@@ -386,15 +395,10 @@ function Workspace() {
     download('branchboard-workspace.json', content, 'application/json');
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const media = window.matchMedia('(prefers-color-scheme: dark)');
     const apply = () => {
-      const dark = theme === 'dark' || (theme === 'system' && media.matches);
-      setDark(dark);
-      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-      Object.entries(colorTokens('#8DB89A', dark)).forEach(([key, value]) =>
-        document.documentElement.style.setProperty(key, value),
-      );
+      setDark(applyAppearance(theme, appearance));
     };
     apply();
     media.addEventListener('change', apply);
@@ -404,7 +408,7 @@ function Workspace() {
       /* Workspace saving reports unavailable storage. */
     }
     return () => media.removeEventListener('change', apply);
-  }, [theme]);
+  }, [theme, appearance]);
   useEffect(() => {
     const controller = new AbortController();
     void fetch('/api/config', { signal: controller.signal })
@@ -547,7 +551,8 @@ function Workspace() {
   };
   const execute = (action: Action) => {
     setPalette(false);
-    requestAnimationFrame(action.run);
+    // Execute on the logical action, never after another input or an exit frame.
+    action.run();
   };
   function removeSelection() {
     const selected = board.nodes.filter((n) => n.selected);
@@ -743,39 +748,15 @@ function Workspace() {
           <nav aria-label="Boards">
             <p className="section-label">Your canvases</p>
             {visibleBoards.map((b) => (
-              <div className="board-row" key={b.id}>
-                <button
-                  aria-label={b.name || 'Untitled canvas'}
-                  title={b.name || 'Untitled canvas'}
-                  className={`board-link ${b.id === board.id ? 'active' : ''}`}
-                  aria-current={b.id === board.id ? 'page' : undefined}
-                  onClick={() => state.switchBoard(b.id)}
-                >
-                  <span className="canvas-number" aria-hidden="true">
-                    {state.boards.findIndex((item) => item.id === b.id) + 1}
-                  </span>
-                  <span>{b.name || 'Untitled canvas'}</span>
-                  {b.id === board.id && <span className="active-dot" />}
-                </button>
-                <IconButton
-                  label={`${favoriteBoardIds.includes(b.id) ? 'Unfavorite' : 'Favorite'} canvas: ${b.name || 'Untitled canvas'}`}
-                  aria-pressed={favoriteBoardIds.includes(b.id)}
-                  onClick={() => state.toggleFavorite(b.id)}
-                >
-                  <Star
-                    size={14}
-                    fill={favoriteBoardIds.includes(b.id) ? 'currentColor' : 'none'}
-                  />
-                </IconButton>
-                <button
-                  className="canvas-delete icon-button"
-                  aria-label={`Delete canvas: ${b.name || 'Untitled canvas'}`}
-                  title="Delete canvas"
-                  onClick={() => confirmDeleteBoard(b.id)}
-                >
-                  <Trash2 size={15} />
-                </button>
-              </div>
+              <CanvasListItem
+                key={b.id}
+                name={b.name || 'Untitled canvas'}
+                number={state.boards.findIndex((item) => item.id === b.id) + 1}
+                active={b.id === board.id}
+                menuOpen={canvasMenu?.boardId === b.id}
+                onSelect={() => state.switchBoard(b.id)}
+                onMenu={(x, y) => setCanvasMenu({ boardId: b.id, x, y })}
+              />
             ))}
             {!visibleBoards.length && (
               <p className="muted empty-boards">No canvases match these filters.</p>
@@ -824,7 +805,7 @@ function Workspace() {
       </div>
       <WorkspacePanelHost />
       <main className="workspace-main">
-        <header className="workspace-header">
+        <header ref={header} className="workspace-header">
           <div className="header-left">
             <IconButton
               label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -876,12 +857,13 @@ function Workspace() {
             </button>
             <IconButton
               label={toolsExpanded ? 'Collapse creation tools' : 'Expand creation tools'}
+              className="creation-toggle"
               aria-expanded={toolsExpanded}
               onClick={() => setToolsExpanded((value) => !value)}
             >
-              {toolsExpanded ? <ChevronRight size={17} /> : <ChevronLeft size={17} />}
+              <ChevronLeft size={17} />
             </IconButton>
-            <div className="creation-extra" hidden={!toolsExpanded}>
+            <MotionReveal open={toolsExpanded}>
               <IconButton label="Add note" onClick={() => add('note')}>
                 <StickyNote size={19} />
               </IconButton>
@@ -918,7 +900,7 @@ function Workspace() {
               >
                 <Map size={19} />
               </IconButton>
-            </div>
+            </MotionReveal>
           </div>
           <div className="flow-viewport">
             <ReactFlow<BoardNode>
@@ -1195,39 +1177,53 @@ function Workspace() {
           )}
         </section>
       </main>
-      {panelState.messageEditor && (
-        <MessageHistory
-          key={`${panelState.messageEditor.boardId}:${panelState.messageEditor.nodeId}:${panelState.messageEditor.messageId}`}
-          {...panelState.messageEditor}
-          onClose={() => useWorkspacePanels.setState({ messageEditor: null })}
-        />
-      )}
-      {panelState.confirmation && (
-        <Modal
-          title={panelState.confirmation.title}
-          kind="confirmation"
-          onClose={() => useWorkspacePanels.setState({ confirmation: null })}
-        >
-          <p>{panelState.confirmation.description}</p>
-          <div className="provider-actions">
-            <button
-              data-autofocus
-              onClick={() => useWorkspacePanels.setState({ confirmation: null })}
-            >
-              Cancel
-            </button>
-            <button
-              className="danger"
-              onClick={() => {
-                panelState.confirmation?.run();
-                useWorkspacePanels.setState({ confirmation: null });
-              }}
-            >
-              Delete
-            </button>
-          </div>
-        </Modal>
-      )}
+      <Presence duration={motion.duration.menu}>
+        {canvasMenu && (
+          <CanvasActionsMenu
+            key={canvasMenu.boardId}
+            {...canvasMenu}
+            onClose={() => setCanvasMenu(null)}
+            onDelete={() => confirmDeleteBoard(canvasMenu.boardId)}
+          />
+        )}
+      </Presence>
+      <Presence>
+        {panelState.messageEditor && (
+          <MessageHistory
+            key={`${panelState.messageEditor.boardId}:${panelState.messageEditor.nodeId}:${panelState.messageEditor.messageId}`}
+            {...panelState.messageEditor}
+            onClose={() => useWorkspacePanels.setState({ messageEditor: null })}
+          />
+        )}
+      </Presence>
+      <Presence>
+        {panelState.confirmation && (
+          <Modal
+            title={panelState.confirmation.title}
+            kind="confirmation"
+            onClose={() => useWorkspacePanels.setState({ confirmation: null })}
+          >
+            <p>{panelState.confirmation.description}</p>
+            <div className="provider-actions">
+              <button
+                data-autofocus
+                onClick={() => useWorkspacePanels.setState({ confirmation: null })}
+              >
+                Cancel
+              </button>
+              <button
+                className="danger"
+                onClick={() => {
+                  panelState.confirmation?.run();
+                  useWorkspacePanels.setState({ confirmation: null });
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </Modal>
+        )}
+      </Presence>
       {state.storageError && (
         <div className="storage-warning" role="alert">
           {state.storageError}
@@ -1259,143 +1255,165 @@ function Workspace() {
           e.target.value = '';
         }}
       />
-      {state.settingsOpen && <Settings theme={theme} onThemeChange={setTheme} />}
-      {conversationImport && <ConversationImport onClose={() => setConversationImport(false)} />}
-      {exportFormat && (
-        <CanvasExport key={board.id} format={exportFormat} onClose={() => setExportFormat(null)} />
-      )}
-      {library && (
-        <WorkspaceLibrary key={library} section={library} onClose={() => setLibrary(null)} />
-      )}
-      {backups && (
-        <Backups
-          onClose={() => setBackups(false)}
-          onExport={exportWorkspace}
-          onImport={() => file.current?.click()}
-        />
-      )}
-      {help && <Help onClose={() => setHelp(false)} />}
-      {historySearch && (
-        <HistorySearch
-          initialQuery={historyQuery}
-          onClose={() => setHistorySearch(false)}
-          onSelect={openSearchResult}
-        />
-      )}
-      {palette && (
-        <Modal
-          kind="search"
-          title="Command palette"
-          onClose={() => setPalette(false)}
-          className="command-palette"
-        >
-          <div className="palette-search">
-            <Search size={20} />
-            <input
-              data-autofocus
-              role="combobox"
-              aria-label="Search commands and nodes"
-              aria-expanded="true"
-              aria-controls="command-results"
-              aria-activedescendant={filtered[active] ? `command-${active}` : undefined}
-              placeholder="What would you like to do?"
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setActive(0);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'ArrowDown') {
-                  e.preventDefault();
-                  setActive((i) => Math.min(i + 1, filtered.length - 1));
-                }
-                if (e.key === 'ArrowUp') {
-                  e.preventDefault();
-                  setActive((i) => Math.max(i - 1, 0));
-                }
-                if (e.key === 'Enter' && filtered[active]) {
-                  e.preventDefault();
-                  execute(filtered[active]);
-                }
-              }}
-            />
-          </div>
-          <button
-            className="palette-history"
-            onClick={() => {
-              setHistoryQuery(query);
-              setPalette(false);
-              setHistorySearch(true);
-            }}
+      <Presence>
+        {state.settingsOpen && <Settings theme={theme} onThemeChange={setTheme} />}
+      </Presence>
+      <Presence>
+        {conversationImport && <ConversationImport onClose={() => setConversationImport(false)} />}
+      </Presence>
+      <Presence>
+        {exportFormat && (
+          <CanvasExport
+            key={board.id}
+            format={exportFormat}
+            onClose={() => setExportFormat(null)}
+          />
+        )}
+      </Presence>
+      <Presence>
+        {library && (
+          <WorkspaceLibrary key={library} section={library} onClose={() => setLibrary(null)} />
+        )}
+      </Presence>
+      <Presence>
+        {backups && (
+          <Backups
+            onClose={() => setBackups(false)}
+            onExport={exportWorkspace}
+            onImport={() => file.current?.click()}
+          />
+        )}
+      </Presence>
+      <Presence>{help && <Help onClose={() => setHelp(false)} />}</Presence>
+      <Presence>
+        {historySearch && (
+          <HistorySearch
+            initialQuery={historyQuery}
+            onClose={() => setHistorySearch(false)}
+            onSelect={openSearchResult}
+          />
+        )}
+      </Presence>
+      <Presence>
+        {palette && (
+          <Modal
+            kind="search"
+            title="Command palette"
+            onClose={() => setPalette(false)}
+            className="command-palette"
           >
-            <Search size={15} />
-            <span>Search saved messages & notes{query ? ` for “${query}”` : ''}</span>
-          </button>
-          <div className="command-results" id="command-results" role="listbox">
-            {filtered.map((action, i) => (
-              <button
-                key={action.label}
-                id={`command-${i}`}
-                role="option"
-                aria-label={action.label}
-                aria-selected={active === i}
-                onClick={() => execute(action)}
-                onPointerMove={() => setActive(i)}
-              >
-                <span>{action.label}</span>
-                <span>{action.category || 'Command'}</span>
-              </button>
-            ))}
-            {!filtered.length && <p>No matching commands or nodes.</p>}
-          </div>
-          <div className="palette-footer">
-            ↑ ↓ to navigate<span>↵ to select</span>
-            <span>esc to close</span>
-          </div>
-        </Modal>
-      )}
-      {menu && (
-        <Menu x={menu.x} y={menu.y} label="Canvas actions" onClose={() => setMenu(null)}>
-          <button role="menuitem" onClick={() => add('chat', flow.screenToFlowPosition(menu))}>
-            New conversation
-          </button>
-          <button role="menuitem" onClick={() => add('note', flow.screenToFlowPosition(menu))}>
-            New note
-          </button>
-          <button role="menuitem" onClick={() => file.current?.click()}>
-            Import board backup
-          </button>
-          {board.nodes.length > 0 && (
-            <button role="menuitem" onClick={fit}>
-              Fit canvas
+            <div className="palette-search">
+              <Search size={20} />
+              <input
+                data-autofocus
+                role="combobox"
+                aria-label="Search commands and nodes"
+                aria-expanded="true"
+                aria-controls="command-results"
+                aria-activedescendant={filtered[active] ? `command-${active}` : undefined}
+                placeholder="What would you like to do?"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setActive(0);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setActive((i) => Math.min(i + 1, filtered.length - 1));
+                  }
+                  if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setActive((i) => Math.max(i - 1, 0));
+                  }
+                  if (e.key === 'Enter' && filtered[active]) {
+                    e.preventDefault();
+                    execute(filtered[active]);
+                  }
+                }}
+              />
+            </div>
+            <button
+              className="palette-history"
+              onClick={() => {
+                setHistoryQuery(query);
+                setPalette(false);
+                setHistorySearch(true);
+              }}
+            >
+              <Search size={15} />
+              <span>Search saved messages & notes{query ? ` for “${query}”` : ''}</span>
             </button>
-          )}
-        </Menu>
-      )}
-      {utilities && (
-        <Menu
-          x={utilities.x}
-          y={utilities.y}
-          label="Workspace utilities"
-          onClose={() => setUtilities(null)}
-        >
-          <button role="menuitem" onClick={() => setConversationImport(true)}>
-            <ArrowUpFromLine size={15} /> Import conversations
-          </button>
-          <button role="menuitem" onClick={() => file.current?.click()}>
-            <FolderOpen size={15} /> Import board backup
-          </button>
-          <button role="menuitem" onClick={() => setExportFormat('png')}>
-            <ImageDown size={15} /> Export image / PDF
-          </button>
-          <button role="menuitem" onClick={exportJSON}>
-            <ArrowDownToLine size={15} /> Back up your canvas
-          </button>
-          <button role="menuitem" onClick={() => setBackups(true)}>
-            <FolderOpen size={15} /> Backups & snapshots
-          </button>
-        </Menu>
-      )}
+            <div className="command-results" id="command-results" role="listbox">
+              {filtered.map((action, i) => (
+                <button
+                  key={action.label}
+                  id={`command-${i}`}
+                  role="option"
+                  aria-label={action.label}
+                  aria-selected={active === i}
+                  onClick={() => execute(action)}
+                  onPointerMove={() => setActive(i)}
+                >
+                  <span>{action.label}</span>
+                  <span>{action.category || 'Command'}</span>
+                </button>
+              ))}
+              {!filtered.length && <p>No matching commands or nodes.</p>}
+            </div>
+            <div className="palette-footer">
+              ↑ ↓ to navigate<span>↵ to select</span>
+              <span>esc to close</span>
+            </div>
+          </Modal>
+        )}
+      </Presence>
+      <Presence duration={motion.duration.menu}>
+        {menu && (
+          <Menu x={menu.x} y={menu.y} label="Canvas actions" onClose={() => setMenu(null)}>
+            <button role="menuitem" onClick={() => add('chat', flow.screenToFlowPosition(menu))}>
+              New conversation
+            </button>
+            <button role="menuitem" onClick={() => add('note', flow.screenToFlowPosition(menu))}>
+              New note
+            </button>
+            <button role="menuitem" onClick={() => file.current?.click()}>
+              Import board backup
+            </button>
+            {board.nodes.length > 0 && (
+              <button role="menuitem" onClick={fit}>
+                Fit canvas
+              </button>
+            )}
+          </Menu>
+        )}
+      </Presence>
+      <Presence duration={motion.duration.menu}>
+        {utilities && (
+          <Menu
+            x={utilities.x}
+            y={utilities.y}
+            label="Workspace utilities"
+            onClose={() => setUtilities(null)}
+          >
+            <button role="menuitem" onClick={() => setConversationImport(true)}>
+              <ArrowUpFromLine size={15} /> Import conversations
+            </button>
+            <button role="menuitem" onClick={() => file.current?.click()}>
+              <FolderOpen size={15} /> Import board backup
+            </button>
+            <button role="menuitem" onClick={() => setExportFormat('png')}>
+              <ImageDown size={15} /> Export image / PDF
+            </button>
+            <button role="menuitem" onClick={exportJSON}>
+              <ArrowDownToLine size={15} /> Back up your canvas
+            </button>
+            <button role="menuitem" onClick={() => setBackups(true)}>
+              <FolderOpen size={15} /> Backups & snapshots
+            </button>
+          </Menu>
+        )}
+      </Presence>
     </div>
   );
 }

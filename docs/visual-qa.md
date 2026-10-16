@@ -1,5 +1,146 @@
 # Visual and interaction QA
 
+## Fluid workspace — 1.9.0 (2026-10-25)
+
+- Added shared cubic-bezier transitions to workspace panels, context menus, model
+  dropdowns, creation tools, node/annotation feedback and the sidebar. Panels fade and
+  clip while their canvas geometry stays fixed; closing surfaces remain above the canvas
+  only visually and stop intercepting pointer hits immediately.
+- Verified real animation frames rather than static end states: panel opening/closing,
+  toolbar reveal, canvas-menu opening, mobile panel opening and an instant reduced-motion
+  panel. Exit is logically inert before the fade completes, focus returns to the opener
+  (or the next visible sidebar control when a filtered row disappears), discarded
+  provider-key drafts never reappear, and explicit model tests abort at logical close.
+- Strict build and **224 unit/HTTP tests in 25 files** passed, followed by the full
+  **119-test Chromium suite**. Evidence: `/tmp/opencode/branchboard-motion-build.log`,
+  `/tmp/opencode/branchboard-motion-tests.log` and
+  `/tmp/opencode/branchboard-motion-e2e.log` (output
+  `/tmp/opencode/branchboard-motion-complete-results`).
+- All **150 numbered screenshots**, `motion-samples.json`, PNG/PDF exports and the
+  contact sheets were inspected. Captures 145–150 recorded two running animations for
+  each motion-enabled state and **zero** under reduced motion; the closing panel was
+  captured at opacity 0.656 and the opening menu at 0.972. Evidence:
+  `/tmp/opencode/branchboard-motion-verified/` and six sheets in
+  `/tmp/opencode/branchboard-contact-motion-verified/`.
+- No browser errors occurred. No paid provider requests, credential writes, data
+  changes, release-payload rewrites or Tailscale configuration changes were made; all
+  138 existing release checksum entries still match.
+
+## Canvas context menus — Unreleased (2026-10-25)
+
+- Replaced inline canvas Favorite/Delete controls with a clean expanded/collapsed
+  button and a portal menu containing icon-labeled Favorite/Unfavorite, Move to project
+  and Delete actions. This supersedes the intermediate fixed delete control below.
+- Verified right-click, Shift+F10/ContextMenu, normal Enter/Space activation, arrow/
+  Home/End/Escape navigation, focus restoration, touch hold/release and movement
+  cancellation. Long lists and nested project destinations stay within the viewport.
+- Inactive actions retain their exact canvas ID without switching the active canvas
+  or changing its draft, viewport or history. Delete retains the integrated confirmation
+  and desktop/mobile unsaved-key navigation guard; discarded keys do not enter storage.
+- Strict build and **222 unit/HTTP tests in 24 files** passed. All **15 focused browser
+  scenarios** passed, then the full **111-test Chromium suite passed in 3.7 minutes**.
+  Evidence: `/tmp/opencode/branchboard-canvas-menu-e2e.log`.
+- All **144 numbered screenshots** plus PNG/PDF exports were inspected, including
+  full-size expanded/collapsed/mobile menus, nested destinations and the complete
+  one-page raster PDF. No browser errors occurred. Evidence:
+  `/tmp/opencode/branchboard-canvas-menu-final/` and 13 contact sheets in
+  `/tmp/opencode/branchboard-canvas-menu-contact/`.
+- Production checks at `http://127.0.0.1:3001` covered 1440px/390px in Gruvbox light/dark,
+  with all six captures inspected. Favorite/nested moves persisted; cancellation was
+  safe; inactive deletion preserved the active draft/viewport. All four scoped menu
+  WCAG A/AA scans reported zero violations, not whole-application certification.
+- Production HTTP config/forged-origin/unknown-route responses were 200/403/404, with
+  no page errors or API writes. Evidence: `/tmp/opencode/branchboard-canvas-menu-production.json`.
+  No data, credentials, release payloads or Tailscale settings changed; all 138 release
+  checksum entries still match.
+
+## Collapsed sidebar overflow — Unreleased (2026-10-25)
+
+- Reproduced the owner's clipped circular wedge and horizontal rail scrollbar. The
+  absolute delete button overflowed a scrolling/clipped ancestor; legacy link padding
+  and flexible width also offset the canvas number.
+- Navigation targets now remain centered and 44px wide. Hover/focus delete controls
+  retain their DOM/tab order but use measured fixed positioning beside the rail.
+  Scrolling and resize update their anchor; offscreen rows cannot leave stray actions.
+- All nine focused Chromium sidebar scenarios passed, including desktop/mobile target
+  geometry, cardinal-edge hit testing, keyboard deletion of an inactive canvas, draft/
+  viewport preservation and a long vertically scrolling list without horizontal scroll.
+- The complete **107-test Chromium suite passed in 3.6 minutes**. All **142 numbered
+  screenshots** and PNG/PDF exports were inspected, with no browser errors. Full-size
+  hover, keyboard-focus and mobile rail captures show centered numbers, complete delete
+  targets and no clipped wedge or scrollbar. Evidence: `/tmp/opencode/branchboard-rail-e2e.log`,
+  `/tmp/opencode/branchboard-rail-final/` and 13 contact sheets in
+  `/tmp/opencode/branchboard-rail-contact/`.
+- Production checks covered 1440px/390px in Gruvbox light/dark, with all four captures
+  inspected. API responses were 200 for config, 403 for a forged origin and 404 for an
+  unknown route; page errors and API writes were empty. Evidence:
+  `/tmp/opencode/branchboard-rail-production.json`.
+- Strict build and **222 unit/HTTP tests in 24 files** passed. No data, credentials,
+  release payloads or Tailscale configuration were changed; all 138 release checksum
+  entries still match.
+
+## Window-centered search and Settings surfaces — Unreleased (2026-10-25)
+
+- Search is centered on the complete window rather than the remaining canvas. It
+  follows measured sidebar movement, shrinks symmetrically around the same center,
+  and becomes a compact button when panels or narrow widths leave insufficient room.
+- Five new header scenarios passed **15 repeated Chromium runs**: 1440/1920px sidebar
+  states and reload, paused/reversed animation, docked-panel resizing, long names and
+  320–1440px windows. Geometric assertions retain under-1px centering, control clearance
+  and no horizontal overflow; resize checks wait for the ResizeObserver layout frame.
+- Fixed a narrow-panel focus race by capturing the opener before the workspace becomes
+  inert and restoring it after the host removes inert, without overriding a new target.
+- The owner's two gray Settings rectangles came from legacy modal background rules.
+  Docked headers and sticky action rows now use the panel surface. Actual rendered
+  colors are checked for Original Sage and all 12 presets in both light/dark modes.
+- Final strict frontend/server build and **222 unit/HTTP tests in 24 files** passed.
+  Full actual Chromium suite: **104/104 passed** (3.4 minutes), recorded in
+  `/tmp/opencode/branchboard-search-complete-e2e.log`.
+  All **139 numbered screenshots**, the full exported PNG and one-page raster PDF
+  were visually inspected at `/tmp/opencode/branchboard-search-settings-final/`.
+  Contact sheets: `/tmp/opencode/branchboard-search-settings-contact/`.
+  No screenshot browser errors or remaining collisions were found.
+- Local production smoke at `http://127.0.0.1:3001` checked expanded/collapsed/docked
+  centering, compact mobile controls, panel surface consistency, Search keyboard/focus
+  behavior and unchanged drafts/viewport. Same-origin config returned 200, forged
+  origins 403 and unknown API routes 404; no page errors or API writes were recorded.
+  Results: `/tmp/opencode/branchboard-search-production.json`.
+- The previous Tailscale root externally changed to Joplin; it was left untouched and
+  is not counted as BranchBoard verification. All 138 existing release checksum entries
+  still match. Protected data, credentials, tags and released payloads were not changed.
+
+## Palettes and model selection — Unreleased (2026-10-25)
+
+- Final production build and **218 unit/HTTP tests in 23 files** passed. Full actual
+  Chromium suite: **99/99 passed**, including palette application without workspace/
+  viewport mutation, custom CRUD/reload, preview cancellation, mobile bounds, exact
+  model IDs, legacy selections, provider icons and no automatic generation/testing.
+- Inspected all **135 numbered desktop/mobile captures**, the full exported PNG and
+  the one-page raster PDF at `/tmp/opencode/branchboard-palettes-final/`. Reviewed
+  contact sheets: `/tmp/opencode/branchboard-palettes-contact-final-fields/`.
+  All 12 presets were captured in both modes; custom tuning/warnings/saved copies,
+  dropdowns and manual-ID forms were checked alongside existing workspace flows.
+- Fixed issues found during review: native controls ignoring palette colors, short
+  mobile text fields, swatches retaining the previous mode and invalid hex drafts
+  surviving reset. Re-ran build, both test suites and screenshots after the fixes.
+  Safe preview/revert and contrast-warning controls remain readable even when users
+  deliberately set foreground equal to background.
+- Checked actual select backgrounds, foregrounds and opaque borders against the
+  palette; normal text meets 4.5:1 and control borders 3:1 in built-in schemes.
+  Palette editor inputs have at least 44px height. Theme label/control spacing is
+  tested, dropdowns retain first-Escape dismissal and normal Tab navigation, and
+  saved content swatches are not recolored by changing UI palettes.
+- Production smoke at `http://127.0.0.1:3001`: custom palette survives reload; desktop/
+  mobile Settings and manual-ID entry work. After transition settling, axe reported
+  zero WCAG 2 A/AA and 2.1 AA violations in `.palette-settings` across all **24 schemes**.
+  This scoped scan is not a claim of whole-app accessibility compliance. Results:
+  `/tmp/opencode/branchboard-palette-accessibility-final.json`.
+- Production checks recorded no page errors, paid/config writes or external browser
+  requests. Same-origin config access succeeds; forged origins receive 403 and unknown
+  API routes 404. The previous Tailscale root now serves Joplin, so it was not counted
+  as BranchBoard verification or reconfigured. No real credentials, protected data,
+  tagged artifacts or release archives were changed.
+
 ## Docked workspace — 1.8.0 (2026-10-24)
 
 - Reviewed docked Models/Settings/Help/editors, titleless cards, rectangle selection,

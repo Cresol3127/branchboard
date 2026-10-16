@@ -66,7 +66,7 @@ test('historical branching uses only chosen turns, remains live, undoes, and per
     }),
   );
   await page.route('**/api/models/catalog*', (route) =>
-    route.fulfill({ json: { version: 1, providers: {} } }),
+    route.fulfill({ json: { version: 2, providers: {} } }),
   );
   await page.route('**/api/chat', async (route) => {
     requests.push(route.request().postDataJSON().messages);

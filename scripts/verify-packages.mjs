@@ -171,7 +171,33 @@ assert actual == record['files'], 'Extracted inventory differs from manifest'
           const nodeCount = await page.locator('.react-flow__node').count();
           if (nodeCount !== expected.starterNodes)
             throw new Error(`Unexpected starter nodes: ${nodeCount}`);
-          await page.getByRole('button', { name: 'Settings', exact: true }).click();
+          let motionChecks;
+          if (expected.motion) {
+            await page.emulateMedia({ reducedMotion: 'no-preference' });
+            const entry = await page
+              .getByRole('button', { name: 'Settings', exact: true })
+              .evaluate((button) => {
+                button.click();
+                return new Promise((resolve) =>
+                  requestAnimationFrame(() =>
+                    requestAnimationFrame(() => {
+                      const panel = document.querySelector(
+                        '.workspace-panel-content[data-motion-state="open"]',
+                      );
+                      resolve({
+                        running: Boolean(panel?.getAnimations().length),
+                        easing: panel ? getComputedStyle(panel).transitionTimingFunction : '',
+                      });
+                    }),
+                  ),
+                );
+              });
+            if (!entry.running || !entry.easing.includes('cubic-bezier'))
+              throw new Error('Runtime panel entry did not use the shared motion curve');
+            motionChecks = { entry };
+          } else {
+            await page.getByRole('button', { name: 'Settings', exact: true }).click();
+          }
           await page
             .getByRole(expected.settingsRole, { name: expected.settingsName, exact: true })
             .waitFor();
@@ -179,6 +205,48 @@ assert actual == record['files'], 'Extracted inventory differs from manifest'
             path: path.join(output, `${version}-runtime.png`),
             animations: 'disabled',
           });
+          if (expected.motion) {
+            const exit = await page
+              .getByRole('button', { name: 'Back to canvas', exact: true })
+              .evaluate((button) => {
+                button.click();
+                return new Promise((resolve) =>
+                  requestAnimationFrame(() =>
+                    requestAnimationFrame(() => {
+                      const panel = document.querySelector(
+                        '.workspace-panel-content[data-motion-state="closing"]',
+                      );
+                      resolve({
+                        running: Boolean(panel?.getAnimations().length),
+                        inert: Boolean(panel?.inert),
+                        hidden: panel?.getAttribute('aria-hidden') === 'true',
+                        roleRemoved: !panel?.querySelector('[role="region"]'),
+                      });
+                    }),
+                  ),
+                );
+              });
+            if (!exit.running || !exit.inert || !exit.hidden || !exit.roleRemoved)
+              throw new Error('Runtime panel exit did not release interaction immediately');
+            motionChecks.exit = exit;
+            await page.locator('.docked-panel').waitFor({ state: 'detached' });
+            await page.emulateMedia({ reducedMotion: 'reduce' });
+            await page.getByRole('button', { name: 'Settings', exact: true }).click();
+            const reducedAnimations = await page
+              .locator('.workspace-panel-content')
+              .evaluate((panel) => panel.getAnimations({ subtree: true }).length);
+            const immediateClose = await page
+              .getByRole('button', { name: 'Back to canvas', exact: true })
+              .evaluate((button) => {
+                button.click();
+                return new Promise((resolve) =>
+                  requestAnimationFrame(() => resolve(!document.querySelector('.docked-panel'))),
+                );
+              });
+            if (reducedAnimations !== 0 || !immediateClose)
+              throw new Error('Runtime reduced-motion preference was not respected');
+            motionChecks.reducedMotion = { animations: reducedAnimations, immediateClose };
+          }
           if (errors.length) throw new Error(`Production browser errors: ${errors.join('\n')}`);
           checks.runtime = {
             status: 'passed',
@@ -190,6 +258,7 @@ assert actual == record['files'], 'Extracted inventory differs from manifest'
             chromium: `rendered ${expected.starterNodes} starter cards, local assets/fonts and working settings ${expected.settingsRole}`,
             pageErrors: errors,
             unavailableProviders,
+            ...(motionChecks ? { motion: motionChecks } : {}),
           };
         } finally {
           await context.close();
