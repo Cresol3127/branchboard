@@ -1,11 +1,13 @@
 # Progress
 
-## Fluid workspace — 1.9.0 (2026-10-25)
+## Fluid workspace — 1.9.0 (2026-10-26)
 
-- Added shared cubic-bezier curves and bounded 120–240ms timings for desktop/mobile
-  panel entry/exit, anchored menus/model dropdowns, creation-tool reveals and node/
-  annotation feedback. React Flow positioning, direct gestures, resizing, ports and
-  streaming tokens remain immediate; no intermediate animation dimensions are saved.
+- Adopted the published Material 3 Expressive motion tokens: spatial fast/default/slow
+  curves at 350/500/650ms for desktop/mobile panel geometry, anchored menus/model
+  dropdowns, creation-tool reveals, the sidebar and node/annotation feedback, with
+  effects fast/default/slow curves at 150/200/300ms for opacity and color. React Flow
+  positioning, direct gestures, resizing, ports and streaming tokens remain immediate;
+  no intermediate animation dimensions are saved.
 - Presence retains actual React subtrees briefly for visual exit, not cloned form
   DOM. Logical close immediately releases panel state, disables closing controls,
   removes their accessible roles, restores previews and aborts explicit model tests.
@@ -15,10 +17,12 @@
   measured independently of presentation transforms; panel reveal does not move
   measured control bounds. Closing overlays no longer intercept canvas corner hits.
 - Includes the palette/model/search/canvas-menu improvements recorded in the following
-  implementation checkpoints. Original release payloads and tagged data stay unchanged.
+  implementation checkpoints. Earlier release payloads and tags remain unchanged;
+  this 1.9.0 edition is replaced in place with the Material 3 Expressive implementation.
 - Verified checkpoint: `../branchboard-backups/20261025T123541Z-before-motion-release/`
-  preserves 138 maintained files before motion edits. Release QA and artifact-specific
-  extracted-install evidence are recorded only after their gates complete.
+  preserves 138 maintained files from the earlier checkpoint. Release QA and
+  artifact-specific extracted-install evidence are recorded only after their gates
+  complete.
 
 ## Canvas context menus — Unreleased
 

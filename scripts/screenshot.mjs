@@ -1029,7 +1029,7 @@ try {
     await motionPage.evaluate(() => {
       for (const animation of document.getAnimations()) animation.play();
     });
-    await motionPage.clock.runFor(350);
+    await motionPage.clock.runFor(700);
   }
   await motionPage
     .getByRole('button', { name: 'Settings', exact: true })
@@ -1054,9 +1054,9 @@ try {
     });
   await captureMotion('148-canvas-menu-opening-midpoint.png', '.canvas-actions-menu');
   await motionPage.keyboard.press('Escape');
-  await motionPage.clock.runFor(350);
+  await motionPage.clock.runFor(700);
   await motionPage.setViewportSize({ width: 390, height: 844 });
-  await motionPage.clock.runFor(350);
+  await motionPage.clock.runFor(700);
   await motionPage
     .getByRole('button', { name: 'Settings', exact: true })
     .evaluate((el) => el.click());
@@ -1064,7 +1064,7 @@ try {
   await motionPage
     .getByRole('button', { name: 'Back to canvas', exact: true })
     .evaluate((el) => el.click());
-  await motionPage.clock.runFor(350);
+  await motionPage.clock.runFor(700);
   await motionPage.emulateMedia({ reducedMotion: 'reduce' });
   await motionPage.clock.runFor(32);
   await motionPage

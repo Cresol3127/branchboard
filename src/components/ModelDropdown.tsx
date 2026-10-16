@@ -50,7 +50,7 @@ export function ModelDropdown({
     [active, setActive] = useState(0);
   const parentPresent = useIsPresent();
   const visible = open && parentPresent && !disabled;
-  const rendered = useMotionPresence(visible, motion.duration.menu);
+  const rendered = useMotionPresence(visible, motion.spatial.fast.duration);
   const trigger = useRef<HTMLButtonElement>(null),
     menu = useRef<HTMLDivElement>(null);
   const filtered = options.filter((o) =>
@@ -77,8 +77,14 @@ export function ModelDropdown({
       popup = { width: menu.current.offsetWidth, height: menu.current.offsetHeight };
     const below = r.bottom + 8,
       top = below + popup.height <= start + height - 12 ? below : r.top - popup.height - 8;
-    menu.current.style.left = `${Math.max(8, Math.min(r.left, innerWidth - popup.width - 8))}px`;
-    menu.current.style.top = `${Math.max(start + 8, Math.min(top, start + height - popup.height - 12))}px`;
+    const finalLeft = Math.max(8, Math.min(r.left, innerWidth - popup.width - 8));
+    const finalTop = Math.max(start + 8, Math.min(top, start + height - popup.height - 12));
+    menu.current.style.left = `${finalLeft}px`;
+    menu.current.style.top = `${finalTop}px`;
+    menu.current.style.setProperty(
+      '--menu-origin',
+      `${finalLeft < r.left ? 'right' : 'left'} ${finalTop < r.top ? 'bottom' : 'top'}`,
+    );
   }, []);
   useLayoutEffect(() => {
     if (visible) position();

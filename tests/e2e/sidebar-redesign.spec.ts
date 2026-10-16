@@ -71,6 +71,11 @@ for (const width of [1440, 390]) {
     await page.getByRole('button', { name: 'Models', exact: true }).click();
     const panel = page.getByRole('region', { name: 'Models', exact: true });
     await expect(panel).toBeVisible();
+    await page.locator('.workspace-panel-content').evaluate(async (element) => {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      const animations = element.getAnimations();
+      if (animations.length) await Promise.all(animations.map((animation) => animation.finished));
+    });
     expect(await page.locator('.react-flow__viewport').getAttribute('style')).toBe(transform);
     const rect = (await panel.boundingBox())!;
     expect(rect.x).toBeGreaterThanOrEqual(width === 390 ? 64 : 256);

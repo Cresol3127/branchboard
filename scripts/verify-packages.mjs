@@ -187,13 +187,19 @@ assert actual == record['files'], 'Extracted inventory differs from manifest'
                       resolve({
                         running: Boolean(panel?.getAnimations().length),
                         easing: panel ? getComputedStyle(panel).transitionTimingFunction : '',
+                        duration: panel ? getComputedStyle(panel).transitionDuration : '',
                       });
                     }),
                   ),
                 );
               });
-            if (!entry.running || !entry.easing.includes('cubic-bezier'))
-              throw new Error('Runtime panel entry did not use the shared motion curve');
+            if (
+              !entry.running ||
+              !entry.easing.includes('cubic-bezier(0.34, 0.8, 0.34, 1)') ||
+              !entry.easing.includes('cubic-bezier(0.38, 1.21, 0.22, 1)') ||
+              !entry.duration.includes('0.5s')
+            )
+              throw new Error('Runtime panel entry did not use the expressive motion tokens');
             motionChecks = { entry };
           } else {
             await page.getByRole('button', { name: 'Settings', exact: true }).click();

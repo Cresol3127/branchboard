@@ -40,7 +40,7 @@ const labels = [
 ];
 
 export function Annotations({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const toolsRendered = useMotionPresence(open, motion.duration.standard);
+  const toolsRendered = useMotionPresence(open, motion.spatial.fast.duration);
   const state = useStore(),
     board = currentBoard(state),
     flow = useReactFlow();

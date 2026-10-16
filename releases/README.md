@@ -28,7 +28,7 @@ Current previews: [desktop](v1.9.0/previews/desktop.png),
 [dark](v1.9.0/previews/dark.png), [mobile](v1.9.0/previews/mobile.png),
 [Models](v1.9.0/previews/models.png), [Settings](v1.9.0/previews/settings.png),
 [Help](v1.9.0/previews/help.png), [canvas actions](v1.9.0/previews/canvas-actions.png),
-[panel motion](v1.9.0/previews/motion.png) and [canvas export](v1.9.0/previews/export.png).
+[expressive motion](v1.9.0/previews/motion.png) and [canvas export](v1.9.0/previews/export.png).
 Each cleanup edition also has four inspected production-browser previews.
 
 ## Local installation

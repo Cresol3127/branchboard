@@ -4,10 +4,11 @@ Notable changes, newest first. See the [release catalog](releases/README.md) for
 artifacts, provenance and verification. Early entries were reconstructed from preserved
 sources; original v1.1–v1.5 release dates are unknown.
 
-## 1.9.0 — 2026-10-25
+## 1.9.0 — 2026-10-26
 
-- Added shared cubic-bezier motion for panel opening/closing, menus, model dropdowns,
-  toolbar reveals and node feedback, with immediate reduced-motion behavior.
+- Adopted Material 3 Expressive motion: published spatial curves at 350/500/650 ms for
+  geometry and effects curves at 150/200/300 ms for opacity and color, applied to
+  panels, menus, dropdowns, toolbar reveals, the sidebar and node feedback.
 - Kept closing UI inert, preserved focus and drafts, prevented discarded-form revival,
   and cancelled explicit model tests before their panel's visual exit finishes.
 - Replaced sidebar Favorite/Delete buttons with an icon-based canvas context menu for

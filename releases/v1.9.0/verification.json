@@ -1,30 +1,30 @@
 {
   "version": "1.9.0",
   "title": "Fluid workspace",
-  "date": "2026-10-25",
+  "date": "2026-10-26",
   "build": "passed",
   "unitAndHttp": {
     "status": "passed",
-    "tests": 224,
+    "tests": 225,
     "files": 25,
-    "log": "/tmp/opencode/branchboard-motion-tests.log"
+    "log": "/tmp/opencode/branchboard-md3e-tests.log"
   },
   "browser": {
     "status": "passed",
     "tests": 119,
-    "scope": "full Chromium suite, including real motion entry/exit/reversal, inert logical close, focus restoration, rapid discarded-draft reopening, reduced motion, explicit model-test abort, palette/model/search/canvas-menu regressions, annotations, resizing and real PNG/PDF downloads",
-    "log": "/tmp/opencode/branchboard-motion-e2e.log"
+    "scope": "full Chromium suite, including Material 3 Expressive spatial/effects entry, reversal and exit, spatially overshooting reveals, inert logical close, focus restoration, rapid discarded-draft reopening, reduced motion, explicit model-test abort, palette/model/search/canvas-menu regressions, annotations, resizing and real PNG/PDF downloads",
+    "log": "/tmp/opencode/branchboard-md3e-e2e2.log"
   },
   "screenshots": {
     "count": 150,
     "inspected": true,
-    "directory": "/tmp/opencode/branchboard-motion-verified",
-    "contactSheets": "/tmp/opencode/branchboard-contact-motion-verified",
+    "directory": "/tmp/opencode/branchboard-md3e-verified",
+    "contactSheets": "/tmp/opencode/branchboard-contact-md3e-verified",
     "exportedArtifacts": [
       "canvas-export.png",
       "canvas-export.pdf"
     ],
-    "inspection": "All 150 captures inspected through six desktop/mobile contact sheets; the canvas export was inspected at full resolution. The motion captures show real mid-transition states: panel opening, panel closing at opacity 0.656, toolbar reveal, canvas menu opening at opacity 0.972, mobile panel opening and an instant reduced-motion panel with zero running animations. Closing surfaces clip and fade without moving canvas geometry; 44px actions, focus rings and viewport bounds remained correct.",
+    "inspection": "All 150 captures inspected through six desktop/mobile contact sheets; the canvas export was inspected at full resolution. Motion captures show the expressive spatial/effects split: panel entry, closing and mobile entry reported three running animations, the toolbar reveal and canvas menu two, and reduced motion zero. The closing panel midpoint measured opacity 0.086 under the effects curve, the opening canvas menu 0.943, and the toolbar exceeded its settled width at midpoint to confirm spatial overshoot. Menu targets, focus rings, viewport bounds and clipped exiting panels remained correct.",
     "pageErrors": []
   },
   "runtimeExpectations": {
@@ -54,58 +54,5 @@
       "1.7.1",
       "1.8.0"
     ]
-  },
-  "cleanInstall": {
-    "status": "passed",
-    "node": "v24.19.0",
-    "platform": "linux",
-    "source": {
-      "status": "passed",
-      "artifactSha256": "7beec41347eef28eca4db661e79de46532e386bb48e4b828461b67d6bf5e9600",
-      "commands": [
-        "npm ci",
-        "npm run build",
-        "npm test"
-      ],
-      "tests": 224,
-      "extractedInventory": "matched manifest"
-    },
-    "runtime": {
-      "status": "passed",
-      "artifactSha256": "ebcbc596dffb530e0e8c64e95c9634e6544cdcf523e55e44c82fda9a25812bc2",
-      "commands": [
-        "npm ci --omit=dev",
-        "npm start"
-      ],
-      "developmentDependenciesAbsent": true,
-      "extractedInventory": "matched manifest",
-      "http": [
-        "frontend",
-        "public config",
-        "JSON API 404",
-        "origin rejection"
-      ],
-      "chromium": "rendered 3 starter cards, local assets/fonts and working settings region",
-      "pageErrors": [],
-      "unavailableProviders": [
-        "Ollama model discovery: local service unavailable (HTTP 502)"
-      ],
-      "motion": {
-        "entry": {
-          "running": true,
-          "easing": "cubic-bezier(0.16, 1, 0.3, 1), cubic-bezier(0.16, 1, 0.3, 1)"
-        },
-        "exit": {
-          "running": true,
-          "inert": true,
-          "hidden": true,
-          "roleRemoved": true
-        },
-        "reducedMotion": {
-          "animations": 0,
-          "immediateClose": true
-        }
-      }
-    }
   }
 }

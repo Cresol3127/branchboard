@@ -1,27 +1,31 @@
 # Visual and interaction QA
 
-## Fluid workspace — 1.9.0 (2026-10-25)
+## Fluid workspace — 1.9.0 (2026-10-26)
 
-- Added shared cubic-bezier transitions to workspace panels, context menus, model
-  dropdowns, creation tools, node/annotation feedback and the sidebar. Panels fade and
-  clip while their canvas geometry stays fixed; closing surfaces remain above the canvas
-  only visually and stop intercepting pointer hits immediately.
-- Verified real animation frames rather than static end states: panel opening/closing,
-  toolbar reveal, canvas-menu opening, mobile panel opening and an instant reduced-motion
-  panel. Exit is logically inert before the fade completes, focus returns to the opener
-  (or the next visible sidebar control when a filtered row disappears), discarded
-  provider-key drafts never reappear, and explicit model tests abort at logical close.
-- Strict build and **224 unit/HTTP tests in 25 files** passed, followed by the full
-  **119-test Chromium suite**. Evidence: `/tmp/opencode/branchboard-motion-build.log`,
-  `/tmp/opencode/branchboard-motion-tests.log` and
-  `/tmp/opencode/branchboard-motion-e2e.log` (output
-  `/tmp/opencode/branchboard-motion-complete-results`).
-- All **150 numbered screenshots**, `motion-samples.json`, PNG/PDF exports and the
-  contact sheets were inspected. Captures 145–150 recorded two running animations for
-  each motion-enabled state and **zero** under reduced motion; the closing panel was
-  captured at opacity 0.656 and the opening menu at 0.972. Evidence:
-  `/tmp/opencode/branchboard-motion-verified/` and six sheets in
-  `/tmp/opencode/branchboard-contact-motion-verified/`.
+- Replaced the workspace transitions with the published Material 3 Expressive web
+  tokens: spatial fast/default/slow curves at 350/500/650 ms for geometry and effects
+  fast/default/slow curves at 150/200/300 ms for opacity and color. Panels, menus,
+  model dropdowns, the sidebar, toolbar reveals, node entry and annotations use the
+  matching token family; spatial overshoot is preserved and effects never overshoot.
+- Panels clip and slide without changing settled canvas geometry. Closing controls
+  become inert, lose their accessible roles and stop pointer hits at logical close
+  while the visual exit finishes. Focus return, filtered-row fallback, dirty-navigation
+  guards, drafts, viewport and history remain protected, and explicit model tests abort
+  at logical close.
+- Strict build and **225 unit/HTTP tests in 25 files** passed, followed by the full
+  **119-test Chromium suite**, including exact token curves, spatial overshoot, inert
+  exit, rapid-reopen draft safety and immediate reduced motion. Evidence:
+  `/tmp/opencode/branchboard-md3e-build.log`,
+  `/tmp/opencode/branchboard-md3e-tests.log` and
+  `/tmp/opencode/branchboard-md3e-e2e2.log` (output
+  `/tmp/opencode/branchboard-md3e-full2-results`).
+- All **150 numbered screenshots**, `motion-samples.json`, PNG/PDF exports and six
+  contact sheets were inspected. The panel captures reported three running animations,
+  the toolbar and canvas menu two, and reduced motion **zero**; the closing panel was
+  captured at its midpoint with opacity 0.086 and the opening canvas menu at 0.943.
+  The toolbar exceeded its settled width at midpoint, confirming spatial overshoot.
+  Evidence: `/tmp/opencode/branchboard-md3e-verified/` and six sheets in
+  `/tmp/opencode/branchboard-contact-md3e-verified/`.
 - No browser errors occurred. No paid provider requests, credential writes, data
   changes, release-payload rewrites or Tailscale configuration changes were made; all
   138 existing release checksum entries still match.

@@ -1,13 +1,13 @@
-/* Only presentation is eased. React Flow positions, ports and resizing stay direct. */
+/* Material 3 Expressive motion. Spatial tokens move geometry; effects tokens
+   change opacity, color and elevation. React Flow positions and drags stay direct. */
 .sidebar-shell {
-  transition: width var(--motion-standard) var(--ease-standard);
-}
-button,
-.board-node {
-  transition-timing-function: var(--ease-standard);
+  transition: width var(--motion-spatial-default) var(--ease-spatial-default);
 }
 .message-tools {
-  transition: opacity var(--motion-fast) var(--ease-standard);
+  transition: opacity var(--motion-effects-fast) var(--ease-effects-fast);
+}
+button:not(:disabled):active {
+  scale: 0.96;
 }
 .workspace-panel-host {
   display: flex;
@@ -38,8 +38,9 @@ button,
   translate: none;
   clip-path: inset(0);
   transition:
-    opacity var(--motion-panel) var(--ease-enter),
-    clip-path var(--motion-panel) var(--ease-enter);
+    opacity var(--motion-effects-default) var(--ease-effects-default),
+    clip-path var(--motion-spatial-default) var(--ease-spatial-default),
+    translate var(--motion-spatial-default) var(--ease-spatial-default);
 }
 .workspace[data-panel-overlay='true'] .workspace-panel-host[data-present='true'] {
   position: absolute;
@@ -51,34 +52,46 @@ button,
 }
 .workspace[data-panel-overlay='true'] .workspace-panel-content {
   width: 100%;
+  transition-duration:
+    var(--motion-effects-slow), var(--motion-spatial-slow), var(--motion-spatial-slow);
 }
 .context-menu,
 .model-menu {
   opacity: 1;
-  translate: 0 0;
+  scale: 1;
+  transform-origin: var(--menu-origin, top left);
   transition:
-    opacity var(--motion-menu) var(--ease-enter),
-    translate var(--motion-menu) var(--ease-enter);
+    opacity var(--motion-effects-fast) var(--ease-effects-fast),
+    scale var(--motion-spatial-fast) var(--ease-spatial-fast);
 }
 [data-motion-state='closing'] {
   pointer-events: none !important;
+}
+.context-menu[data-motion-state='closing'],
+.model-menu[data-motion-state='closing'] {
   opacity: 0;
-  translate: 0 4px;
-  transition-timing-function: var(--ease-exit);
+  scale: 0.92;
 }
 .workspace-panel-content[data-motion-state='closing'] {
-  translate: none;
+  opacity: 0;
+  translate: -12px 0;
   clip-path: inset(0 12px 0 0);
 }
 @starting-style {
   .workspace-panel-content {
     opacity: 0;
+    translate: -16px 0;
     clip-path: inset(0 12px 0 0);
   }
   .context-menu,
   .model-menu {
     opacity: 0;
-    translate: 0 4px;
+    scale: 0.8;
+  }
+  .annotation-panel {
+    opacity: 0;
+    translate: -8px 0;
+    clip-path: inset(0 8px 0 0);
   }
 }
 .creation-extra {
@@ -89,8 +102,8 @@ button,
   overflow: hidden;
   opacity: 0;
   transition:
-    width var(--motion-standard) var(--ease-standard),
-    opacity var(--motion-fast) var(--ease-standard);
+    width var(--motion-spatial-fast) var(--ease-spatial-fast),
+    opacity var(--motion-effects-fast) var(--ease-effects-fast);
 }
 .creation-extra[data-open='true'] {
   width: var(--reveal-width);
@@ -103,56 +116,42 @@ button,
 }
 .creation-toggle svg {
   rotate: 0deg;
-  transition: rotate var(--motion-standard) var(--ease-standard);
+  transition: rotate var(--motion-spatial-fast) var(--ease-spatial-fast);
 }
 .board-tools[data-expanded='true'] .creation-toggle svg {
   rotate: 180deg;
 }
 .board-node {
-  animation: motion-card-enter var(--motion-node) var(--ease-enter);
+  transform-origin: center;
+  animation:
+    motion-node-fade var(--motion-effects-fast) var(--ease-effects-fast),
+    motion-node-scale var(--motion-spatial-fast) var(--ease-spatial-fast);
   transition:
-    border-color var(--motion-fast) var(--ease-standard),
-    box-shadow var(--motion-fast) var(--ease-standard);
-}
-.board-node > .node-heading,
-.board-node > .note-body,
-.board-node > .messages,
-.board-node > .conversation-bottom {
-  animation: motion-content-enter var(--motion-node) var(--ease-enter);
+    border-color var(--motion-effects-fast) var(--ease-effects-fast),
+    box-shadow var(--motion-effects-fast) var(--ease-effects-fast);
 }
 .annotation-panel {
   opacity: 1;
+  translate: none;
   clip-path: inset(0);
   transition:
-    opacity var(--motion-standard) var(--ease-enter),
-    clip-path var(--motion-standard) var(--ease-enter);
+    opacity var(--motion-effects-default) var(--ease-effects-default),
+    clip-path var(--motion-spatial-default) var(--ease-spatial-default),
+    translate var(--motion-spatial-default) var(--ease-spatial-default);
 }
 .annotation-panel[data-motion-state='closing'] {
-  translate: none;
+  opacity: 0;
+  translate: -8px 0;
   clip-path: inset(0 8px 0 0);
 }
-@starting-style {
-  .annotation-panel {
-    opacity: 0;
-    clip-path: inset(0 8px 0 0);
-  }
-}
-@keyframes motion-card-enter {
+@keyframes motion-node-fade {
   from {
     opacity: 0;
   }
-  to {
-    opacity: 1;
-  }
 }
-@keyframes motion-content-enter {
+@keyframes motion-node-scale {
   from {
-    opacity: 0;
-    clip-path: inset(0 0 6px);
-  }
-  to {
-    opacity: 1;
-    clip-path: inset(0);
+    scale: 0.96;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -162,5 +161,6 @@ button,
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
+    scale: none !important;
   }
 }

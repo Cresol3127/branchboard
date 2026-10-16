@@ -1,11 +1,15 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { useWorkspacePanels } from '../workspacePanels';
 import { useMotionPresence } from './Motion';
 import { motion } from '../motion';
 
 export function WorkspacePanelHost() {
   const active = useWorkspacePanels((s) => s.active);
-  const rendered = useMotionPresence(Boolean(active), motion.duration.panel);
+  const [overlay, setOverlay] = useState(false);
+  const rendered = useMotionPresence(
+    Boolean(active),
+    overlay ? motion.spatial.slow.duration : motion.spatial.default.duration,
+  );
   const navigation = useWorkspacePanels((s) => s.navigation);
   const ref = useRef<HTMLElement>(null);
   const lastControl = useRef<HTMLElement | null>(null);
@@ -23,6 +27,7 @@ export function WorkspacePanelHost() {
       const sidebarWidth = sidebar.getBoundingClientRect().width;
       const narrow = root.clientWidth - sidebarWidth < 820;
       const full = Boolean(active) && narrow;
+      setOverlay(narrow);
       root.dataset.panelFullView = String(full);
       root.dataset.panelOverlay = String(narrow);
       root.style.setProperty('--panel-sidebar-width', `${sidebarWidth}px`);

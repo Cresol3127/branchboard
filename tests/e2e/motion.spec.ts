@@ -50,7 +50,7 @@ for (const width of [1440, 390]) {
       );
     });
     expect(enter.count).toBeGreaterThan(0);
-    expect(enter.duration).toContain('0.24s');
+    expect(enter.duration).toContain(width === 390 ? '0.65s' : '0.5s');
     expect(enter.opacity).toBeLessThan(1);
     const panel = page.getByRole('region', { name: 'Models', exact: true });
     await expect(panel).toBeVisible();
@@ -129,7 +129,10 @@ test('menus and model dropdowns fade out inertly and stay bounded at the viewpor
   const row = page.getByRole('navigation', { name: 'Boards' }).locator('.board-link').first();
   await row.click({ button: 'right' });
   const menu = page.getByRole('menu', { name: /^Canvas actions:/ });
-  await expect(menu).toHaveCSS('transition-timing-function', /cubic-bezier/);
+  await expect(menu).toHaveCSS(
+    'transition-timing-function',
+    /cubic-bezier\(0\.31, 0\.94, 0\.34, 1\), cubic-bezier\(0\.42, 1\.67, 0\.21, 0\.9\)/,
+  );
   const close = await menu.evaluate((element) => {
     element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     return new Promise<boolean>((resolve) =>
@@ -219,8 +222,8 @@ test('toolbar reversals keep closed controls inert and never change graph coordi
     });
   });
   expect(sample.width).toBeGreaterThan(0);
-  expect(sample.width).toBeLessThan(sample.target);
-  expect(sample.easing).toContain('cubic-bezier');
+  expect(sample.width).toBeGreaterThan(sample.target);
+  expect(sample.easing).toContain('cubic-bezier(0.42, 1.67, 0.21, 0.9)');
   await page
     .getByRole('button', { name: 'Collapse creation tools', exact: true })
     .evaluate((button) => (button as HTMLElement).click());

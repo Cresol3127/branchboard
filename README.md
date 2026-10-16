@@ -38,7 +38,9 @@ Keyboard: **Shift+F10**; touch: **long-press**. Deletion requires confirmation.
 In **Settings → Workspace**, choose a UI palette independently of Light/Dark/System.
 Customize either variant, then save a named palette; edit, duplicate or delete your
 copies without changing built-ins or saved card colors. Unsaved edits are previews.
-UI transitions automatically respect your system's reduced-motion preference.
+Panels, menus and controls use Material 3 Expressive motion; geometry and opacity
+transition on their separate published spatial and effects tokens, and your system's
+reduced-motion preference disables them immediately.
 
 Model dropdowns suggest the latest known generation per supported family. Existing
 and recent selections stay available separately; local Ollama lists installed models.

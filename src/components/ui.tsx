@@ -166,8 +166,14 @@ export function Menu({
       menu.style.maxHeight = `${Math.max(80, height - 20)}px`;
       menu.style.maxWidth = `${Math.max(160, width - 16)}px`;
       menu.style.overflowY = 'auto';
-      menu.style.left = `${Math.max(left, Math.min(x, left + width - menu.offsetWidth - 16))}px`;
-      menu.style.top = `${Math.max(top, Math.min(y, top + height - menu.offsetHeight - 20))}px`;
+      const finalLeft = Math.max(left, Math.min(x, left + width - menu.offsetWidth - 16));
+      const finalTop = Math.max(top, Math.min(y, top + height - menu.offsetHeight - 20));
+      menu.style.left = `${finalLeft}px`;
+      menu.style.top = `${finalTop}px`;
+      menu.style.setProperty(
+        '--menu-origin',
+        `${finalLeft < x ? 'right' : 'left'} ${finalTop < y ? 'bottom' : 'top'}`,
+      );
     };
     position();
     const observer = new ResizeObserver(position);

@@ -1,8 +1,10 @@
 # BranchBoard 1.9.0 — Fluid workspace
 
-Shared cubic-bezier transitions bring consistent opening/closing motion to workspace
-panels, context menus, model dropdowns, creation tools and node feedback. Dragging,
-resizing, ports and streaming text remain immediate. Reduced motion disables both
+BranchBoard now follows Material 3 Expressive motion. Panels, context menus, model
+dropdowns, creation tools, the sidebar and node feedback use the published spatial
+curves at 350/500/650 ms for geometry and the published effects curves at 150/200/300 ms
+for opacity and color. Spatial overshoot is preserved; effects never overshoot. Dragging,
+resizing, ports and streaming text remain immediate, and reduced motion disables both
 animations and delayed visual removal.
 
 Closing controls immediately become inert. Focus, dirty-navigation confirmation,

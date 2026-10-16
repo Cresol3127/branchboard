@@ -364,7 +364,7 @@ export function CanvasNode({ id, data, selected, type }: NodeProps<BoardNode>) {
         </div>
       )}
       {type !== 'group' && <Ports id={id} data={data} />}
-      <Presence duration={motion.duration.menu}>
+      <Presence duration={motion.spatial.fast.duration}>
         {menu && (
           <Menu x={menu.x} y={menu.y} label="Node actions" onClose={() => setMenu(null)}>
             {type !== 'group' && (

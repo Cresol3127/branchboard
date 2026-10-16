@@ -1,16 +1,27 @@
-/** Shared timings: presentation only, never a delay for a data operation. */
+/**
+ * Material 3 Expressive motion.
+ *
+ * Spatial tokens animate geometry: position, size, scale, rotation and clips.
+ * Effects tokens animate opacity, color and elevation. Presentation never delays
+ * a data operation.
+ */
 export const motion = {
-  duration: { fast: 120, menu: 160, node: 180, standard: 200, panel: 240 },
-  easing: {
-    standard: 'cubic-bezier(0.2, 0, 0, 1)',
-    enter: 'cubic-bezier(0.16, 1, 0.3, 1)',
-    exit: 'cubic-bezier(0.4, 0, 1, 1)',
+  spatial: {
+    fast: { duration: 350, easing: 'cubic-bezier(0.42, 1.67, 0.21, 0.9)' },
+    default: { duration: 500, easing: 'cubic-bezier(0.38, 1.21, 0.22, 1)' },
+    slow: { duration: 650, easing: 'cubic-bezier(0.39, 1.29, 0.35, 0.98)' },
+  },
+  effects: {
+    fast: { duration: 150, easing: 'cubic-bezier(0.31, 0.94, 0.34, 1)' },
+    default: { duration: 200, easing: 'cubic-bezier(0.34, 0.8, 0.34, 1)' },
+    slow: { duration: 300, easing: 'cubic-bezier(0.34, 0.88, 0.34, 1)' },
   },
 } as const;
 
 export function installMotionTokens(root: HTMLElement) {
-  for (const [name, value] of Object.entries(motion.duration))
-    root.style.setProperty(`--motion-${name}`, `${value}ms`);
-  for (const [name, value] of Object.entries(motion.easing))
-    root.style.setProperty(`--ease-${name}`, value);
+  for (const group of ['spatial', 'effects'] as const)
+    for (const [name, token] of Object.entries(motion[group])) {
+      root.style.setProperty(`--motion-${group}-${name}`, `${token.duration}ms`);
+      root.style.setProperty(`--ease-${group}-${name}`, token.easing);
+    }
 }

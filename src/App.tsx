@@ -1177,7 +1177,7 @@ function Workspace() {
           )}
         </section>
       </main>
-      <Presence duration={motion.duration.menu}>
+      <Presence duration={motion.spatial.fast.duration}>
         {canvasMenu && (
           <CanvasActionsMenu
             key={canvasMenu.boardId}
@@ -1368,7 +1368,7 @@ function Workspace() {
           </Modal>
         )}
       </Presence>
-      <Presence duration={motion.duration.menu}>
+      <Presence duration={motion.spatial.fast.duration}>
         {menu && (
           <Menu x={menu.x} y={menu.y} label="Canvas actions" onClose={() => setMenu(null)}>
             <button role="menuitem" onClick={() => add('chat', flow.screenToFlowPosition(menu))}>
@@ -1388,7 +1388,7 @@ function Workspace() {
           </Menu>
         )}
       </Presence>
-      <Presence duration={motion.duration.menu}>
+      <Presence duration={motion.spatial.fast.duration}>
         {utilities && (
           <Menu
             x={utilities.x}

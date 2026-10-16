@@ -42,7 +42,7 @@ export function useMotionPresence(open: boolean, duration: number) {
 /** Retain the actual React subtree briefly, not a clone of form DOM or its values. */
 export function Presence({
   children,
-  duration = motion.duration.panel,
+  duration = motion.spatial.default.duration,
 }: {
   children: ReactNode;
   duration?: number;
