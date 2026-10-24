@@ -64,7 +64,7 @@ export function CanvasActionsMenu({
             stop();
             return;
           }
-          if (useWorkspacePanels.getState().active) {
+          if (useWorkspacePanels.getState().activeId) {
             stop();
             return;
           }

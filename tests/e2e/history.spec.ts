@@ -193,6 +193,14 @@ test('history controls and search dialogs fit a mobile viewport', async ({ page 
     .getByRole('button', { name: 'Edit message', exact: true })
     .click();
   let dialog = page.getByRole('region', { name: 'Edit message', exact: true });
+  // Wait for the sheet's expressive scale to settle before checking viewport fit.
+  await expect
+    .poll(() =>
+      dialog.evaluate(
+        (element) => element.closest('.workspace-panel-content')!.getAnimations().length,
+      ),
+    )
+    .toBe(0);
   const bounds = (await dialog.boundingBox())!;
   expect(bounds.x).toBeGreaterThanOrEqual(0);
   expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);

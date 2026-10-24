@@ -6,6 +6,7 @@ import { catalogModelChoices } from '../modelCatalog';
 import { selectableProviders } from '../modelPreferences';
 import { useAddedModels } from '../addedModels';
 import { ModelDropdown, type ModelOption } from './ModelDropdown';
+import { useWorkspacePanels } from '../workspacePanels';
 
 export function ModelSelector({
   id,
@@ -105,13 +106,13 @@ export function ModelSelector({
           <button
             type="button"
             data-close-model-dropdown
-            onClick={() =>
+            onClick={() => {
               useStore.setState({
-                settingsOpen: true,
-                settingsSection: 'models',
+                modelsOpen: true,
                 settingsProvider: value.provider,
-              })
-            }
+              });
+              requestAnimationFrame(() => useWorkspacePanels.getState().raiseKind('models'));
+            }}
           >
             Manage providers
           </button>

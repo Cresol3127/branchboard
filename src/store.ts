@@ -356,8 +356,8 @@ type State = {
   applyConfig: (config: AIConfig, changedProvider?: ProviderId) => void;
   refreshModels: (id?: ProviderId, signal?: AbortSignal) => Promise<void>;
   settingsOpen: boolean;
+  modelsOpen: boolean;
   settingsProvider: ProviderId;
-  settingsSection: 'models' | 'workspace';
   streaming: Record<string, boolean>;
   composerDrafts: Record<string, string>;
   composerModels: Record<string, { provider: ProviderId; model: string }>;
@@ -735,7 +735,7 @@ export const useStore = create<State>((set, get) => {
           ? target.node.data.model || state.model
           : selection?.model || state.model;
       if (!state.providers.find((p) => p.id === provider)?.configured) {
-        set({ settingsOpen: true, settingsSection: 'models', settingsProvider: provider });
+        set({ modelsOpen: true, settingsProvider: provider });
         return null;
       }
       if (target.kind === 'chat' && target.node.data.contextTokenLimit) {
@@ -1032,8 +1032,8 @@ export const useStore = create<State>((set, get) => {
       if (id && results[0]?.status === 'rejected') throw results[0].reason;
     },
     settingsOpen: false,
+    modelsOpen: false,
     settingsProvider: 'openai',
-    settingsSection: 'models',
     streaming: {},
     toast: '',
     historyTarget: null,
@@ -1545,7 +1545,7 @@ export const useStore = create<State>((set, get) => {
       const provider = node.data.provider || 'openai';
       const model = node.data.model || get().model;
       if (!get().providers.find((p) => p.id === provider)?.configured) {
-        set({ settingsOpen: true, settingsSection: 'models', settingsProvider: provider });
+        set({ modelsOpen: true, settingsProvider: provider });
         return;
       }
       let messages = [...node.data.messages];

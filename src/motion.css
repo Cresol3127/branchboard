@@ -10,50 +10,44 @@ button:not(:disabled):active {
   scale: 0.96;
 }
 .workspace-panel-host {
-  display: flex;
   flex-basis: 0;
-  overflow: hidden;
-  border-right-width: 0;
+  width: 0;
+  overflow: visible;
+  border: 0;
 }
-.workspace-panel-host[data-open='true'] {
+.workspace-panel-host[data-docked='true'] {
   flex-basis: 360px;
-  border-right-width: 1px;
-}
-.workspace-panel-host[data-present='false'] {
-  visibility: hidden;
+  width: 360px;
 }
 .workspace-panel-host[data-open='false'] {
-  pointer-events: none;
   background: transparent;
 }
-.workspace-panel-host[data-open='false'][data-present='true'] {
-  /* Keep the exiting surface visible without moving the canvas during a gesture. */
-  overflow: visible;
-}
 .workspace-panel-content {
-  position: absolute;
-  width: 360px;
-  inset: 0 auto 0 0;
   opacity: 1;
-  translate: none;
-  clip-path: inset(0);
+  scale: 1;
   transition:
     opacity var(--motion-effects-default) var(--ease-effects-default),
-    clip-path var(--motion-spatial-default) var(--ease-spatial-default),
-    translate var(--motion-spatial-default) var(--ease-spatial-default);
+    scale var(--motion-spatial-default) var(--ease-spatial-default),
+    box-shadow var(--motion-effects-default) var(--ease-effects-default);
+  transform-origin: center;
 }
-.workspace[data-panel-overlay='true'] .workspace-panel-host[data-present='true'] {
-  position: absolute;
-  left: var(--panel-sidebar-width);
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: auto;
+.workspace-panel-content[data-mode='docked'],
+.workspace-panel-content[data-mode='sheet'] {
+  transform-origin: left center;
 }
-.workspace[data-panel-overlay='true'] .workspace-panel-content {
-  width: 100%;
-  transition-duration:
-    var(--motion-effects-slow), var(--motion-spatial-slow), var(--motion-spatial-slow);
+.workspace-panel-content[data-motion-state='closing'] {
+  opacity: 0;
+  scale: 0.97;
+}
+@starting-style {
+  .workspace-panel-content {
+    opacity: 0;
+    scale: 0.97;
+  }
+}
+.window-snap-preview {
+  opacity: 1;
+  transition: opacity var(--motion-effects-fast) var(--ease-effects-fast);
 }
 .context-menu,
 .model-menu {

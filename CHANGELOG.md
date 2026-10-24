@@ -4,6 +4,31 @@ Notable changes, newest first. See the [release catalog](releases/README.md) for
 artifacts, provenance and verification. Early entries were reconstructed from preserved
 sources; original v1.1–v1.5 release dates are unknown.
 
+## 1.10.0 — 2026-10-26
+
+- Added independent Models and Settings windows with one docked panel, multiple floating
+  panels, at most one snapped panel, dock swapping, maximize/restore and focus/z-order.
+- Added Windows-style edge snapping to all four halves. The canvas now always moves to
+  the opposite half, including vertical top/bottom splits and snapping from a docked
+  panel. Snap previews sit above the dragged window and dragging directly to an edge works.
+- Added direct move, corner/edge resize and keyboard window control: Arrow moves,
+  Shift+Arrow resizes, Alt+Arrow snaps and Enter maximizes or restores. Minimum window
+  and canvas sizes remain bounded to the measured workspace.
+- Persisted only each panel's mode and last floating bounds at
+  `branchboard.windows.v1`; open panels, drafts, keys and maximized state are not saved.
+  Added **Reset window layout** to Settings.
+- Made every dockable surface movable, including Models, Settings, Help, Library,
+  Backups, import/export, history, message editing and annotation layers. Command
+  palettes and confirmations remain transient overlays.
+- Added narrow full-stage sheets with an inert canvas below 820px usable workspace width,
+  focus restoration, dirty-form guards and preserved drafts.
+- Improved node connections: edges and ports now inherit conversation-family colors,
+  use heavier rounded paths and family-colored arrowheads. Selected edges stay in their
+  family color with a distinct weight and glow instead of switching to a generic accent.
+- Fixed canvas placement under snapped panels, missing vertical snapping, resize-handle
+  hit testing, stale keyboard window geometry, transient focus races and panel/header
+  surface mismatches.
+
 ## 1.9.0 — 2026-10-26
 
 - Adopted Material 3 Expressive motion: published spatial curves at 350/500/650 ms for

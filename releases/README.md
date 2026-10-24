@@ -4,7 +4,8 @@
 
 | Version   | Purpose                                                              | Source                                         |
 | --------- | -------------------------------------------------------------------- | ---------------------------------------------- |
-| **1.9.0** | Fluid workspace, personal palettes and refined model/canvas controls | Maintained project root                        |
+| **1.10.0** | Windowed Models/Settings, four-way snapping and colored connections | Maintained project root                        |
+| 1.9.0     | Fluid workspace, personal palettes and refined model/canvas controls | Preserved source/runtime archives in `v1.9.0/` |
 | 1.8.0     | Docked panels, quiet cards and bounded model testing                 | Preserved source/runtime archives in `v1.8.0/` |
 | 1.7.1     | Design improvements with canvas cleanup                              | `v1.7.1/`                                      |
 | 1.6.1     | Material workspace with canvas cleanup                               | `v1.6.1/`                                      |
@@ -24,11 +25,15 @@ Earlier downloads/previews are withdrawn from the maintained list, not rewritten
 Original source directories, archived payloads, checksums and tags remain preserved
 for private recovery. No original implementation has been fabricated for `v1.0`.
 
-Current previews: [desktop](v1.9.0/previews/desktop.png),
-[dark](v1.9.0/previews/dark.png), [mobile](v1.9.0/previews/mobile.png),
-[Models](v1.9.0/previews/models.png), [Settings](v1.9.0/previews/settings.png),
-[Help](v1.9.0/previews/help.png), [canvas actions](v1.9.0/previews/canvas-actions.png),
-[expressive motion](v1.9.0/previews/motion.png) and [canvas export](v1.9.0/previews/export.png).
+Current previews: [desktop](v1.10.0/previews/desktop.png),
+[dark](v1.10.0/previews/dark.png), [mobile](v1.10.0/previews/mobile.png),
+[Models](v1.10.0/previews/models.png), [Settings](v1.10.0/previews/settings.png),
+[Help](v1.10.0/previews/help.png), [canvas actions](v1.10.0/previews/canvas-actions.png),
+[expressive motion](v1.10.0/previews/motion.png),
+[canvas export](v1.10.0/previews/export.png),
+[windows](v1.10.0/previews/windows.png),
+[connections](v1.10.0/previews/connections.png)
+and [top snap](v1.10.0/previews/top-snap.png).
 Each cleanup edition also has four inspected production-browser previews.
 
 ## Local installation
@@ -46,7 +51,8 @@ use separate browser profiles/origins and do not edit the same storage concurren
 
 - Verified external checkpoints: `../branchboard-backups/20261022T133446Z-before-material-redesign/`
   and `../branchboard-backups/20261024T042350Z-before-sidebar-redesign/`, plus
-  `../branchboard-backups/20261025T123541Z-before-motion-release/`.
+  `../branchboard-backups/20261025T123541Z-before-motion-release/` and
+  `../branchboard-backups/20261026T085316Z-before-windowed-workspace/`.
   Protected `data/`, real provider configuration and user work are not release payloads.
 - Current app: full build, unit/HTTP and Chromium suites, complete screenshot flow,
   inspected screenshots and real PNG/PDF downloads.
@@ -72,7 +78,7 @@ Freeze reviewed sources in Git first. Prepare only new editions with
 `node scripts/verify-packages.mjs VERSION`. Finalize with
 `python3 scripts/package-current-release.py --version VERSION --finalize` only after
 matching fresh-install hashes pass. Commit evidence, then create the annotated tag.
-Release tag after final verification: `v1.9.0`; cleanup tags: `editions/v1.1.2`, `editions/v1.2.2`,
-`editions/v1.3.2`, `editions/v1.4.2`, `editions/v1.5.2`, `editions/v1.6.1`,
-`editions/v1.7.1`. Tagged releases are immutable. The old batch packager is not the
-updater for new releases.
+Release tag after final verification: `v1.10.0`; cleanup tags: `editions/v1.1.2`,
+`editions/v1.2.2`, `editions/v1.3.2`, `editions/v1.4.2`, `editions/v1.5.2`,
+`editions/v1.6.1`, `editions/v1.7.1`. Tagged releases are immutable. The old batch
+packager is not the updater for new releases.

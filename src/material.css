@@ -21,6 +21,12 @@
   --error: var(--md-sys-color-error, #ba1a1a);
   --grid: var(--md-sys-color-outline-variant, #c4c7c5);
   --edge: var(--md-sys-color-outline, #747775);
+  --branch-sage: #4f8462;
+  --branch-blue: #5d7fa8;
+  --branch-amber: #a4782f;
+  --branch-rose: #a65f74;
+  --branch-violet: #7a68a9;
+  --branch-teal: #4b8488;
   --shadow: 0 1px 3px #20212412, 0 4px 12px #20212408;
   --radius-control: 20px;
   --radius-panel: 16px;
@@ -31,6 +37,12 @@
 }
 :root[data-theme='dark'] {
   color-scheme: dark;
+  --branch-sage: #82c39a;
+  --branch-blue: #8fb4e4;
+  --branch-amber: #dfb46d;
+  --branch-rose: #e09aad;
+  --branch-violet: #b9a5ea;
+  --branch-teal: #79c9c3;
   --shadow: 0 1px 3px #00000030, 0 4px 12px #00000016;
 }
 h1,

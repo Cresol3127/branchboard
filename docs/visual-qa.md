@@ -1,5 +1,53 @@
 # Visual and interaction QA
 
+## Windowed workspace — 1.10.0 (2026-10-26)
+
+- Verified independent Models and Settings windows at 1440px: first open docks, opening
+  the other floats it, reopening raises it, docking swaps the previous panel and
+  maximize/restore returns to the prior layout. Multiple floating windows retain
+  z-order and pinned drafts.
+- Verified all four snaps and the opposite-half canvas mapping, including the reported
+  docked-canvas case and vertical top/bottom snapping. Drag-to-edge previews stay above
+  the moving window; the canvas moves only after release.
+- Verified move, corner/edge resize, keyboard Arrow/Shift+Arrow/Alt+Arrow/Enter,
+  restore-under-pointer, embedded pop-out/dock controls and focus restoration. Window
+  bounds remain inside the desk with 320x280 minima and a usable canvas.
+- Verified `branchboard.windows.v1` round trips mode and floating bounds only; open
+  panels, maximized state, drafts and credentials do not survive reload. Reset layout
+  clears persisted geometry without touching workspace data.
+- At 760px and 390px, open panels become full-stage sheets, the canvas is inert but
+  remains mounted, focus stays contained, Escape/Back restores the origin, and dirty
+  guards/drafts behave as on desktop.
+- Connection review covered multiple conversation roots and branches: edges and ports
+  inherit target-family colors in six light/dark hues, note inputs match the
+  conversation they feed, paths render at 3px with 12px ports, and selected/related
+  edges keep their family color at 3.75px with a glow. Arrowheads remain small and
+  family-colored. The prior Alt-drag endpoint mismatch was traced to hover-scaling
+  handles and fixed without changing port geometry.
+- Strict build and **241 unit/HTTP tests in 27 files** passed, followed by the full
+  **123-test Chromium suite**. Reopening two panels whose stored layouts were both
+  snapped keeps only the first snapped, opens the second floating and persists that
+  resolved mode. Evidence: `/tmp/opencode/build-110-final2.log`,
+  `/tmp/opencode/unit-110-final.log`, `/tmp/opencode/full-e2e-final2.log`.
+- All **159 numbered screenshots**, `motion-samples.json` and PNG/PDF exports were
+  inspected through eight contact sheets, including a full-resolution look at the PNG
+  and the PDF's one-page A4/1000x1052 embedded render. The final nine captures cover
+  family-colored connections, docked Models, left/top/bottom snaps, maximize, floating
+  Settings, drag preview and the narrow sheet. Motion sampling recorded two running
+  animations for desktop panel entry/close, one for mobile entry, and zero for reduced
+  motion; closing opacity was **0.086** and toolbar/canvas-menu opacity was **0.943**.
+  Evidence: `/tmp/opencode/screenshots-110-final/` and
+  `/tmp/opencode/contact-110-final/`.
+- The built production assets on 3001 passed the isolated browser pass at 1440x960 and
+  390x844: docked canvas relocation, Settings floating without replacing the dock, top
+  snap below the canvas, mode-only persistence across reload, and a full-stage narrow
+  sheet over an inert mounted canvas. Evidence: `/tmp/opencode/production-110/` with
+  `pageErrors: []`; the only failed request was the expected local Ollama catalog probe
+  (502 while Ollama is not running), which the Models UI reports as unavailable.
+- No uncaught browser errors occurred. No paid provider requests, credential writes,
+  `data/` changes, release-payload rewrites or Tailscale configuration changes were made;
+  all 152 existing release checksum entries still match.
+
 ## Fluid workspace — 1.9.0 (2026-10-26)
 
 - Replaced the workspace transitions with the published Material 3 Expressive web

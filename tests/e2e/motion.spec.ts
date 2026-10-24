@@ -50,10 +50,18 @@ for (const width of [1440, 390]) {
       );
     });
     expect(enter.count).toBeGreaterThan(0);
-    expect(enter.duration).toContain(width === 390 ? '0.65s' : '0.5s');
+    expect(enter.duration).toContain('0.5s');
     expect(enter.opacity).toBeLessThan(1);
     const panel = page.getByRole('region', { name: 'Models', exact: true });
     await expect(panel).toBeVisible();
+    // Measure the exit from the settled entry, not from an invisible first frame.
+    await expect
+      .poll(() =>
+        panel.evaluate(
+          (element) => element.closest('.workspace-panel-content')!.getAnimations().length,
+        ),
+      )
+      .toBe(0);
     const exit = await panel
       .getByRole('button', { name: 'Back to canvas', exact: true })
       .evaluate((button) => {

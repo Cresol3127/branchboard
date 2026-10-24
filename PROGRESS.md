@@ -1,5 +1,64 @@
 # Progress
 
+## Windowed workspace — 1.10.0 (2026-10-26)
+
+- Split the single shared dock into independent Models and Settings windows. One panel
+  may be docked, several may float, and at most one may be snapped; any window can be
+  maximized or raised. Opening the other tool floats it instead of replacing the current
+  panel; docking swaps the previous dock to floating; opening an existing window raises
+  it.
+- Added Windows-style snapping to left, right, top and bottom halves. The canvas now
+  always moves to the opposite half, fixing the reported case where a docked panel did
+  not relocate the canvas and the missing vertical top/bottom split. Dragging to an edge
+  previews and commits the same snap, and the preview now renders above the dragged
+  window instead of behind it.
+- Added direct move, responsive corner/edge resize, keyboard move/resize/snap/maximize,
+  dock/pop-out/maximize/restore controls and stable focus/z-order. Bounds enforce a
+  320x280 minimum while retaining a usable canvas, and restore-under-pointer keeps
+  snapped and maximized windows attached to the cursor.
+- Persisted only each panel's layout mode and last floating bounds at
+  `branchboard.windows.v1`. Open panels, maximized state, drafts and keys are never
+  saved; **Settings → Reset window layout** clears the saved geometry. Narrow workspaces
+  use full-stage sheets over an inert canvas instead of overlapping fixed panels.
+- Improved node connections to match the supplied branch reference: every edge and port
+  inherits the target conversation family's color from a six-color light/dark palette,
+  with 3px rounded paths, 12px ports, smaller family-colored arrowheads, and selected or
+  related edges retaining their color with weight and glow as the state cue. Note inputs
+  inherit the color of the conversation they feed; multiple roots stay visually distinct.
+- Fixed a pointer/port alignment defect found during regression testing: hover-scaling
+  React Flow handles changed the measured handle center at non-1 zoom. Hover now uses a
+  colored ring without geometry changes, preserving Alt-drag port resets and connection
+  endpoints.
+- All movable surfaces use the same window host, including Models, Settings, Help,
+  Library, Backups, import/export, history search and annotation layers; command
+  palettes and confirmations remain transient overlays above windows.
+- Checkpoint: `../branchboard-backups/20261026T085316Z-before-windowed-workspace/`
+  preserves 161 byte-checked files from the verified 1.9.0 worktree.
+- Strict build and **241 unit/HTTP tests in 27 files** passed. The full **123-test
+  Chromium suite** passed after adding window geometry/multi-window regressions,
+  all four snap halves, edge-color and connection-state coverage, persisted-snap
+  collision coverage, and settling the expressive entry animation before measuring
+  exit. Evidence:
+  `/tmp/opencode/build-110-final2.log`, `/tmp/opencode/unit-110-final.log` and
+  `/tmp/opencode/full-e2e-final2.log`.
+- The final screenshot flow saved **159 numbered captures**, PNG/PDF exports and
+  motion samples with no browser errors; all were inspected through eight contact
+  sheets and the exported PNG and one-page A4 PDF were opened. The final nine captures
+  cover the docked, four snapped, maximized, floating, drag-preview and narrow-sheet
+  states. Evidence: `/tmp/opencode/screenshots-110-final/` and
+  `/tmp/opencode/contact-110-final/`.
+- Built production assets served on 3001 passed an isolated Chromium pass: the dock
+  moved the canvas, opening Settings floated it, top snap moved the canvas below, only
+  modes/bounds persisted, reload restored snap-top, and the 390px sheet covered the
+  stage over an inert canvas. Two captures and the no-page-error record are in
+  `/tmp/opencode/production-110/`; the only failed request was the expected local
+  Ollama catalog probe (502 while Ollama is not running).
+- No paid provider requests, credential writes, `data/` edits, dependency additions or
+  Tailscale changes were made. All **152 existing release checksum entries** still match;
+  original 1.1.1–1.9.0 tags/artifacts remain immutable.
+- Fresh source/runtime archive installs and artifact-specific verification are recorded
+  in the 1.10.0 release manifest after their gates complete.
+
 ## Fluid workspace — 1.9.0 (2026-10-26)
 
 - Adopted the published Material 3 Expressive motion tokens: spatial fast/default/slow

@@ -854,7 +854,7 @@ try {
   await providerSettings.getByRole('button', { name: 'Check for updates', exact: true }).click();
   await expect(
     providerSettings.getByRole('button', { name: 'Check for updates', exact: true }),
-  ).toBeEnabled();
+  ).toBeEnabled({ timeout: 30_000 });
   await providerSettings.locator('.model-discovery-status').first().scrollIntoViewIfNeeded();
   await capture('91-mobile-keyless-catalog-settings.png');
   await page.keyboard.press('Escape');
@@ -1077,6 +1077,78 @@ try {
     JSON.stringify(motionSamples, null, 2),
   );
   await motionPage.close();
+
+  // Windowed workspace and connection visuals use an isolated fresh profile.
+  const windowPage = await browser.newPage({
+    viewport: { width: 1440, height: 960 },
+    colorScheme: 'light',
+    reducedMotion: 'reduce',
+  });
+  windowPage.on('pageerror', (error) => errors.push(error.message));
+  async function captureWindow(name) {
+    await windowPage.evaluate(() => document.fonts.ready);
+    await windowPage.waitForTimeout(400);
+    await windowPage.screenshot({ path: path.join(directory, name), fullPage: true });
+    captureCount++;
+  }
+  await windowPage.goto('http://localhost:3000');
+  await expect(windowPage.locator('.react-flow__node')).toHaveCount(3);
+  await captureWindow('151-family-connections.png');
+
+  const windowRegion = (name) => windowPage.getByRole('region', { name, exact: true });
+  const windowMode = (name) =>
+    windowRegion(name).evaluate(
+      (element) => element.closest('[data-mode]')?.getAttribute('data-mode') || null,
+    );
+  const snapWindow = async (name, target) => {
+    await windowRegion(name).getByRole('button', { name: 'Snap layout', exact: true }).click();
+    await windowPage
+      .getByRole('menu', { name: 'Snap window', exact: true })
+      .getByRole('menuitem', { name: `Snap ${target} half`, exact: true })
+      .click();
+    await expect.poll(() => windowMode(name)).toBe(`snap-${target}`);
+  };
+
+  await windowPage.getByRole('button', { name: 'Models', exact: true }).click();
+  await expect(windowRegion('Models')).toBeVisible();
+  await captureWindow('152-window-docked-models.png');
+  await snapWindow('Models', 'left');
+  await captureWindow('153-window-snap-left.png');
+  await snapWindow('Models', 'top');
+  await captureWindow('154-window-snap-top.png');
+  await snapWindow('Models', 'bottom');
+  await captureWindow('155-window-snap-bottom.png');
+  await windowRegion('Models').getByRole('button', { name: 'Maximize window' }).click();
+  await expect.poll(() => windowMode('Models')).toBe('maximized');
+  await captureWindow('156-window-maximized.png');
+  await windowRegion('Models').getByRole('button', { name: 'Restore window' }).click();
+  await windowRegion('Models').getByRole('button', { name: 'Dock panel' }).click();
+  await expect.poll(() => windowMode('Models')).toBe('docked');
+
+  await windowPage.getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(windowRegion('Settings')).toBeVisible();
+  await captureWindow('157-window-settings-floating.png');
+  const moveSettings = windowRegion('Settings').getByRole('button', {
+    name: 'Move Settings window',
+  });
+  const handle = await moveSettings.boundingBox();
+  const desk = await windowPage.locator('.canvas-area').boundingBox();
+  await windowPage.mouse.move(handle.x + 60, handle.y + 20);
+  await windowPage.mouse.down();
+  await windowPage.mouse.move(desk.x + desk.width - 8, desk.y + desk.height / 2, { steps: 8 });
+  await expect(windowPage.locator('.window-snap-preview')).toBeVisible();
+  await captureWindow('158-window-drag-preview.png');
+  await windowPage.mouse.up();
+  await expect.poll(() => windowMode('Settings')).toBe('snap-right');
+
+  await windowPage.setViewportSize({ width: 760, height: 900 });
+  await windowPage.waitForTimeout(500);
+  await captureWindow('159-window-narrow-sheet.png');
+  await expect
+    .poll(() => windowPage.locator('.workspace-main').evaluate((element) => element.inert))
+    .toBe(true);
+  await windowPage.close();
+
   await writeFile(path.join(directory, 'browser-errors.json'), JSON.stringify(errors, null, 2));
   expect(errors).toEqual([]);
   console.log(

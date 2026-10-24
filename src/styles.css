@@ -1551,51 +1551,103 @@ button svg {
   padding: 3px;
 }
 .react-flow__handle {
-  width: 10px;
-  height: 10px;
-  min-width: 10px;
-  min-height: 10px;
+  width: 12px;
+  height: 12px;
+  min-width: 12px;
+  min-height: 12px;
   border: 2px solid var(--surface);
-  background: var(--edge);
-  box-shadow: 0 0 0 1px var(--node-border);
+  background: var(--family-color, var(--edge));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--family-color, var(--edge)) 45%, var(--node-border)),
+    0 1px 5px #00000012;
   transition:
     background var(--motion-effects-fast) var(--ease-effects-fast),
     box-shadow var(--motion-effects-fast) var(--ease-effects-fast);
+}
+.react-flow__node.family-sage {
+  --family-color: var(--branch-sage);
+}
+.react-flow__node.family-blue {
+  --family-color: var(--branch-blue);
+}
+.react-flow__node.family-amber {
+  --family-color: var(--branch-amber);
+}
+.react-flow__node.family-rose {
+  --family-color: var(--branch-rose);
+}
+.react-flow__node.family-violet {
+  --family-color: var(--branch-violet);
+}
+.react-flow__node.family-teal {
+  --family-color: var(--branch-teal);
 }
 .board-node:hover .react-flow__handle,
 .selected .board-node .react-flow__handle {
   background: var(--primary);
 }
 .react-flow__handle-right {
-  right: -5px;
+  right: -6px;
 }
 .react-flow__handle-left {
-  left: -5px;
+  left: -6px;
 }
 .react-flow__handle:hover {
   background: var(--purple);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--purple) 48%, var(--node-border)),
+    0 0 0 5px color-mix(in srgb, var(--purple) 18%, transparent);
 }
 .suggested-input .target {
   background: var(--purple);
   box-shadow: 0 0 0 5px var(--accent);
 }
+.react-flow__edge.family-sage {
+  --edge-color: var(--branch-sage);
+}
+.react-flow__edge.family-blue {
+  --edge-color: var(--branch-blue);
+}
+.react-flow__edge.family-amber {
+  --edge-color: var(--branch-amber);
+}
+.react-flow__edge.family-rose {
+  --edge-color: var(--branch-rose);
+}
+.react-flow__edge.family-violet {
+  --edge-color: var(--branch-violet);
+}
+.react-flow__edge.family-teal {
+  --edge-color: var(--branch-teal);
+}
 .react-flow__edge-path {
-  stroke: var(--edge);
-  stroke-width: 1.5;
+  stroke: var(--edge-color, var(--edge));
+  stroke-width: 3;
   stroke-linecap: round;
   stroke-linejoin: round;
+  opacity: 0.92;
+  transition:
+    stroke-width var(--motion-effects-fast) var(--ease-effects-fast),
+    opacity var(--motion-effects-fast) var(--ease-effects-fast);
 }
 .react-flow__connection-path {
   stroke: var(--primary);
-  stroke-width: 1.5;
+  stroke-width: 3;
+  stroke-linecap: round;
 }
 .react-flow__edge:hover .react-flow__edge-path,
 .react-flow__edge.related-edge .react-flow__edge-path {
-  stroke: var(--primary);
+  stroke: color-mix(in srgb, var(--edge-color, var(--primary)) 78%, var(--text));
+  stroke-width: 3.25;
+  opacity: 1;
 }
 .react-flow__edge.selected .react-flow__edge-path {
-  stroke: var(--purple);
-  stroke-width: 2.5;
+  stroke: var(--edge-color, var(--purple));
+  stroke-width: 3.75;
+  opacity: 1;
+  filter: drop-shadow(
+    0 0 4px color-mix(in srgb, var(--edge-color, var(--purple)) 48%, transparent)
+  );
 }
 .react-flow__resize-control.handle {
   width: 7px;

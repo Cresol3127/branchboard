@@ -88,6 +88,26 @@ export function familyName(node: BoardNode) {
   );
 }
 
+/**
+ * Assign each connection the color of the conversation family it feeds.
+ * Notes inherit the family of the conversation they point at, so an input note
+ * and the branch it starts read as one continuous path.
+ */
+export function edgeFamilyColors(nodes: BoardNode[], edges: Edge[]) {
+  const colors = new Map<string, FamilyColor>();
+  for (const node of assignFamilies(nodes, edges)) {
+    if (isFamilyColor(node.data.familyColor)) colors.set(node.id, node.data.familyColor);
+  }
+  const byEdge = new Map<string, FamilyColor>();
+  for (const edge of edges) {
+    byEdge.set(
+      edge.id,
+      colors.get(edge.target) || colors.get(edge.source) || familyColorFor(edge.id),
+    );
+  }
+  return byEdge;
+}
+
 /** Ancestor family names provide a non-color cue in the node context inspector. */
 export function familyContext(nodes: BoardNode[], id: string, edges: Edge[]) {
   const byId = new Map(nodes.map((node) => [node.id, node]));

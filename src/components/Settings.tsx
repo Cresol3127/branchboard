@@ -18,118 +18,99 @@ import {
   hasPublicCatalog,
 } from '../modelCatalog';
 
-export function Settings({
+export function ModelsPanel() {
+  const providers = useStore((s) => s.providers);
+  const provider = useStore((s) => s.settingsProvider);
+  const selected = providers.find((p) => p.id === provider);
+  return (
+    <Modal
+      title="Models"
+      kind="models"
+      className="settings-dialog models-dialog"
+      onClose={() => useStore.setState({ modelsOpen: false })}
+    >
+      <div className="dialog-body">
+        <p className="dialog-subtitle">Choose your AI provider. Keys stay on this server.</p>
+        <label htmlFor="settings-provider">Provider</label>
+        <select
+          id="settings-provider"
+          value={provider}
+          onChange={(e) => {
+            const id = e.target.value as ProviderId;
+            useWorkspacePanels
+              .getState()
+              .navigate(() => useStore.setState({ settingsProvider: id }));
+          }}
+        >
+          {providers.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+        {selected && <ProviderSettings key={provider} provider={selected} />}
+        {!selected && (
+          <p role="status">
+            Provider settings are unavailable. Check that the local API server is running.
+          </p>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+export function SettingsPanel({
   theme,
   onThemeChange,
 }: {
   theme: Theme;
   onThemeChange: (theme: Theme) => void;
 }) {
-  const providers = useStore((s) => s.providers);
-  const provider = useStore((s) => s.settingsProvider);
-  const selected = providers.find((p) => p.id === provider);
-  const section = useStore((s) => s.settingsSection);
+  const [layoutStatus, setLayoutStatus] = useState('');
   return (
     <Modal
-      title={section === 'models' ? 'Models' : 'Settings'}
-      kind={section === 'models' ? 'models' : 'settings'}
+      title="Settings"
+      kind="settings"
       className="settings-dialog"
       onClose={() => useStore.setState({ settingsOpen: false })}
     >
-      <div
-        className="help-tabs"
-        role="tablist"
-        aria-label="Workspace settings"
-        onKeyDown={(e) => {
-          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
-          e.preventDefault();
-          const next =
-            e.key === 'Home'
-              ? 'models'
-              : e.key === 'End'
-                ? 'workspace'
-                : section === 'models'
-                  ? 'workspace'
-                  : 'models';
-          useWorkspacePanels.getState().navigate(() => {
-            useStore.setState({ settingsSection: next });
-            requestAnimationFrame(() => document.getElementById(`settings-tab-${next}`)?.focus());
-          });
-        }}
-      >
-        {(['models', 'workspace'] as const).map((id) => (
+      <div className="dialog-body">
+        <section>
+          <h3>Appearance</h3>
+          <label className="appearance-field">
+            Color theme
+            <select
+              aria-label="Color theme"
+              value={theme}
+              onChange={(e) => onThemeChange(e.target.value as Theme)}
+            >
+              <option value="system">System</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </label>
+          <PaletteSettings />
+          <p className="muted">
+            Canvases stay in this browser. Use Backups before changing browser or origin.
+          </p>
+        </section>
+        <section className="window-layout-settings">
+          <h3>Window layout</h3>
+          <p>
+            Panels can float, dock, or snap to half the workspace. Layout is remembered for each
+            panel; open panels and drafts are not.
+          </p>
           <button
             type="button"
-            role="tab"
-            key={id}
-            id={`settings-tab-${id}`}
-            aria-controls={`settings-panel-${id}`}
-            aria-selected={section === id}
-            tabIndex={section === id ? 0 : -1}
-            onClick={() =>
-              useWorkspacePanels
-                .getState()
-                .navigate(() => useStore.setState({ settingsSection: id }))
-            }
+            onClick={() => {
+              useWorkspacePanels.getState().resetLayout();
+              setLayoutStatus('Window layout reset.');
+            }}
           >
-            {id === 'models' ? 'Models' : 'Workspace'}
+            Reset window layout
           </button>
-        ))}
-      </div>
-      <div
-        className="dialog-body"
-        role="tabpanel"
-        id={`settings-panel-${section}`}
-        aria-labelledby={`settings-tab-${section}`}
-      >
-        {section === 'workspace' ? (
-          <section>
-            <h3>Appearance</h3>
-            <label className="appearance-field">
-              Color theme
-              <select
-                aria-label="Color theme"
-                value={theme}
-                onChange={(e) => onThemeChange(e.target.value as Theme)}
-              >
-                <option value="system">System</option>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-              </select>
-            </label>
-            <PaletteSettings />
-            <p className="muted">
-              Canvases stay in this browser. Use Backups before changing browser or origin.
-            </p>
-          </section>
-        ) : (
-          <>
-            <p className="dialog-subtitle">Choose your AI provider. Keys stay on this server.</p>
-            <label htmlFor="settings-provider">Provider</label>
-            <select
-              id="settings-provider"
-              value={provider}
-              onChange={(e) => {
-                const id = e.target.value as ProviderId;
-                useWorkspacePanels
-                  .getState()
-                  .navigate(() => useStore.setState({ settingsProvider: id }));
-              }}
-            >
-              {providers.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            {selected && <ProviderSettings key={provider} provider={selected} />}
-            {!selected && (
-              <p role="status">
-                Provider settings are unavailable. Check that the local API server is running.
-              </p>
-            )}
-          </>
-        )}
+          {layoutStatus && <p role="status">{layoutStatus}</p>}
+        </section>
       </div>
     </Modal>
   );

@@ -28,6 +28,7 @@ beforeEach(() => {
     modelPreferenceError: '',
     modelDiscovery: { ollama: { loading: false, updatedAt: Date.now() } },
     settingsOpen: false,
+    modelsOpen: false,
     snapshots: [],
     snapshotError: '',
     storageError: '',
@@ -405,7 +406,7 @@ describe('unified message bar routing and drafts', () => {
     });
     expect(s.sendComposerMessage(boardId, null, 'Wait for setup', { x: 0, y: 0 })).toBeNull();
     expect(store.useStore.getState()).toMatchObject({
-      settingsOpen: true,
+      modelsOpen: true,
       settingsProvider: 'anthropic',
     });
     expect(store.useStore.getState().composerDrafts[draftKey(boardId, null)]).toBe(
@@ -469,7 +470,7 @@ describe('unified message bar routing and drafts', () => {
     expect(s.sendComposerMessage(boardId, null, 'Keep new draft', { x: 0, y: 0 })).toBeNull();
     expect(board().nodes).toHaveLength(0);
     expect(store.useStore.getState()).toMatchObject({
-      settingsOpen: true,
+      modelsOpen: true,
       settingsProvider: 'openai',
     });
     expect(store.useStore.getState().composerDrafts[draftKey(boardId, null)]).toBe(
@@ -1098,8 +1099,8 @@ describe('conversation state', () => {
       s.updateNode(id, { provider: 'anthropic', model: 'claude-test' }, true);
       await s.generate(id, 'No key');
       expect(mock).toHaveBeenCalledTimes(1);
-      expect(store.useStore.getState().settingsOpen).toBe(true);
-      store.useStore.setState({ settingsOpen: false });
+      expect(store.useStore.getState().modelsOpen).toBe(true);
+      store.useStore.setState({ modelsOpen: false });
     } finally {
       mock.mockRestore();
     }
@@ -1191,8 +1192,8 @@ describe('conversation state', () => {
     const id = s.addNode('chat', { x: 0, y: 0 });
     await s.generate(id, 'Hi');
     expect(board().nodes[0].data.messages).toHaveLength(0);
-    expect(store.useStore.getState().settingsOpen).toBe(true);
-    store.useStore.setState({ settingsOpen: false });
+    expect(store.useStore.getState().modelsOpen).toBe(true);
+    store.useStore.setState({ modelsOpen: false });
   });
   it('stops a stream without discarding partial content and blocks undo while active', async () => {
     const s = store.useStore.getState();

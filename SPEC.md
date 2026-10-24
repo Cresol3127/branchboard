@@ -18,13 +18,13 @@ Complete feature summary
 
 9. Sticky notes and annotations: Rich-text notes, freehand drawing, shapes, arrows, highlighting, checklists, and annotation layers.
 
-10. Color-coded families: Automatically assign and inherit colors across conversation trees, with manual overrides.
+10. Color-coded families: Automatically assign and inherit colors across conversation trees, with manual overrides, visible on connections and ports.
 
 11. Keyboard shortcuts: Shortcuts for node creation, navigation, editing, model switching, canvas operations, and a command palette.
 
 12. Node resizing: Automatic content-based sizing, manual resizing, and collision-aware repositioning.
 
-13. Workspace management: Multiple projects, boards, folders, templates, favorites, search, autosave, and version history.
+13. Workspace management: Multiple projects, boards, folders, templates, favorites, search, autosave, and version history, with independent dockable, floating, snapped and maximized workspace windows.
 
 14. Import/export: JSON backups, Markdown, images, PDFs, full workspace backups, and conversation imports.
 

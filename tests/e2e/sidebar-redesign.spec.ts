@@ -82,11 +82,19 @@ for (const width of [1440, 390]) {
     expect(rect.x + rect.width).toBeLessThanOrEqual(width);
     await panel.getByLabel('API key', { exact: true }).fill('unsaved-fixture-only');
     await page.getByRole('button', { name: 'Tips & shortcuts', exact: true }).click();
+    const help = page.getByRole('region', { name: 'Help', exact: true });
+    await expect(help).toBeVisible();
+    await expect(page.getByRole('alert', { name: 'Unsaved changes' })).toHaveCount(0);
+    await expect(panel.getByLabel('API key', { exact: true })).toHaveValue('unsaved-fixture-only');
+    await help.getByRole('button', { name: 'Back to canvas', exact: true }).click();
+    await expect(help).toHaveCount(0);
+    await panel.getByRole('button', { name: 'Back to canvas', exact: true }).click();
     await expect(page.getByRole('alert', { name: 'Unsaved changes' })).toBeVisible();
     await page.getByRole('button', { name: 'Keep editing', exact: true }).click();
     await expect(panel.getByLabel('API key', { exact: true })).toHaveValue('unsaved-fixture-only');
     await panel.getByRole('button', { name: 'Back to canvas', exact: true }).click();
     await page.getByRole('button', { name: 'Discard changes', exact: true }).click();
+    await expect(panel).toHaveCount(0);
     await expect(input).toHaveValue('Keep my unsent draft');
     expect(await page.locator('.react-flow__viewport').getAttribute('style')).toBe(transform);
     expect(await page.evaluate(() => JSON.stringify(localStorage))).not.toContain(
@@ -238,14 +246,10 @@ for (const width of [1440, 390]) {
     const second = page.getByRole('button', { name: 'Second canvas', exact: true });
     await second.click({ button: 'right' });
     await page.getByRole('menuitem', { name: 'Delete', exact: true }).click();
-    await expect(page.getByRole('alert', { name: 'Unsaved changes' })).toBeVisible();
-    await expect(page.getByRole('region', { name: 'Delete canvas', exact: true })).toHaveCount(0);
-    await page.getByRole('button', { name: 'Keep editing', exact: true }).click();
-    await expect(panel.getByLabel('API key', { exact: true })).toHaveValue('unsaved-menu-fixture');
-    await second.click({ button: 'right' });
-    await page.getByRole('menuitem', { name: 'Delete', exact: true }).click();
-    await page.getByRole('button', { name: 'Discard changes', exact: true }).click();
     const confirmation = page.getByRole('region', { name: 'Delete canvas', exact: true });
+    await expect(confirmation).toBeVisible();
+    await expect(page.getByRole('alert', { name: 'Unsaved changes' })).toHaveCount(0);
+    await expect(panel.getByLabel('API key', { exact: true })).toHaveValue('unsaved-menu-fixture');
     await expect(confirmation).toContainText('Second canvas');
     await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
     await expect(second).toBeVisible();
@@ -253,6 +257,10 @@ for (const width of [1440, 390]) {
       'aria-current',
       'page',
     );
+    await expect(panel.getByLabel('API key', { exact: true })).toHaveValue('unsaved-menu-fixture');
+    await panel.getByRole('button', { name: 'Back to canvas', exact: true }).click();
+    await page.getByRole('button', { name: 'Discard changes', exact: true }).click();
+    await expect(panel).toHaveCount(0);
     await expect(input).toHaveValue('Keep this confirmation draft');
     await expect(page.locator('.react-flow__viewport')).toHaveAttribute('style', transform!);
     expect(await page.evaluate(() => JSON.stringify(localStorage))).not.toContain(

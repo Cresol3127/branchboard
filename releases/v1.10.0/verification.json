@@ -1,0 +1,81 @@
+{
+  "version": "1.10.0",
+  "title": "Windowed workspace",
+  "date": "2026-10-26",
+  "build": "passed",
+  "unitAndHttp": {
+    "status": "passed",
+    "tests": 241,
+    "files": 27,
+    "log": "/tmp/opencode/unit-110-final.log"
+  },
+  "browser": {
+    "status": "passed",
+    "tests": 123,
+    "scope": "full Chromium suite, including independent docked/floating Models and Settings windows, all four edge snaps with opposite-half canvas relocation, drag previews above windows, move/resize/keyboard controls, persisted mode and floating bounds, single snapped-window fallback, narrow full-stage sheets over an inert mounted canvas, family-colored edges/ports/arrowheads and connection-state styling, Material 3 Expressive entry/reversal/exit, immediate reduced motion, focus restoration, dirty guards, annotations, resizing and real PNG/PDF downloads",
+    "log": "/tmp/opencode/full-e2e-final2.log"
+  },
+  "screenshots": {
+    "count": 159,
+    "inspected": true,
+    "directory": "/tmp/opencode/screenshots-110-final",
+    "contactSheets": "/tmp/opencode/contact-110-final",
+    "exportedArtifacts": [
+      "canvas-export.png",
+      "canvas-export.pdf"
+    ],
+    "inspection": "All 159 numbered captures inspected through eight desktop/mobile contact sheets; the full-resolution PNG and the PDF's one-page A4/1000x1052 embedded render were inspected. The final nine captures cover family-colored connections, docked Models, left/top/bottom snaps, maximize, floating Settings, the drag preview and the narrow sheet. Motion captures recorded two running animations for desktop panel entry/close, one for mobile entry, and zero for reduced motion; closing opacity measured 0.0857 and toolbar/canvas-menu opacity 0.9430. Window captures show the canvas moved to the opposite half after every snap and remain bounded at desktop and narrow sizes.",
+    "pageErrors": []
+  },
+  "production": {
+    "status": "passed",
+    "origin": "http://127.0.0.1:3001",
+    "viewport": "1440x960 and 390x844",
+    "checked": [
+      "production page and starter graph loaded",
+      "docked Models moved the canvas beside the 360px dock",
+      "opening Settings floated it without replacing the dock",
+      "top snap used the full desk width and moved the canvas below",
+      "only mode and floating bounds were stored; open and maximized state were absent",
+      "reload closed windows and reopening Models restored snap-top",
+      "390px layout used a sheet covering its full workspace stage and made the mounted canvas inert"
+    ],
+    "captures": [
+      "production-desktop.png",
+      "production-mobile-sheet.png"
+    ],
+    "pageErrors": [],
+    "unavailableProviders": [
+      "Ollama model discovery: local service unavailable (HTTP 502); handled as unavailable"
+    ]
+  },
+  "runtimeExpectations": {
+    "starterNodes": 3,
+    "settingsRole": "region",
+    "settingsName": "Settings",
+    "motion": true
+  },
+  "paidProviderRequests": false,
+  "originalArtifactChecksums": {
+    "status": "passed",
+    "entries": 152,
+    "versions": [
+      "1.1.1",
+      "1.1.2",
+      "1.2.1",
+      "1.2.2",
+      "1.3.1",
+      "1.3.2",
+      "1.4.1",
+      "1.4.2",
+      "1.5.1",
+      "1.5.2",
+      "1.6.0",
+      "1.6.1",
+      "1.7.0",
+      "1.7.1",
+      "1.8.0",
+      "1.9.0"
+    ]
+  }
+}

@@ -8,7 +8,10 @@ A local-first canvas for connected AI conversations, notes and ideas.
 - Rich Markdown notes, drawings, shapes and annotation layers.
 - Projects, templates, favorites, search, undo/redo and manual snapshots.
 - JSON backups, conversation imports, and Markdown, PNG and PDF exports.
-- Responsive docked panels, keyboard shortcuts and customizable light/dark palettes.
+- Independent Models and Settings windows that dock, float, resize, snap to any half,
+  maximize, restore their saved layout and reset from Settings.
+- Family-colored connections with prominent ports, keyboard shortcuts and customizable
+  light/dark palettes; narrow workspaces use full-stage sheets over an inert canvas.
 - Latest-generation model dropdowns, provider icons and saved exact-ID additions.
 - Window-centered search that adapts to sidebar changes and compact layouts.
 
@@ -47,6 +50,16 @@ and recent selections stay available separately; local Ollama lists installed mo
 Use **Add model by ID…** for a specific model. Added IDs are saved separately from
 the five recent choices and do not trigger an AI request. Palettes and added IDs are
 browser preferences, separate from workspace backups. [Palette sources](docs/palette-sources.md).
+
+### Windows and connections
+
+Models and Settings open independently. The first panel docks, additional panels
+float above the canvas, and any window can be dragged or resized. Use the snap menu
+or drag to an edge to fill half the workspace; the canvas moves to the opposite half.
+Arrow keys move a window, Shift+Arrow resizes, Alt+Arrow snaps and Enter maximizes or
+restores. Window layout is remembered per panel, while open panels, drafts and keys
+are never persisted; **Settings → Reset window layout** clears it. Connections and
+ports use each conversation family's color so branches remain visually distinct.
 
 ### Production
 

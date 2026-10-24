@@ -120,11 +120,9 @@ export function CanvasNode({ id, data, selected, type }: NodeProps<BoardNode>) {
   const streaming = Boolean(state.streaming[id]);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const editHistory = (messageId: string, mode: 'edit' | 'delete') =>
-    useWorkspacePanels.getState().navigate(() =>
-      useWorkspacePanels.setState({
-        messageEditor: { boardId: board.id, nodeId: id, messageId, mode },
-      }),
-    );
+    useWorkspacePanels.setState({
+      messageEditor: { boardId: board.id, nodeId: id, messageId, mode },
+    });
   const historyBusy = Object.values(state.streaming).some(Boolean);
   const expanded = selected && !data.collapsed;
   const contentRef = useRef<HTMLDivElement>(null);

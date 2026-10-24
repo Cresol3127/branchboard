@@ -137,7 +137,16 @@ test('legacy context overrides remain effective and a removed legacy limit can b
   expect(saved.contextTokenLimit).toBeUndefined();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole('button', { name: 'Models', exact: true }).click();
-  const bounds = (await page.getByRole('region', { name: 'Models', exact: true }).boundingBox())!;
+  const models = page.getByRole('region', { name: 'Models', exact: true });
+  // Let the full-stage sheet finish its expressive scale before checking viewport fit.
+  await expect
+    .poll(() =>
+      models.evaluate(
+        (element) => element.closest('.workspace-panel-content')!.getAnimations().length,
+      ),
+    )
+    .toBe(0);
+  const bounds = (await models.boundingBox())!;
   expect(bounds.x).toBeGreaterThanOrEqual(0);
   expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
   await expect(page.getByLabel('API key', { exact: true })).toBeVisible();

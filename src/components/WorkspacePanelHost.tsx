@@ -1,83 +1,114 @@
-import { useLayoutEffect, useRef, useState } from 'react';
-import { useWorkspacePanels } from '../workspacePanels';
-import { useMotionPresence } from './Motion';
+import { useEffect, useLayoutEffect, useRef } from 'react';
+import {
+  buildMetrics,
+  snappedInset,
+  snapPreviewBounds,
+  useWorkspacePanels,
+} from '../workspacePanels';
 import { motion } from '../motion';
+import { useMotionPresence } from './Motion';
 
 export function WorkspacePanelHost() {
-  const active = useWorkspacePanels((s) => s.active);
-  const [overlay, setOverlay] = useState(false);
-  const rendered = useMotionPresence(
-    Boolean(active),
-    overlay ? motion.spatial.slow.duration : motion.spatial.default.duration,
-  );
-  const navigation = useWorkspacePanels((s) => s.navigation);
+  const entries = useWorkspacePanels((s) => s.entries);
+  const dockedId = useWorkspacePanels((s) => s.dockedId);
+  const activeId = useWorkspacePanels((s) => s.activeId);
+  const preview = useWorkspacePanels((s) => s.preview);
+  const metrics = useWorkspacePanels((s) => s.metrics);
   const ref = useRef<HTMLElement>(null);
-  const lastControl = useRef<HTMLElement | null>(null);
+  const measureRef = useRef<() => void>(() => {});
+  const openEntries = Object.values(entries).filter((entry) => !entry.closing);
+  const hasOpen = openEntries.length > 0;
+  const rendered = useMotionPresence(hasOpen, motion.spatial.fast.duration);
+  const docked = Boolean(dockedId && entries[dockedId] && !entries[dockedId].closing);
+
   useLayoutEffect(() => {
-    ref.current?.querySelectorAll<HTMLElement>('.workspace-panel-content').forEach((content) => {
-      content.inert = Boolean(navigation) || content.dataset.motionState === 'closing';
-    });
-  }, [navigation, active]);
-  useLayoutEffect(() => {
-    const root = ref.current?.closest<HTMLElement>('.workspace');
+    const host = ref.current;
+    const root = host?.closest<HTMLElement>('.workspace');
     const sidebar = root?.querySelector<HTMLElement>('.sidebar-shell');
     const main = root?.querySelector<HTMLElement>('.workspace-main');
-    if (!root || !sidebar || !main) return;
+    const header = root?.querySelector<HTMLElement>('.workspace-header');
+    if (!host || !root || !sidebar || !main) return;
+    let frame = 0;
     const measure = () => {
+      frame = 0;
+      const workspace = root.getBoundingClientRect();
       const sidebarWidth = sidebar.getBoundingClientRect().width;
-      const narrow = root.clientWidth - sidebarWidth < 820;
-      const full = Boolean(active) && narrow;
-      setOverlay(narrow);
-      root.dataset.panelFullView = String(full);
-      root.dataset.panelOverlay = String(narrow);
+      const headerHeight = header?.getBoundingClientRect().height || 64;
+      const narrow = workspace.width - sidebarWidth < 820;
+      const state = useWorkspacePanels.getState();
+      const dockedNow = Boolean(
+        state.dockedId && state.entries[state.dockedId] && !state.entries[state.dockedId].closing,
+      );
+      const next = buildMetrics(workspace, sidebarWidth, headerHeight, dockedNow, narrow);
       root.style.setProperty('--panel-sidebar-width', `${sidebarWidth}px`);
-      main.inert = full;
+      root.style.setProperty('--panel-dock-width', `${next.dockWidth}px`);
+      state.setMetrics(next);
     };
-    const observer = new ResizeObserver(measure);
+    const schedule = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(measure);
+    };
+    measureRef.current = measure;
+    const observer = new ResizeObserver(schedule);
     observer.observe(root);
     observer.observe(sidebar);
+    if (header) observer.observe(header);
     measure();
     return () => {
+      if (frame) cancelAnimationFrame(frame);
       observer.disconnect();
-      main.inert = false;
     };
-  }, [active]);
+  }, []);
+
+  useLayoutEffect(() => {
+    measureRef.current();
+  }, [docked, openEntries.length]);
+
+  useEffect(() => {
+    const root = ref.current?.closest<HTMLElement>('.workspace');
+    const main = root?.querySelector<HTMLElement>('.workspace-main');
+    if (!root || !main) return;
+    const full = metrics.narrow && hasOpen;
+    root.dataset.panelFullView = String(full);
+    root.dataset.panelOverlay = String(metrics.narrow);
+    main.inert = full;
+    if (!full) main.removeAttribute('inert');
+  }, [hasOpen, metrics.narrow]);
+
+  useEffect(() => {
+    const root = ref.current?.closest<HTMLElement>('.workspace');
+    if (!root || !metrics.ready) return;
+    const inset = snappedInset(entries, metrics);
+    root.style.setProperty('--canvas-inset-left', `${inset.left}px`);
+    root.style.setProperty('--canvas-inset-right', `${inset.right}px`);
+    root.style.setProperty('--canvas-inset-top', `${inset.top}px`);
+    root.style.setProperty('--canvas-inset-bottom', `${inset.bottom}px`);
+    root.dataset.canvasSplit = String(inset.left + inset.right + inset.top + inset.bottom > 0);
+  }, [entries, metrics]);
+
+  const previewBounds = preview ? snapPreviewBounds(preview, metrics) : null;
+
   return (
     <aside
       ref={ref}
       id="workspace-panel-host"
       className="workspace-panel-host"
-      data-open={Boolean(active)}
+      data-open={hasOpen}
       data-present={rendered}
-      aria-hidden={!active}
-      aria-label="Workspace panel"
-      onFocusCapture={(event) => {
-        if ((event.target as HTMLElement).closest('.workspace-panel-content'))
-          lastControl.current = event.target as HTMLElement;
-      }}
+      data-docked={docked && !metrics.narrow}
+      data-active={activeId || undefined}
     >
-      {navigation && (
-        <div className="panel-leave-confirmation" role="alert" aria-label="Unsaved changes">
-          <h3>Keep your changes?</h3>
-          <p>
-            Save before leaving, or discard this form and its unsaved preview. API keys are never
-            stored in the browser.
-          </p>
-          <button
-            autoFocus
-            onClick={() => {
-              useWorkspacePanels.getState().resolve(false);
-              requestAnimationFrame(
-                () => lastControl.current?.isConnected && lastControl.current.focus(),
-              );
-            }}
-          >
-            Keep editing
-          </button>
-          <button className="danger" onClick={() => useWorkspacePanels.getState().resolve(true)}>
-            Discard changes
-          </button>
-        </div>
+      {previewBounds && (
+        <div
+          className="window-snap-preview"
+          aria-hidden
+          style={{
+            left: previewBounds.x,
+            top: previewBounds.y,
+            width: previewBounds.width,
+            height: previewBounds.height,
+          }}
+        />
       )}
     </aside>
   );

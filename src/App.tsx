@@ -47,8 +47,9 @@ import {
   Unlink,
 } from 'lucide-react';
 import { absolutePosition, canConnect } from './graph';
+import { edgeFamilyColors } from './families';
 import { nodeLabel } from './nodeLabel';
-import { useWorkspacePanels } from './workspacePanels';
+import { useWorkspacePanels, type PanelKind } from './workspacePanels';
 import { WorkspacePanelHost } from './components/WorkspacePanelHost';
 import { CanvasListItem } from './components/CanvasListItem';
 import { CanvasActionsMenu } from './components/CanvasActionsMenu';
@@ -57,7 +58,7 @@ import { currentBoard, saveWorkspace, useStore, workspaceBackup } from './store'
 import { CanvasNode } from './components/Nodes';
 import { MessageBar } from './components/MessageBar';
 import { useModelDiscovery } from './components/useModelDiscovery';
-import { Help, Settings } from './components/Settings';
+import { Help, ModelsPanel, SettingsPanel } from './components/Settings';
 import { useCanvasLayout } from './components/useCanvasLayout';
 import { useHeaderSearchLayout } from './components/useHeaderSearchLayout';
 import { IconButton, Menu, Modal } from './components/ui';
@@ -197,6 +198,20 @@ function Workspace() {
     }
     return ids;
   }, [board.nodes, board.edges]);
+  const edgeFamilies = useMemo(
+    () => edgeFamilyColors(board.nodes, board.edges),
+    [board.nodes, board.edges],
+  );
+  const portFamilies = useMemo(() => {
+    const colors = new globalThis.Map<string, string>();
+    for (const edge of board.edges) {
+      const family = edgeFamilies.get(edge.id);
+      if (!family) continue;
+      if (!colors.has(edge.source)) colors.set(edge.source, family);
+      if (!colors.has(edge.target)) colors.set(edge.target, family);
+    }
+    return colors;
+  }, [board.edges, edgeFamilies]);
   const selectedEdge = board.edges.find((edge) => edge.selected);
   const fit = useCallback(() => {
     const b = currentBoard(useStore.getState());
@@ -429,13 +444,30 @@ function Workspace() {
     return () => clearTimeout(timer);
   }, [state.toast]);
 
+  const focusPanel = (kind: PanelKind) =>
+    requestAnimationFrame(() => useWorkspacePanels.getState().raiseKind(kind));
+  const openPanel = (kind: PanelKind, open: () => void) => {
+    open();
+    focusPanel(kind);
+  };
+  const openModels = () => {
+    useStore.setState({ modelsOpen: true });
+    focusPanel('models');
+  };
+  const openSettings = () => {
+    useStore.setState({ settingsOpen: true });
+    focusPanel('settings');
+  };
   const actions: Action[] = [
     { label: 'New conversation', run: () => add('chat') },
     { label: 'New note', run: () => add('note') },
-    { label: 'Drawing & annotations', run: () => setAnnotationsOpen(true) },
+    {
+      label: 'Drawing & annotations',
+      run: () => openPanel('layers', () => setAnnotationsOpen(true)),
+    },
     { label: 'New canvas', run: state.newBoard },
-    { label: 'Projects & folders', run: () => setLibrary('projects') },
-    { label: 'Canvas templates', run: () => setLibrary('templates') },
+    { label: 'Projects & folders', run: () => openPanel('library', () => setLibrary('projects')) },
+    { label: 'Canvas templates', run: () => openPanel('library', () => setLibrary('templates')) },
     {
       label: favoriteBoardIds.includes(board.id)
         ? 'Unfavorite current canvas'
@@ -444,10 +476,11 @@ function Workspace() {
     },
     {
       label: 'Search saved content',
-      run: () => {
-        setHistoryQuery('');
-        setHistorySearch(true);
-      },
+      run: () =>
+        openPanel('history', () => {
+          setHistoryQuery('');
+          setHistorySearch(true);
+        }),
     },
     { label: 'Focus message composer', run: focusComposer },
     {
@@ -490,22 +523,28 @@ function Workspace() {
       label: sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar',
       run: () => setSidebarCollapsed((value) => !value),
     },
-    {
-      label: 'Models',
-      run: () => useStore.setState({ settingsOpen: true, settingsSection: 'models' }),
-    },
-    {
-      label: 'Settings',
-      run: () => useStore.setState({ settingsOpen: true, settingsSection: 'workspace' }),
-    },
-    { label: 'Keyboard shortcuts & help', run: () => setHelp(true) },
+    { label: 'Models', run: openModels },
+    { label: 'Settings', run: openSettings },
+    { label: 'Keyboard shortcuts & help', run: () => openPanel('help', () => setHelp(true)) },
     { label: 'Export board backup (JSON)', run: exportJSON },
-    { label: 'Backups & snapshots', run: () => setBackups(true) },
+    {
+      label: 'Backups & snapshots',
+      run: () => openPanel('backups', () => setBackups(true)),
+    },
     { label: 'Export Markdown', run: exportMarkdown },
-    { label: 'Export canvas (PNG)', run: () => setExportFormat('png') },
-    { label: 'Export canvas (PDF)', run: () => setExportFormat('pdf') },
+    {
+      label: 'Export canvas (PNG)',
+      run: () => openPanel('export', () => setExportFormat('png')),
+    },
+    {
+      label: 'Export canvas (PDF)',
+      run: () => openPanel('export', () => setExportFormat('pdf')),
+    },
     { label: 'Import board backup', run: () => file.current?.click() },
-    { label: 'Import conversations', run: () => setConversationImport(true) },
+    {
+      label: 'Import conversations',
+      run: () => openPanel('import', () => setConversationImport(true)),
+    },
     ...(['light', 'dark', 'system'] as const).map((value) => ({
       label: `Theme: ${value}`,
       run: () => setTheme(value),
@@ -678,7 +717,7 @@ function Workspace() {
   return (
     <div
       className={`workspace ${textSelection ? 'text-selection-mode' : ''} ${spacePressed ? 'space-panning' : ''}`}
-      data-panel-open={Boolean(panelState.active)}
+      data-panel-open={Boolean(panelState.activeId)}
     >
       <div className="sidebar-shell" data-collapsed={sidebarCollapsed}>
         <aside
@@ -713,7 +752,9 @@ function Workspace() {
               <span className="project-icon">
                 <FolderOpen size={17} />
               </span>
-              <button onClick={() => setLibrary('projects')}>Projects & folders</button>
+              <button onClick={() => openPanel('library', () => setLibrary('projects'))}>
+                Projects & folders
+              </button>
             </div>
             <select
               aria-label="Filter canvases by project or folder"
@@ -739,7 +780,7 @@ function Workspace() {
                 <Star size={14} />
                 Favorites
               </button>
-              <button onClick={() => setLibrary('templates')}>
+              <button onClick={() => openPanel('library', () => setLibrary('templates'))}>
                 <Blocks size={14} />
                 Templates
               </button>
@@ -763,11 +804,7 @@ function Workspace() {
             )}
           </nav>
           <div className="sidebar-bottom">
-            <button
-              aria-label="Models"
-              title="Models"
-              onClick={() => useStore.setState({ settingsOpen: true, settingsSection: 'models' })}
-            >
+            <button aria-label="Models" title="Models" onClick={openModels}>
               <Bot size={18} />
               <span>Models</span>
             </button>
@@ -785,18 +822,12 @@ function Workspace() {
             <button
               aria-label="Tips & shortcuts"
               title="Tips & shortcuts"
-              onClick={() => setHelp(true)}
+              onClick={() => openPanel('help', () => setHelp(true))}
             >
               <HelpCircle size={17} />
               <span>Tips & shortcuts</span>
             </button>
-            <button
-              aria-label="Settings"
-              title="Settings"
-              onClick={() =>
-                useStore.setState({ settingsOpen: true, settingsSection: 'workspace' })
-              }
-            >
+            <button aria-label="Settings" title="Settings" onClick={openSettings}>
               <SettingsIcon size={17} />
               <span>Settings</span>
             </button>
@@ -906,26 +937,37 @@ function Workspace() {
             <ReactFlow<BoardNode>
               key={board.id}
               onInit={() => setReadyBoardId(board.id)}
-              nodes={board.nodes.map((n) => ({
-                ...n,
-                dragHandle: undefined,
-                className: [
-                  textSelection ? 'nopan' : '',
-                  suggested === n.id ? 'suggested-input' : '',
-                  related.has(n.id) && !n.selected ? 'related-node' : '',
-                ].join(' '),
-              }))}
-              edges={board.edges.map((edge) => ({
-                ...edge,
-                className:
-                  related.has(edge.source) && related.has(edge.target) ? 'related-edge' : '',
-                markerEnd: {
-                  type: MarkerType.ArrowClosed,
-                  width: 15,
-                  height: 15,
-                  color: 'var(--edge)',
-                },
-              }))}
+              nodes={board.nodes.map((n) => {
+                const family = portFamilies.get(n.id);
+                return {
+                  ...n,
+                  dragHandle: undefined,
+                  className: [
+                    textSelection ? 'nopan' : '',
+                    suggested === n.id ? 'suggested-input' : '',
+                    related.has(n.id) && !n.selected ? 'related-node' : '',
+                    family ? `family-${family}` : '',
+                  ].join(' '),
+                };
+              })}
+              edges={board.edges.map((edge) => {
+                const family = edgeFamilies.get(edge.id) || 'sage';
+                return {
+                  ...edge,
+                  className: [
+                    `family-${family}`,
+                    related.has(edge.source) && related.has(edge.target) ? 'related-edge' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' '),
+                  markerEnd: {
+                    type: MarkerType.ArrowClosed,
+                    width: 12,
+                    height: 12,
+                    color: `var(--branch-${family})`,
+                  },
+                };
+              })}
               nodeTypes={nodeTypes}
               onNodesChange={state.nodesChange}
               onEdgesChange={state.edgesChange}
@@ -1201,6 +1243,7 @@ function Workspace() {
           <Modal
             title={panelState.confirmation.title}
             kind="confirmation"
+            transient
             onClose={() => useWorkspacePanels.setState({ confirmation: null })}
           >
             <p>{panelState.confirmation.description}</p>
@@ -1255,8 +1298,9 @@ function Workspace() {
           e.target.value = '';
         }}
       />
+      <Presence>{state.modelsOpen && <ModelsPanel />}</Presence>
       <Presence>
-        {state.settingsOpen && <Settings theme={theme} onThemeChange={setTheme} />}
+        {state.settingsOpen && <SettingsPanel theme={theme} onThemeChange={setTheme} />}
       </Presence>
       <Presence>
         {conversationImport && <ConversationImport onClose={() => setConversationImport(false)} />}
@@ -1299,6 +1343,8 @@ function Workspace() {
           <Modal
             kind="search"
             title="Command palette"
+            transient
+            placement="top"
             onClose={() => setPalette(false)}
             className="command-palette"
           >
@@ -1338,7 +1384,7 @@ function Workspace() {
               onClick={() => {
                 setHistoryQuery(query);
                 setPalette(false);
-                setHistorySearch(true);
+                openPanel('history', () => setHistorySearch(true));
               }}
             >
               <Search size={15} />
@@ -1396,19 +1442,25 @@ function Workspace() {
             label="Workspace utilities"
             onClose={() => setUtilities(null)}
           >
-            <button role="menuitem" onClick={() => setConversationImport(true)}>
+            <button
+              role="menuitem"
+              onClick={() => openPanel('import', () => setConversationImport(true))}
+            >
               <ArrowUpFromLine size={15} /> Import conversations
             </button>
             <button role="menuitem" onClick={() => file.current?.click()}>
               <FolderOpen size={15} /> Import board backup
             </button>
-            <button role="menuitem" onClick={() => setExportFormat('png')}>
+            <button
+              role="menuitem"
+              onClick={() => openPanel('export', () => setExportFormat('png'))}
+            >
               <ImageDown size={15} /> Export image / PDF
             </button>
             <button role="menuitem" onClick={exportJSON}>
               <ArrowDownToLine size={15} /> Back up your canvas
             </button>
-            <button role="menuitem" onClick={() => setBackups(true)}>
+            <button role="menuitem" onClick={() => openPanel('backups', () => setBackups(true))}>
               <FolderOpen size={15} /> Backups & snapshots
             </button>
           </Menu>
