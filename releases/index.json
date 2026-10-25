@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "date": "2026-10-26",
-  "current": "1.10.0",
+  "current": "1.10.1",
   "policy": "private local artifacts; preserve originals; refreshed editions have new versions",
   "externalBackup": "../../branchboard-backups/20261022T133446Z-before-material-redesign/",
   "redesignBackup": "../../branchboard-backups/20261024T042350Z-before-sidebar-redesign/",
@@ -180,6 +180,13 @@
       "path": "v1.10.0/",
       "manifest": "v1.10.0/manifest.json",
       "verification": "v1.10.0/verification.json"
+    },
+    {
+      "version": "1.10.1",
+      "title": "Center-spine connections and shared parents",
+      "path": "v1.10.1/",
+      "manifest": "v1.10.1/manifest.json",
+      "verification": "v1.10.1/verification.json"
     }
   ],
   "supersessions": [
