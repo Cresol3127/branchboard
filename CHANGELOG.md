@@ -4,6 +4,22 @@ Notable changes, newest first. See the [release catalog](releases/README.md) for
 artifacts, provenance and verification. Early entries were reconstructed from preserved
 sources; original v1.1–v1.5 release dates are unknown.
 
+## 1.10.1 — 2026-10-26
+
+- Replaced visible connection ports and freehand link drawing with one hidden source
+  origin at each card's exact center. Edges now emerge from that shared origin and are
+  created only by branching, imports, merging or dropping a card near another card's
+  right edge. Legacy `portPositions` imports remain readable but no longer affect layout.
+- Added **Merge selected parents**: select exactly two non-group cards to create a blank
+  shared chat child beside them with two parent edges. The child inherits both parent
+  histories as context, deduplicates shared ancestors, inherits a stable model and
+  family color, and restores in one undo step. Available in the command palette, node
+  menu and conditional board toolbar; blocked for groups, invalid selections and busy
+  generations.
+- Kept family-colored 3px paths, arrowheads and selected-edge weight/glow. Automatic
+  drag-drop branches now avoid overlapping existing cards so the new branch remains
+  visible and selectable.
+
 ## 1.10.0 — 2026-10-26
 
 - Added independent Models and Settings windows with one docked panel, multiple floating

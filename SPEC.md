@@ -18,7 +18,7 @@ Complete feature summary
 
 9. Sticky notes and annotations: Rich-text notes, freehand drawing, shapes, arrows, highlighting, checklists, and annotation layers.
 
-10. Color-coded families: Automatically assign and inherit colors across conversation trees, with manual overrides, visible on connections and ports.
+10. Color-coded families: Automatically assign and inherit colors across conversation trees, with manual overrides, visible on automatic connections.
 
 11. Keyboard shortcuts: Shortcuts for node creation, navigation, editing, model switching, canvas operations, and a command palette.
 

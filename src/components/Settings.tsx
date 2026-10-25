@@ -449,7 +449,6 @@ export function Help({ onClose }: { onClose: () => void }) {
         ['Ctrl / ⌘ Shift Z', 'Redo'],
         ['Delete / Backspace', 'Delete selection'],
         ['G', 'Toggle grid and snapping'],
-        ['Alt + drag a port', 'Move its connection point'],
       ],
     },
     {
@@ -520,8 +519,9 @@ export function Help({ onClose }: { onClose: () => void }) {
               <span>02</span>
               <h3>Connect your ideas</h3>
               <p>
-                Drag an output dot onto an input to share upstream context. Drop it on empty canvas
-                to branch. History is inherited, not copied.
+                Connections are automatic. Branch from a card, drop a card near another card’s right
+                edge, or select two cards and choose Merge selected parents. History is inherited,
+                not copied.
               </p>
             </section>
             <section>

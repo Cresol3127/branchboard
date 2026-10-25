@@ -140,22 +140,12 @@ for (const width of [1440, 390]) {
       'border-radius',
       width === 390 ? '24px' : '28px',
     );
-    // Round the visible card without clipping the connection ports outside its border.
+    // Automatic connections keep their anchors measurable but hidden and noninteractive.
     const card = page.locator('.board-node');
     await expect(card).toHaveCSS('overflow', 'visible');
-    const port = card.locator('.source');
-    await expect
-      .poll(() =>
-        port.evaluate((el) => {
-          const box = el.getBoundingClientRect();
-          return (
-            document
-              .elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)
-              ?.closest('.react-flow__handle') === el
-          );
-        }),
-      )
-      .toBe(true);
+    const source = card.locator('.source');
+    await expect(source).toHaveCSS('opacity', '0');
+    await expect(source).toHaveCSS('pointer-events', 'none');
     await command(page, 'Theme: light');
     await expect(card).toHaveCSS('border-radius', '16px');
     await command(page, 'Models');

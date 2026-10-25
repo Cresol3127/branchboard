@@ -1,11 +1,5 @@
-import { memo, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
-import {
-  Handle,
-  NodeResizer,
-  Position,
-  useUpdateNodeInternals,
-  type NodeProps,
-} from '@xyflow/react';
+import { memo, useEffect, useRef, useState } from 'react';
+import { Handle, NodeResizer, Position, type NodeProps } from '@xyflow/react';
 import {
   GitBranch,
   MoreHorizontal,
@@ -42,73 +36,32 @@ const MessageMarkdown = memo(function MessageMarkdown({ text }: { text: string }
   );
 });
 
-function Ports({ id, data }: Pick<BoardNode, 'id' | 'data'>) {
-  const ref = useRef<HTMLDivElement>(null),
-    internals = useUpdateNodeInternals();
-  const cleanup = useRef<(() => void) | null>(null);
-  useEffect(() => () => cleanup.current?.(), []);
-  useEffect(() => {
-    internals(id);
-  }, [data.portPositions, id, internals]);
-  const move = (kind: 'source' | 'target', e: PointerEvent) => {
-    if (!e.altKey) return;
-    e.preventDefault();
-    e.stopPropagation();
-    cleanup.current?.();
-    const rect = ref.current!.closest('.react-flow__node')!.getBoundingClientRect();
-    const start = { x: e.clientX, y: e.clientY };
-    useStore.getState().checkpoint();
-    const set = (point: { x: number; y: number } | undefined) => {
-      const node = currentBoard(useStore.getState()).nodes.find((n) => n.id === id);
-      const ports = { ...node?.data.portPositions };
-      if (point) ports[kind] = point;
-      else delete ports[kind];
-      useStore.getState().updateNode(id, { portPositions: ports });
-    };
-    const onMove = (event: globalThis.PointerEvent) => {
-      const x = Math.min(1, Math.max(0, (event.clientX - rect.x) / rect.width));
-      const y = Math.min(1, Math.max(0, (event.clientY - rect.y) / rect.height));
-      set({ x, y });
-    };
-    const up = (event: globalThis.PointerEvent) => {
-      if (Math.hypot(event.clientX - start.x, event.clientY - start.y) < 5) set(undefined);
-      cleanup.current?.();
-    };
-    const cancel = () => cleanup.current?.();
-    cleanup.current = () => {
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', up);
-      window.removeEventListener('pointercancel', cancel);
-      cleanup.current = null;
-    };
-    window.addEventListener('pointermove', onMove);
-    window.addEventListener('pointerup', up);
-    window.addEventListener('pointercancel', cancel);
-  };
-  const style = (kind: 'source' | 'target'): CSSProperties | undefined => {
-    const p = data.portPositions?.[kind];
-    return p
-      ? {
-          left: `${p.x * 100}%`,
-          top: `${p.y * 100}%`,
-          right: 'auto',
-          bottom: 'auto',
-          transform: 'translate(-50%, -50%)',
-        }
-      : undefined;
-  };
+function Anchors() {
   return (
-    <div ref={ref} className="ports">
-      {(['target', 'source'] as const).map((kind) => (
-        <div key={kind} onPointerDownCapture={(e) => move(kind, e)}>
-          <Handle
-            type={kind}
-            position={kind === 'source' ? Position.Right : Position.Left}
-            style={style(kind)}
-            aria-label={kind === 'source' ? 'Output connection' : 'Input connection'}
-          />
-        </div>
-      ))}
+    <div className="node-anchors" aria-hidden="true">
+      <Handle
+        type="target"
+        position={Position.Left}
+        className="node-target-anchor"
+        isConnectable={false}
+        style={{
+          left: 0,
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+        }}
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        className="node-source-anchor"
+        isConnectable={false}
+        style={{
+          left: '50%',
+          top: '50%',
+          right: 'auto',
+          transform: 'translate(-50%, -50%)',
+        }}
+      />
     </div>
   );
 }
@@ -124,6 +77,18 @@ export function CanvasNode({ id, data, selected, type }: NodeProps<BoardNode>) {
       messageEditor: { boardId: board.id, nodeId: id, messageId, mode },
     });
   const historyBusy = Object.values(state.streaming).some(Boolean);
+  const selectedNodes = board.nodes.filter((node) => node.selected);
+  const mergeable =
+    !historyBusy &&
+    selectedNodes.length === 2 &&
+    selectedNodes.every((node) => node.type !== 'group');
+  const mergeSelectedParents = () => {
+    const id = state.mergeParents();
+    if (id)
+      requestAnimationFrame(() =>
+        document.querySelector<HTMLTextAreaElement>('.unified-composer textarea')?.focus(),
+      );
+  };
   const expanded = selected && !data.collapsed;
   const contentRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -361,13 +326,18 @@ export function CanvasNode({ id, data, selected, type }: NodeProps<BoardNode>) {
           </IconButton>
         </div>
       )}
-      {type !== 'group' && <Ports id={id} data={data} />}
+      {type !== 'group' && <Anchors />}
       <Presence duration={motion.spatial.fast.duration}>
         {menu && (
           <Menu x={menu.x} y={menu.y} label="Node actions" onClose={() => setMenu(null)}>
             {type !== 'group' && (
               <button role="menuitem" onClick={() => state.branch(id)}>
                 Branch conversation
+              </button>
+            )}
+            {mergeable && (
+              <button role="menuitem" onClick={mergeSelectedParents}>
+                Merge selected parents
               </button>
             )}
             <button role="menuitem" onClick={state.duplicate}>

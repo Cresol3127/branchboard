@@ -1550,57 +1550,22 @@ button svg {
   color: var(--muted);
   padding: 3px;
 }
-.react-flow__handle {
+.node-anchors {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.react-flow__handle.node-source-anchor,
+.react-flow__handle.node-target-anchor {
   width: 12px;
   height: 12px;
   min-width: 12px;
   min-height: 12px;
-  border: 2px solid var(--surface);
-  background: var(--family-color, var(--edge));
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--family-color, var(--edge)) 45%, var(--node-border)),
-    0 1px 5px #00000012;
-  transition:
-    background var(--motion-effects-fast) var(--ease-effects-fast),
-    box-shadow var(--motion-effects-fast) var(--ease-effects-fast);
-}
-.react-flow__node.family-sage {
-  --family-color: var(--branch-sage);
-}
-.react-flow__node.family-blue {
-  --family-color: var(--branch-blue);
-}
-.react-flow__node.family-amber {
-  --family-color: var(--branch-amber);
-}
-.react-flow__node.family-rose {
-  --family-color: var(--branch-rose);
-}
-.react-flow__node.family-violet {
-  --family-color: var(--branch-violet);
-}
-.react-flow__node.family-teal {
-  --family-color: var(--branch-teal);
-}
-.board-node:hover .react-flow__handle,
-.selected .board-node .react-flow__handle {
-  background: var(--primary);
-}
-.react-flow__handle-right {
-  right: -6px;
-}
-.react-flow__handle-left {
-  left: -6px;
-}
-.react-flow__handle:hover {
-  background: var(--purple);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--purple) 48%, var(--node-border)),
-    0 0 0 5px color-mix(in srgb, var(--purple) 18%, transparent);
-}
-.suggested-input .target {
-  background: var(--purple);
-  box-shadow: 0 0 0 5px var(--accent);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  opacity: 0;
+  pointer-events: none;
 }
 .react-flow__edge.family-sage {
   --edge-color: var(--branch-sage);
@@ -1629,11 +1594,6 @@ button svg {
   transition:
     stroke-width var(--motion-effects-fast) var(--ease-effects-fast),
     opacity var(--motion-effects-fast) var(--ease-effects-fast);
-}
-.react-flow__connection-path {
-  stroke: var(--primary);
-  stroke-width: 3;
-  stroke-linecap: round;
 }
 .react-flow__edge:hover .react-flow__edge-path,
 .react-flow__edge.related-edge .react-flow__edge-path {

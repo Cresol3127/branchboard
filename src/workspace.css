@@ -471,9 +471,6 @@ html[data-window-interacting='true'] *::after {
   flex: 1;
   min-height: 0;
 }
-.node-bottom-actions + .node-ports {
-  pointer-events: none;
-}
 .model-test {
   border-top: 1px solid var(--line);
   padding-top: 16px;

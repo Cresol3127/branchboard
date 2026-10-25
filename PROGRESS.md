@@ -1,5 +1,48 @@
 # Progress
 
+## Automatic center connections and shared parents — 1.10.1 (2026-10-26)
+
+- Replaced the visible React Flow ports, freehand drag-to-connect gesture, ghost line,
+  suggestion rings and Alt-drag port editing with automatic-only connections. Every
+  non-group card now exposes one invisible, pointer-inert source anchor at its exact
+  center and one hidden target at the facing edge so arrowheads remain visible. Edges
+  are created only by branch actions, imports, drag-drop branching and merging.
+- Added **Merge selected parents** for exactly two selected non-group cards. It creates
+  one blank chat child to the right, vertically centered and collision-safe, with two
+  parent edges, combined parent-first context that includes shared ancestors once, no
+  copied messages, the first chat parent's model in stable canvas order, and a family
+  color derived from the new edges. Creation, both edges and child selection undo as one
+  step. The action is available from the command palette, node menu and conditional
+  toolbar, and is blocked for groups, invalid selections and active generation.
+- Automatic branch-on-drop continues to target the source card's right-edge center,
+  with recorded branches resolving to a clear position rather than appearing underneath
+  another card. Legacy `portPositions` imports remain readable but no longer affect
+  rendering. Family-colored 3px paths, arrowheads, selected-edge weight/glow, motion and
+  focus behavior are preserved; manual edge disconnection remains available.
+- Strict build and **243 unit/HTTP tests in 27 files** passed. The complete **122-test
+  Chromium suite** passed after focused merge coverage for command/menu/toolbar entry,
+  combined context, invalid/busy guards, collision-safe placement, one-step undo/redo
+  and reload persistence. Evidence: `/tmp/opencode/build-1101-4.log`,
+  `/tmp/opencode/unit-1101-5.log` and `/tmp/opencode/full-e2e-1101-final.log`.
+- The final screenshot flow saved **159 numbered captures**, PNG/PDF exports and motion
+  samples with no browser errors; all were inspected through eight contact sheets. The
+  03 merge scene now creates a shared child from two parents with visible arrowheads,
+  the connection preview shows the new child title and automatic edges, and Help
+  describes automatic connections and merge. Evidence:
+  `/tmp/opencode/screenshots-1101-final/` and `/tmp/opencode/contact-1101-final/`.
+- Built production assets on 3001 passed an isolated Chromium pass at 1440x960 and
+  390x844: merge created a selected shared child from two parents with exactly two
+  edges, every source anchor was transparent, pointer-inert and centered within one
+  pixel, and the existing dock/snap/floating/reload/mobile-sheet checks remained valid.
+  Three captures and the no-page-error record are in `/tmp/opencode/production-1101/`;
+  the only failed requests were two expected local Ollama catalog probes (502).
+- No paid provider requests, credential writes, `data/` edits, dependency additions or
+  Tailscale changes were made. All **169 historical release checksum entries across 17
+  versions** including v1.10.0 still match; prior source/runtime artifacts, manifests
+  and tags remain immutable.
+- Fresh source/runtime archive installs and artifact-specific verification are recorded
+  in the 1.10.1 release manifest after their gates complete.
+
 ## Windowed workspace — 1.10.0 (2026-10-26)
 
 - Split the single shared dock into independent Models and Settings windows. One panel

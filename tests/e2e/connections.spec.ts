@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test';
+import { clickEdge } from './helpers';
 
 test.use({ viewport: { width: 1440, height: 960 } });
 
-test('connections use family colors, prominent ports and a distinct selected state', async ({
+test('automatic connections use one hidden center origin and family-colored edges', async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -12,38 +13,67 @@ test('connections use family colors, prominent ports and a distinct selected sta
   await expect(edge).toHaveClass(/family-(sage|blue|amber|rose|violet|teal)/);
 
   const family = (await edge.getAttribute('class'))!.match(/family-(\w+)/)![1];
-  const appearance = await edge.evaluate((element, name) => {
+  const appearance = await edge.evaluate((element, family) => {
     const path = element.querySelector<SVGPathElement>('.react-flow__edge-path')!;
-    const source = document.querySelector<HTMLElement>(`.react-flow__node.family-${name}`);
-    const handle = source?.querySelector<HTMLElement>('.source') || null;
     const colorProbe = document.createElement('span');
     colorProbe.style.color = getComputedStyle(document.documentElement)
-      .getPropertyValue(`--branch-${name}`)
+      .getPropertyValue(`--branch-${family}`)
       .trim();
     document.body.append(colorProbe);
     const expectedColor = getComputedStyle(colorProbe).color;
     colorProbe.remove();
     const pathStyle = getComputedStyle(path);
-    const handleStyle = handle ? getComputedStyle(handle) : null;
     return {
-      familyClass: source?.className || null,
       stroke: pathStyle.stroke,
       width: pathStyle.strokeWidth,
       opacity: pathStyle.opacity,
       expectedColor,
-      handleWidth: handleStyle?.width || null,
-      handleColor: handleStyle?.backgroundColor || null,
     };
   }, family);
 
-  expect(appearance.familyClass).toContain(`family-${family}`);
   expect(appearance.stroke).toBe(appearance.expectedColor);
   expect(appearance.width).toBe('3px');
   expect(appearance.opacity).toBe('0.92');
-  expect(appearance.handleWidth).toBe('12px');
-  expect(appearance.handleColor).toBe(appearance.expectedColor);
 
-  await edge.locator('.react-flow__edge-interaction').click({ force: true });
+  const handles = page.locator('.react-flow__handle');
+  await expect(handles).toHaveCount(6);
+  await expect(handles.first()).toHaveCSS('opacity', '0');
+  await expect(handles.first()).toHaveCSS('pointer-events', 'none');
+  await expect(page.locator('.react-flow__node').first()).not.toHaveClass(/connectable/);
+
+  const geometry = await page.locator('.react-flow__node').evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const card = node.getBoundingClientRect();
+      return [...node.querySelectorAll<HTMLElement>('.react-flow__handle')].map((handle) => {
+        const box = handle.getBoundingClientRect();
+        return {
+          type: handle.classList.contains('source') ? 'source' : 'target',
+          x: box.x + box.width / 2,
+          y: box.y + box.height / 2,
+          card: { x: card.x, y: card.y, width: card.width, height: card.height },
+        };
+      });
+    }),
+  );
+  for (const anchors of geometry) {
+    const center = {
+      x: anchors[0].card.x + anchors[0].card.width / 2,
+      y: anchors[0].card.y + anchors[0].card.height / 2,
+    };
+    expect(anchors).toHaveLength(2);
+    for (const anchor of anchors) {
+      if (anchor.type === 'source') {
+        expect(anchor.x).toBeCloseTo(center.x, 0);
+        expect(anchor.y).toBeCloseTo(center.y, 0);
+      } else {
+        // The hidden target stays on the facing edge so the arrowhead remains visible.
+        expect(Math.abs(anchor.x - anchor.card.x)).toBeLessThanOrEqual(2);
+        expect(anchor.y).toBeCloseTo(center.y, 0);
+      }
+    }
+  }
+
+  await clickEdge(page, edge);
   await expect(page.getByRole('region', { name: 'Connection context' })).toBeVisible();
   await expect
     .poll(() =>

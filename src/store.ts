@@ -15,6 +15,7 @@ import {
   layoutNodes,
   resolveNodeCollisions,
 } from './graph';
+import { assignFamilies } from './families';
 import { sseData } from '../server/stream';
 import type {
   AnnotationState,
@@ -405,6 +406,7 @@ type State = {
   branch: (id: string) => string;
   branchFromMessage: (id: string, messageId: string) => string;
   branchOnDrop: (source: string, dragged: string, original: XYPosition) => void;
+  mergeParents: () => string;
   undo: () => void;
   redo: () => void;
   layout: () => void;
@@ -644,7 +646,11 @@ export const useStore = create<State>((set, get) => {
     child.selected = true;
     mutate((b) => ({
       ...b,
-      nodes: [...b.nodes.map((n) => ({ ...n, selected: false })), child],
+      // A branch dropped under an existing card must stay reachable and selectable.
+      nodes: resolveNodeCollisions(
+        [...b.nodes.map((n) => ({ ...n, selected: false })), child],
+        [child.id],
+      ),
       edges: [
         ...b.edges,
         {
@@ -660,6 +666,60 @@ export const useStore = create<State>((set, get) => {
             : {}),
         },
       ],
+    }));
+    return child.id;
+  };
+  const mergeParents = () => {
+    const state = get();
+    if (Object.values(state.streaming).some(Boolean)) return '';
+    const b = currentBoard(state);
+    const chosen = b.nodes.filter((n) => n.selected);
+    if (chosen.length !== 2 || chosen.some((n) => n.type === 'group')) return '';
+    const parents = [...chosen].sort((a, c) => {
+      const pa = absolutePosition(a, b.nodes),
+        pc = absolutePosition(c, b.nodes);
+      return pa.x - pc.x || pa.y - pc.y || a.id.localeCompare(c.id);
+    });
+    const size = (node: BoardNode) => ({
+      width: Number(node.style?.width) || 340,
+      height: Number(node.style?.height) || 380,
+    });
+    const positions = parents.map((parent) => absolutePosition(parent, b.nodes));
+    const right = Math.max(...positions.map((position, i) => position.x + size(parents[i]).width));
+    const top = Math.min(...positions.map((position) => position.y));
+    const bottom = Math.max(
+      ...positions.map((position, i) => position.y + size(parents[i]).height),
+    );
+    const child = makeNode('chat', {
+      x: right + 100,
+      y: top + (bottom - top) / 2 - 190,
+    });
+    const label = (title: string) => title.trim().slice(0, 60) || 'Untitled';
+    child.data.title = `Merge · ${label(parents[0].data.title)} + ${label(parents[1].data.title)}`;
+    const firstChat = parents.find((parent) => parent.type === 'chat');
+    if (firstChat?.data.provider && firstChat.data.model) {
+      child.data.provider = firstChat.data.provider;
+      child.data.model = firstChat.data.model;
+    }
+    const edges = [
+      ...b.edges.map((edge) => ({ ...edge, selected: false })),
+      ...parents.map((parent) => ({ id: uid(), source: parent.id, target: child.id })),
+    ];
+    const merged = assignFamilies([...b.nodes, child], edges).find((node) => node.id === child.id);
+    if (merged?.data.familyId && merged.data.familyColor) {
+      child.data.familyId = merged.data.familyId;
+      child.data.familyColor = merged.data.familyColor;
+      child.data.color = merged.data.color;
+    }
+    child.selected = true;
+    checkpoint();
+    mutate((b) => ({
+      ...b,
+      nodes: resolveNodeCollisions(
+        [...b.nodes.map((node) => ({ ...node, selected: false })), child],
+        [child.id],
+      ),
+      edges,
     }));
     return child.id;
   };
@@ -1410,6 +1470,7 @@ export const useStore = create<State>((set, get) => {
     },
     branch: (id) => branch(id),
     branchFromMessage: (id, messageId) => branch(id, undefined, true, messageId),
+    mergeParents,
     branchOnDrop: (source, dragged, original) => {
       const node = currentBoard(get()).nodes.find((n) => n.id === dragged);
       if (!node) return;

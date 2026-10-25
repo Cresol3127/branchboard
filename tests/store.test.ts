@@ -580,7 +580,8 @@ describe('node operations and undo', () => {
     s.branchOnDrop(source, dragged, { x: 700, y: 0 });
     expect(board().nodes.find((n) => n.id === dragged)?.position).toEqual({ x: 700, y: 0 });
     const child = board().nodes.at(-1)!;
-    expect(child.position).toEqual({ x: 400, y: 100 });
+    // Keep the new branch clear of the dragged card after it returns to its origin.
+    expect(child.position).toEqual({ x: 400, y: 284 });
     expect(child.data.messages).toEqual([]);
     expect(board().edges).toEqual([expect.objectContaining({ source, target: child.id })]);
     s.undo();
@@ -646,6 +647,75 @@ describe('node operations and undo', () => {
     expect(board().edges[0]).toMatchObject({ source: parent, target: child });
     s.undo();
     expect(board().nodes).toHaveLength(1);
+    expect(board().edges).toHaveLength(0);
+  });
+  it('merges two selected parents into one shared child with combined context and undo', () => {
+    const s = store.useStore.getState();
+    const root = s.addNode('chat', { x: 0, y: 0 });
+    s.updateNode(root, {
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+      messages: [{ id: 'root-message', role: 'user', content: 'Shared ancestor' }],
+    });
+    const first = s.branch(root);
+    const second = s.branch(root);
+    s.updateNode(first, {
+      messages: [{ id: 'first-message', role: 'user', content: 'First parent' }],
+    });
+    s.updateNode(second, {
+      messages: [{ id: 'second-message', role: 'user', content: 'Second parent' }],
+    });
+    select(first, second);
+    const history = store.useStore.getState().past.length;
+    const child = s.mergeParents();
+    expect(child).toBeTruthy();
+    expect(store.useStore.getState().past).toHaveLength(history + 1);
+    const merged = board().nodes.find((node) => node.id === child)!;
+    expect(merged.type).toBe('chat');
+    expect(merged.data.title).toBe('Merge · Untitled conversation + Untitled conversation');
+    expect(merged.data.provider).toBe('openai');
+    expect(merged.data.model).toBe('gpt-4o-mini');
+    expect(merged.data.familyId).toBe(root);
+    expect(merged.data.familyColor).toBeTruthy();
+    expect(merged.data.color).toBe(merged.data.familyColor);
+    expect(merged.selected).toBe(true);
+    expect(selected()).toEqual([merged]);
+    expect(board().edges.filter((edge) => edge.target === child)).toEqual([
+      expect.objectContaining({ source: first, target: child }),
+      expect.objectContaining({ source: second, target: child }),
+    ]);
+    expect(merged.position.x).toBeGreaterThan(780);
+    expect(
+      contextFor(child, board().nodes, board().edges).map((message) => message.content),
+    ).toEqual(['Shared ancestor', 'First parent', 'Second parent']);
+    s.undo();
+    expect(board().nodes).toHaveLength(3);
+    expect(board().edges).toHaveLength(2);
+    s.redo();
+    expect(board().nodes).toHaveLength(4);
+    expect(board().edges).toHaveLength(4);
+  });
+  it('merges note and chat parents and rejects invalid, group and busy selections', () => {
+    const s = store.useStore.getState();
+    const note = s.addNode('note', { x: 0, y: 0 });
+    s.updateNode(note, { note: 'Shared note context' });
+    const chat = s.addNode('chat', { x: 500, y: 0 });
+    select(note, chat);
+    const child = s.mergeParents();
+    expect(child).toBeTruthy();
+    expect(contextFor(child, board().nodes, board().edges)[0].content).toContain(
+      'Shared note context',
+    );
+    s.undo();
+    select(note);
+    expect(s.mergeParents()).toBe('');
+    const group = s.addNode('group', { x: 0, y: 400 });
+    select(chat, group);
+    expect(s.mergeParents()).toBe('');
+    select(note, chat);
+    store.useStore.setState({ streaming: { [chat]: true } });
+    expect(s.mergeParents()).toBe('');
+    expect(board().nodes).toHaveLength(3);
     expect(board().edges).toHaveLength(0);
   });
 });

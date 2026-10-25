@@ -1,0 +1,85 @@
+{
+  "version": "1.10.1",
+  "title": "Center-spine connections and shared parents",
+  "date": "2026-10-26",
+  "build": "passed",
+  "unitAndHttp": {
+    "status": "passed",
+    "tests": 243,
+    "files": 27,
+    "log": "/tmp/opencode/unit-1101-5.log"
+  },
+  "browser": {
+    "status": "passed",
+    "tests": 122,
+    "scope": "full Chromium suite, including automatic-only hidden center origins and facing-edge targets, no visible ports or manual link gestures, exactly-two-parent shared-child merge from the command palette, node menu and conditional toolbar, combined deduplicated parent context, model/family inheritance, collision-safe placement, one-step undo/redo, automatic drag-drop branch collision avoidance, preserved family-colored edge and arrowhead styling, and all prior window, provider, history, import/export, annotation, accessibility, motion and responsive coverage",
+    "log": "/tmp/opencode/full-e2e-1101-final.log"
+  },
+  "screenshots": {
+    "count": 159,
+    "inspected": true,
+    "directory": "/tmp/opencode/screenshots-1101-final",
+    "contactSheets": "/tmp/opencode/contact-1101-final",
+    "exportedArtifacts": [
+      "canvas-export.png",
+      "canvas-export.pdf"
+    ],
+    "inspection": "All 159 numbered desktop/mobile captures were inspected through eight contact sheets. Full-resolution review covered the merged shared child with two parent edges and visible arrowheads, center-origin family connections without visible ports, the updated automatic-connections Help copy, and the real 1000x1052 PNG export; the one-page A4 PDF and six motion samples were also checked. The merge preview is sourced from the regenerated two-parent 03-connected scene. Desktop panel entry/close each recorded two running animations, mobile entry one, toolbar/canvas-menu midpoint opacity 0.943004, closing opacity 0.0857018, and reduced motion zero.",
+    "pageErrors": []
+  },
+  "production": {
+    "status": "passed",
+    "origin": "http://127.0.0.1:3001",
+    "viewport": "1440x960 and 390x844",
+    "checked": [
+      "production page and starter graph loaded",
+      "merge created one selected shared child from two parents with exactly two parent edges",
+      "every non-group node has one fully transparent pointer-inert source anchor at the card center",
+      "docked Models moved the canvas beside the 360px dock",
+      "opening Settings floated it without replacing the dock",
+      "top snap used the full desk width and moved the canvas below",
+      "only mode and floating bounds were stored; open and maximized state were absent",
+      "reload closed windows and reopening Models restored snap-top",
+      "390px layout used a sheet covering its full workspace stage and made the mounted canvas inert"
+    ],
+    "captures": [
+      "production-merge.png",
+      "production-desktop.png",
+      "production-mobile-sheet.png"
+    ],
+    "pageErrors": [],
+    "unavailableProviders": [
+      "Ollama model discovery: local service unavailable (HTTP 502); two startup probes handled as unavailable"
+    ]
+  },
+  "runtimeExpectations": {
+    "starterNodes": 3,
+    "settingsRole": "region",
+    "settingsName": "Settings",
+    "motion": true
+  },
+  "paidProviderRequests": false,
+  "originalArtifactChecksums": {
+    "status": "passed",
+    "entries": 169,
+    "versions": [
+      "1.1.1",
+      "1.1.2",
+      "1.2.1",
+      "1.2.2",
+      "1.3.1",
+      "1.3.2",
+      "1.4.1",
+      "1.4.2",
+      "1.5.1",
+      "1.5.2",
+      "1.6.0",
+      "1.6.1",
+      "1.7.0",
+      "1.7.1",
+      "1.8.0",
+      "1.9.0",
+      "1.10.0"
+    ]
+  }
+}

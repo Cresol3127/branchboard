@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
 export async function command(page: Page, label: string) {
   await page.keyboard.press('Control+k');
@@ -18,4 +18,18 @@ export async function emptyCanvasPoint(page: Page) {
     }
     throw new Error('No empty canvas space is visible');
   });
+}
+
+export async function clickEdge(page: Page, edge: Locator) {
+  const point = await edge.locator('.react-flow__edge-interaction').evaluate((element) => {
+    const path = element as SVGPathElement;
+    const location = path.getPointAtLength(path.getTotalLength() * 0.8);
+    const matrix = path.getScreenCTM();
+    if (!matrix) throw new Error('Edge is not rendered');
+    return {
+      x: location.x * matrix.a + location.y * matrix.c + matrix.e,
+      y: location.x * matrix.b + location.y * matrix.d + matrix.f,
+    };
+  });
+  await page.mouse.click(point.x, point.y);
 }

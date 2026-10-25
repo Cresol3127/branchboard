@@ -10,8 +10,10 @@ A local-first canvas for connected AI conversations, notes and ideas.
 - JSON backups, conversation imports, and Markdown, PNG and PDF exports.
 - Independent Models and Settings windows that dock, float, resize, snap to any half,
   maximize, restore their saved layout and reset from Settings.
-- Family-colored connections with prominent ports, keyboard shortcuts and customizable
-  light/dark palettes; narrow workspaces use full-stage sheets over an inert canvas.
+- Automatic family-colored connections with one hidden center origin per card, plus
+  one-step merging of two selected parents into a shared child; keyboard shortcuts and
+  customizable light/dark palettes; narrow workspaces use full-stage sheets over an
+  inert canvas.
 - Latest-generation model dropdowns, provider icons and saved exact-ID additions.
 - Window-centered search that adapts to sidebar changes and compact layouts.
 
@@ -58,8 +60,11 @@ float above the canvas, and any window can be dragged or resized. Use the snap m
 or drag to an edge to fill half the workspace; the canvas moves to the opposite half.
 Arrow keys move a window, Shift+Arrow resizes, Alt+Arrow snaps and Enter maximizes or
 restores. Window layout is remembered per panel, while open panels, drafts and keys
-are never persisted; **Settings → Reset window layout** clears it. Connections and
-ports use each conversation family's color so branches remain visually distinct.
+are never persisted; **Settings → Reset window layout** clears it. Connections use each
+conversation family's color and grow automatically from one hidden origin at the center
+of each card; there are no visible ports or freehand link gestures. Select exactly two
+non-group cards and choose **Merge selected parents** to create a blank shared child
+that inherits both histories as context in one undoable step.
 
 ### Production
 

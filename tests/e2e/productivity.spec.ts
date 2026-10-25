@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { command, emptyCanvasPoint } from './helpers';
+import { clickEdge, command, emptyCanvasPoint } from './helpers';
 
 async function setup(page: Page, scrolling = false) {
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -205,7 +205,7 @@ test('saved viewports survive reload and canvas switching even when all cards ar
   await expect(viewport).not.toHaveAttribute('style', saved!);
 });
 
-test('double-click quick creation, port-drop branching, connection inspection and slash focus are functional', async ({
+test('double-click quick creation, automatic drag-drop branching, connection inspection and slash focus are functional', async ({
   page,
 }) => {
   await setup(page);
@@ -219,21 +219,21 @@ test('double-click quick creation, port-drop branching, connection inspection an
   await expect(input).toBeFocused();
   await command(page, 'Fit canvas');
   await page.waitForTimeout(300);
-  const source = page.locator('[data-id="beta"] .source');
-  const from = (await source.boundingBox())!;
-  const point = await emptyCanvasPoint(page);
-  const bounds = (await pane.boundingBox())!;
-  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  const beta = (await page.locator('[data-id="beta"]').boundingBox())!;
+  const alpha = (await page.locator('[data-id="alpha"]').boundingBox())!;
+  await page.mouse.move(beta.x + 20, beta.y + 20);
   await page.mouse.down();
-  await page.mouse.move(bounds.x + point.x, bounds.y + point.y + 25, { steps: 20 });
+  await page.mouse.move(alpha.x + alpha.width, alpha.y + alpha.height / 2, {
+    steps: 20,
+  });
   await page.mouse.up();
   await expect(page.locator('.react-flow__node-chat')).toHaveCount(4);
   await expect(input).toBeFocused();
   await command(page, 'Fit canvas');
   await page.waitForTimeout(300);
   const edge = page.locator('.react-flow__edge').last();
-  await edge.locator('.react-flow__edge-interaction').click({ force: true });
-  await expect(page.getByRole('region', { name: 'Connection context' })).toContainText('beta');
+  await clickEdge(page, edge);
+  await expect(page.getByRole('region', { name: 'Connection context' })).toContainText('alpha');
   await page.getByRole('button', { name: 'Disconnect nodes', exact: true }).click();
   await expect(page.locator('.react-flow__edge')).toHaveCount(1);
   await page.getByRole('button', { name: 'Undo', exact: true }).click();

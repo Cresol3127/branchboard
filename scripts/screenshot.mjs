@@ -37,6 +37,17 @@ async function command(name, preserveSelection = false) {
   );
   if (name === 'Fit canvas') await page.waitForTimeout(300);
 }
+async function selectChatNodes(indexes) {
+  const chats = page.locator('.react-flow__node-chat');
+  for (const [position, index] of indexes.entries()) {
+    const box = await chats.nth(index).boundingBox();
+    if (!box) throw new Error(`Chat node ${index} is not visible`);
+    if (position) await page.keyboard.down('Shift');
+    await page.mouse.click(box.x + 16, box.y + 16);
+    if (position) await page.keyboard.up('Shift');
+  }
+  await expect(page.locator('.react-flow__node-chat.selected')).toHaveCount(indexes.length);
+}
 try {
   await page.goto('http://localhost:3000');
   await expect(page.locator('.react-flow__node')).toHaveCount(3);
@@ -47,22 +58,12 @@ try {
   await expect(page.locator('.react-flow__node')).toHaveCount(1);
   await capture('02-node-created.png');
   await page.getByRole('button', { name: 'Add conversation', exact: true }).click();
-  await page.getByRole('button', { name: 'Add conversation', exact: true }).click();
   await command('Auto-arrange nodes');
   await page.waitForTimeout(500);
   const nodes = page.locator('.react-flow__node-chat');
-  await expect(nodes).toHaveCount(3);
-  for (let i = 0; i < 2; i++) {
-    const from = await nodes.nth(i).locator('.source').boundingBox();
-    const to = await nodes
-      .nth(i + 1)
-      .locator('.target')
-      .boundingBox();
-    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
-    await page.mouse.down();
-    await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 20 });
-    await page.mouse.up();
-  }
+  await expect(nodes).toHaveCount(2);
+  await selectChatNodes([0, 1]);
+  await command('Merge selected parents', true);
   await expect(page.locator('.react-flow__edge')).toHaveCount(2);
   await command('Auto-arrange nodes');
   await capture('03-connected.png');
@@ -774,18 +775,18 @@ try {
   await command('Duplicate selection', true);
   await expect(page.locator('.react-flow__node-chat')).toHaveCount(2);
   await command('Auto-arrange nodes');
+  await page.waitForTimeout(700);
+  const chats = page.locator('.react-flow__node-chat');
+  await selectChatNodes([0, 1]);
+  await command('Merge selected parents', true);
+  await command('Auto-arrange nodes', true);
   await page.waitForTimeout(350);
-  const from = await page.locator('.react-flow__node-chat .source').first().boundingBox();
-  const to = await page.locator('.react-flow__node-chat .target').last().boundingBox();
-  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 20 });
-  await page.mouse.up();
+  await expect(page.locator('.react-flow__edge')).toHaveCount(2);
   const midpoint = await page
     .locator('.react-flow__edge-path')
     .last()
     .evaluate((path) => {
-      const p = path.getPointAtLength(path.getTotalLength() / 2);
+      const p = path.getPointAtLength(path.getTotalLength() * 0.8);
       const point = new DOMPoint(p.x, p.y).matrixTransform(path.getScreenCTM());
       return { x: point.x, y: point.y };
     });

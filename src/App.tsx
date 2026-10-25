@@ -10,7 +10,6 @@ import {
   useReactFlow,
   useNodesInitialized,
   getViewportForBounds,
-  type OnConnectStartParams,
   type XYPosition,
 } from '@xyflow/react';
 import {
@@ -21,6 +20,7 @@ import {
   Bot,
   FolderOpen,
   GitBranch,
+  GitMerge,
   Grid2X2,
   ImageDown,
   HelpCircle,
@@ -166,10 +166,6 @@ function Workspace() {
     }
   }, [sidebarCollapsed]);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
-  const [suggested, setSuggested] = useState<string | null>(null);
-  const connection = useRef<OnConnectStartParams | null>(null),
-    candidate = useRef<string | null>(null);
-  const connected = useRef(false);
   const dragStart = useRef<XYPosition | null>(null);
   const file = useRef<HTMLInputElement>(null),
     canvas = useRef<HTMLElement>(null);
@@ -188,6 +184,16 @@ function Workspace() {
   );
   const focusComposer = () =>
     document.querySelector<HTMLTextAreaElement>('.unified-composer textarea')?.focus();
+  const selectedParents = board.nodes.filter((n) => n.selected);
+  const mergeable =
+    !generating &&
+    selectedParents.length === 2 &&
+    selectedParents.every((node) => node.type !== 'group');
+  const mergeSelectedParents = () => {
+    const id = state.mergeParents();
+    if (!id) return;
+    requestAnimationFrame(() => requestAnimationFrame(focusComposer));
+  };
   const related = useMemo(() => {
     const ids = new Set(board.nodes.filter((n) => n.selected).map((n) => n.id));
     for (const edge of board.edges) {
@@ -202,16 +208,6 @@ function Workspace() {
     () => edgeFamilyColors(board.nodes, board.edges),
     [board.nodes, board.edges],
   );
-  const portFamilies = useMemo(() => {
-    const colors = new globalThis.Map<string, string>();
-    for (const edge of board.edges) {
-      const family = edgeFamilies.get(edge.id);
-      if (!family) continue;
-      if (!colors.has(edge.source)) colors.set(edge.source, family);
-      if (!colors.has(edge.target)) colors.set(edge.target, family);
-    }
-    return colors;
-  }, [board.edges, edgeFamilies]);
   const selectedEdge = board.edges.find((edge) => edge.selected);
   const fit = useCallback(() => {
     const b = currentBoard(useStore.getState());
@@ -462,6 +458,11 @@ function Workspace() {
     { label: 'New conversation', run: () => add('chat') },
     { label: 'New note', run: () => add('note') },
     {
+      label: 'Merge selected parents',
+      run: mergeSelectedParents,
+      available: mergeable,
+    },
+    {
       label: 'Drawing & annotations',
       run: () => openPanel('layers', () => setAnnotationsOpen(true)),
     },
@@ -686,34 +687,6 @@ function Workspace() {
     };
   });
 
-  const nearestInput = (x: number, y: number) => {
-    const start = connection.current;
-    if (!start?.nodeId || start.handleType !== 'source') return null;
-    const b = currentBoard(useStore.getState());
-    let best: string | null = null,
-      distance = 20;
-    document.querySelectorAll<HTMLElement>('.react-flow__node .target').forEach((el) => {
-      const id = el.closest<HTMLElement>('.react-flow__node')!.dataset.id!;
-      if (!canConnect(start.nodeId!, id, b.edges)) return;
-      const rect = el.getBoundingClientRect(),
-        d = Math.hypot(rect.x + rect.width / 2 - x, rect.y + rect.height / 2 - y);
-      if (d <= distance) {
-        distance = d;
-        best = id;
-      }
-    });
-    return best;
-  };
-  useEffect(() => {
-    const move = (e: PointerEvent) => {
-      if (!connection.current) return;
-      candidate.current = nearestInput(e.clientX, e.clientY);
-      setSuggested(candidate.current);
-    };
-    window.addEventListener('pointermove', move);
-    return () => window.removeEventListener('pointermove', move);
-  });
-
   return (
     <div
       className={`workspace ${textSelection ? 'text-selection-mode' : ''} ${spacePressed ? 'space-panning' : ''}`}
@@ -886,6 +859,15 @@ function Workspace() {
               <Plus size={18} />
               <span>New conversation</span>
             </button>
+            {mergeable && (
+              <IconButton
+                label="Merge selected parents"
+                title="Create a shared conversation from two selected cards"
+                onClick={mergeSelectedParents}
+              >
+                <GitMerge size={18} />
+              </IconButton>
+            )}
             <IconButton
               label={toolsExpanded ? 'Collapse creation tools' : 'Expand creation tools'}
               className="creation-toggle"
@@ -937,19 +919,14 @@ function Workspace() {
             <ReactFlow<BoardNode>
               key={board.id}
               onInit={() => setReadyBoardId(board.id)}
-              nodes={board.nodes.map((n) => {
-                const family = portFamilies.get(n.id);
-                return {
-                  ...n,
-                  dragHandle: undefined,
-                  className: [
-                    textSelection ? 'nopan' : '',
-                    suggested === n.id ? 'suggested-input' : '',
-                    related.has(n.id) && !n.selected ? 'related-node' : '',
-                    family ? `family-${family}` : '',
-                  ].join(' '),
-                };
-              })}
+              nodes={board.nodes.map((n) => ({
+                ...n,
+                dragHandle: undefined,
+                className: [
+                  textSelection ? 'nopan' : '',
+                  related.has(n.id) && !n.selected ? 'related-node' : '',
+                ].join(' '),
+              }))}
               edges={board.edges.map((edge) => {
                 const family = edgeFamilies.get(edge.id) || 'sage';
                 return {
@@ -971,11 +948,7 @@ function Workspace() {
               nodeTypes={nodeTypes}
               onNodesChange={state.nodesChange}
               onEdgesChange={state.edgesChange}
-              onConnect={({ source, target }) => {
-                connected.current = true;
-                state.connect(source, target);
-              }}
-              isValidConnection={(c) => canConnect(c.source, c.target, board.edges)}
+              nodesConnectable={false}
               defaultViewport={board.viewport}
               fitViewOptions={{ padding: 0.2, maxZoom: 0.9 }}
               minZoom={0.15}
@@ -991,51 +964,8 @@ function Workspace() {
               selectionMode={SelectionMode.Partial}
               multiSelectionKeyCode="Shift"
               deleteKeyCode={null}
-              connectionRadius={1}
               zoomOnDoubleClick={false}
               onMoveEnd={(_e, viewport) => state.setViewport(viewport)}
-              onConnectStart={(_e, params) => {
-                connection.current = params;
-                connected.current = false;
-              }}
-              onConnectEnd={(event) => {
-                const pointer = 'changedTouches' in event ? event.changedTouches[0] : event;
-                const target = nearestInput(pointer.clientX, pointer.clientY);
-                const nearCard = [
-                  ...document.querySelectorAll<HTMLElement>('.react-flow__node'),
-                ].some((el) => {
-                  const rect = el.getBoundingClientRect();
-                  return (
-                    pointer.clientX >= rect.left - 35 &&
-                    pointer.clientX <= rect.right + 35 &&
-                    pointer.clientY >= rect.top - 35 &&
-                    pointer.clientY <= rect.bottom + 35
-                  );
-                });
-                if (!connected.current && target && connection.current?.nodeId)
-                  state.connect(connection.current.nodeId, target);
-                else if (
-                  !connected.current &&
-                  !nearCard &&
-                  connection.current?.handleType === 'source' &&
-                  connection.current.nodeId &&
-                  (pointer.target as HTMLElement)?.closest('.react-flow__pane')
-                ) {
-                  const id = state.branch(connection.current.nodeId);
-                  if (id) {
-                    const position = flow.screenToFlowPosition({
-                      x: pointer.clientX,
-                      y: pointer.clientY,
-                    });
-                    state.nodesChange([{ type: 'position', id, position }]);
-                    state.settleNodes([id]);
-                    focusComposer();
-                  }
-                }
-                connection.current = null;
-                candidate.current = null;
-                setSuggested(null);
-              }}
               onNodeDragStart={(_e, node) => {
                 state.checkpoint();
                 dragStart.current = { ...node.position };
@@ -1044,24 +974,25 @@ function Workspace() {
                 if (!dragStart.current) return;
                 let branched = false;
                 const pointer = 'changedTouches' in event ? event.changedTouches[0] : event;
-                if (!event.shiftKey && draggedNodes.length === 1)
-                  document
-                    .querySelectorAll<HTMLElement>('.react-flow__node .source')
-                    .forEach((el) => {
-                      const id = el.closest<HTMLElement>('.react-flow__node')!.dataset.id!;
-                      if (branched || id === node.id || node.parentId === id) return;
-                      const rect = el.getBoundingClientRect();
-                      if (
-                        Math.hypot(
-                          pointer.clientX - rect.x - rect.width / 2,
-                          pointer.clientY - rect.y - rect.height / 2,
-                        ) <= 35
-                      ) {
-                        state.branchOnDrop(id, node.id, dragStart.current!);
-                        branched = true;
-                      }
+                if (!event.shiftKey && draggedNodes.length === 1 && node.type !== 'group') {
+                  const current = currentBoard(useStore.getState());
+                  for (const source of current.nodes) {
+                    if (source.id === node.id || source.type === 'group') continue;
+                    if (!canConnect(source.id, node.id, current.edges)) continue;
+                    const position = absolutePosition(source, current.nodes);
+                    const point = flow.flowToScreenPosition({
+                      x: position.x + (Number(source.style?.width) || 340),
+                      y: position.y + (Number(source.style?.height) || 380) / 2,
                     });
+                    if (Math.hypot(pointer.clientX - point.x, pointer.clientY - point.y) <= 35) {
+                      state.branchOnDrop(source.id, node.id, dragStart.current!);
+                      branched = true;
+                      break;
+                    }
+                  }
+                }
                 if (!branched) state.settleNodes(draggedNodes.map((n) => n.id));
+                else requestAnimationFrame(() => requestAnimationFrame(focusComposer));
                 dragStart.current = null;
               }}
               onPaneClick={() => setMenu(null)}

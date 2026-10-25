@@ -1,5 +1,46 @@
 # Visual and interaction QA
 
+## Automatic center connections and shared parents — 1.10.1 (2026-10-26)
+
+- Verified automatic-only connections at 1440px and 390px: source paths emerge from
+  the card center, targets sit at the facing edge for visible arrowheads, and no port
+  dots, suggestion rings, ghost line, manual drag-to-connect or Alt-drag editing remain.
+  Utility and native browser checks found one hidden source per non-group card; the
+  production build measured each source center within 1px of its card center with zero
+  opacity and no pointer events.
+- Verified **Merge selected parents** from the command palette, node menu and conditional
+  toolbar. Exactly two non-group cards produce one selected blank chat child with two
+  parent edges, combined and deduplicated parent context, no copied messages, stable
+  chat model inheritance and a family color from the new edges. The child is placed
+  clear of other cards with vertical centering, and creation, both edges and selection
+  undo/redo as one step.
+- Verified invalid selections (none, one, three, groups) omit or disable merge, and
+  active generation blocks it. Automatic branch-on-drop still uses the source card's
+  right-edge center and avoids placing a new branch underneath an existing card. Legacy
+  imported port data stays accepted but is not rendered or used for edge geometry.
+- Family-colored 3px paths, visible arrowheads, selected-edge weight/glow, menu focus,
+  reduced motion and responsive window behavior remain intact.
+- Strict build and **243 unit/HTTP tests in 27 files** passed, followed by the full
+  **122-test Chromium suite** in 3.6 minutes. Evidence:
+  `/tmp/opencode/build-1101-4.log`, `/tmp/opencode/unit-1101-5.log` and
+  `/tmp/opencode/full-e2e-1101-final.log`.
+- All **159 numbered screenshots**, `motion-samples.json` and the real PNG/PDF exports
+  were inspected through eight contact sheets. Full-resolution review covered the
+  two-parent merged child, center-origin family connections, automatic-connection Help
+  copy and the 1000x1052 PNG. Motion samples measured two running animations for desktop
+  panel entry/close, one for mobile entry, zero for reduced motion, toolbar/canvas-menu
+  opacity **0.943004** and closing opacity **0.0857018**. Evidence:
+  `/tmp/opencode/screenshots-1101-final/` and `/tmp/opencode/contact-1101-final/`.
+- The built production assets on 3001 passed merge creation, hidden center-anchor
+  geometry, docked/floating/snapped window behavior, persistence/reload and the 390px
+  full-stage sheet over an inert canvas. Evidence:
+  `/tmp/opencode/production-1101/` with `pageErrors: []`; only the expected local Ollama
+  catalog probes failed with 502 while Ollama was not running.
+- No uncaught browser errors occurred. All **169 release checksum entries across 17
+  versions** including v1.10.0 still match. No paid provider requests, credential
+  writes, `data/` changes, release-payload rewrites or Tailscale configuration changes
+  were made.
+
 ## Windowed workspace — 1.10.0 (2026-10-26)
 
 - Verified independent Models and Settings windows at 1440px: first open docks, opening

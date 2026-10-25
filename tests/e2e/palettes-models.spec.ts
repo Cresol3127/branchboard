@@ -23,6 +23,7 @@ async function expectUniformPanelSurface(panel: ReturnType<Page['getByRole']>) {
 test('all built-in palettes apply in both modes without changing workspace or viewport', async ({
   page,
 }) => {
+  test.setTimeout(60_000);
   await page.emulateMedia({ colorScheme: 'light' });
   await page.goto('/');
   const panel = await openAppearance(page);
