@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import {
   boundsEqual,
   canSnap,
+  clampDockWidth,
   clampWindowBounds,
   defaultFloatingBounds,
   deskWindowRect,
@@ -10,6 +11,7 @@ import {
   isSnapMode,
   maximizedWindowBounds,
   modeFromSnapTarget,
+  PANEL_DOCK_WIDTH,
   restoreUnderPointer,
   sheetWindowRect,
   snapTargetFromMode,
@@ -64,6 +66,7 @@ export type WindowMetrics = {
 
 type Navigation = { id: string; proceed: () => void; cancel: () => void };
 type StoredPanel = { mode: PanelLayoutMode; bounds?: Rect };
+type StoredLayout = { panels: Record<string, StoredPanel>; dockWidth: number };
 type RegisterEntry = {
   id: string;
   kind: PanelKind;
@@ -86,13 +89,14 @@ const INITIAL_METRICS: WindowMetrics = {
   desk: EMPTY_RECT,
 };
 
-function readStoredLayout(): Record<string, StoredPanel> {
-  if (typeof localStorage === 'undefined') return {};
+function readStoredLayout(): StoredLayout {
+  const fallback: StoredLayout = { panels: {}, dockWidth: PANEL_DOCK_WIDTH };
+  if (typeof localStorage === 'undefined') return fallback;
   try {
     const parsed: unknown = JSON.parse(localStorage.getItem(LAYOUT_KEY) || 'null');
-    if (!parsed || typeof parsed !== 'object') return {};
-    const value = parsed as { version?: unknown; panels?: unknown };
-    if (value.version !== 1 || !value.panels || typeof value.panels !== 'object') return {};
+    if (!parsed || typeof parsed !== 'object') return fallback;
+    const value = parsed as { version?: unknown; panels?: unknown; dockWidth?: unknown };
+    if (value.version !== 1 || !value.panels || typeof value.panels !== 'object') return fallback;
     const panels: Record<string, StoredPanel> = {};
     for (const [kind, candidate] of Object.entries(value.panels)) {
       if (!candidate || typeof candidate !== 'object') continue;
@@ -101,28 +105,37 @@ function readStoredLayout(): Record<string, StoredPanel> {
       const bounds = validateStoredBounds(panel.bounds);
       panels[kind] = bounds ? { mode: panel.mode, bounds } : { mode: panel.mode };
     }
-    return panels;
+    const dockWidth =
+      typeof value.dockWidth === 'number' && Number.isFinite(value.dockWidth)
+        ? value.dockWidth
+        : PANEL_DOCK_WIDTH;
+    return { panels, dockWidth };
   } catch {
-    return {};
+    return fallback;
   }
 }
 
-function writeStoredLayout(panels: Record<string, StoredPanel>) {
+function writeStoredLayout(panels: Record<string, StoredPanel>, dockWidth: number) {
   if (typeof localStorage === 'undefined') return;
   try {
-    localStorage.setItem(LAYOUT_KEY, JSON.stringify({ version: 1, panels }));
+    localStorage.setItem(LAYOUT_KEY, JSON.stringify({ version: 1, panels, dockWidth }));
   } catch {
     // Layout is presentation-only; workspace storage failures remain the visible error path.
   }
 }
 
 function persistEntry(entry: PanelEntry) {
-  const panels = readStoredLayout();
-  panels[entry.kind] = {
+  const stored = readStoredLayout();
+  stored.panels[entry.kind] = {
     mode: entry.mode,
     ...(entry.bounds ? { bounds: entry.bounds } : {}),
   };
-  writeStoredLayout(panels);
+  writeStoredLayout(stored.panels, useWorkspacePanels.getState().dockWidth);
+}
+
+function persistDockWidth(dockWidth: number) {
+  const stored = readStoredLayout();
+  writeStoredLayout(stored.panels, dockWidth);
 }
 
 function topEntry(entries: Record<string, PanelEntry>, exclude?: string) {

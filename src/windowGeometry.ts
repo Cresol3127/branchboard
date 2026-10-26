@@ -13,6 +13,15 @@ export const MIN_PANEL_WIDTH = 320;
 export const MIN_PANEL_HEIGHT = 280;
 export const MIN_CANVAS_WIDTH = 320;
 export const MIN_CANVAS_HEIGHT = 280;
+
+/** Keep the dock usable while reserving enough room for the canvas. */
+export function maxDockWidth(availableWidth: number) {
+  return Math.max(MIN_PANEL_WIDTH, availableWidth - MIN_CANVAS_WIDTH);
+}
+
+export function clampDockWidth(width: number, availableWidth: number) {
+  return Math.min(Math.max(width, MIN_PANEL_WIDTH), maxDockWidth(availableWidth));
+}
 export const SNAP_EDGE = 28;
 export const WINDOW_MARGIN = 24;
 export const WINDOW_STEP = 24;
@@ -138,11 +147,15 @@ export function restoreUnderPointer(bounds: Rect, desk: Rect, pointer: { x: numb
   return clampWindowBounds({ ...bounds, x, y }, desk);
 }
 
-export function dockWindowRect(workspace: Rect, sidebarWidth: number): Rect {
+export function dockWindowRect(
+  workspace: Rect,
+  sidebarWidth: number,
+  width = PANEL_DOCK_WIDTH,
+): Rect {
   return {
     x: workspace.x + sidebarWidth,
     y: workspace.y,
-    width: Math.min(PANEL_DOCK_WIDTH, Math.max(0, workspace.width - sidebarWidth)),
+    width: Math.min(Math.max(0, width), Math.max(0, workspace.width - sidebarWidth)),
     height: workspace.height,
   };
 }
