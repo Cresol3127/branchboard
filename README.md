@@ -17,6 +17,12 @@ A local-first canvas for connected AI conversations, notes and ideas.
 - Latest-generation model dropdowns, provider icons and saved exact-ID additions.
 - Window-centered search that adapts to sidebar changes and compact layouts.
 
+## Screenshots
+
+**Light & dark themes** — the same connected workspace, shown with a diagonal split.
+
+![BranchBoard desktop workspace with light mode on the left and dark mode on the right, divided diagonally](docs/images/workspace-light-dark.png)
+
 ## Quick start
 
 Requires **Node.js 22.12+** and npm.
