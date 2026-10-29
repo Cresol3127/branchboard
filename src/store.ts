@@ -16,12 +16,15 @@ import {
   resolveNodeCollisions,
 } from './graph';
 import { assignFamilies } from './families';
+import { readGeneration, reportedUsage } from './tokenUsage';
+import { estimatedUsage } from './tokens';
 import { sseData } from '../server/stream';
 import type {
   AnnotationState,
   Board,
   BoardNode,
   NodeData,
+  TokenUsage,
   Snapshot,
   WorkspaceBackup,
   WorkspaceOrganization,
@@ -151,6 +154,13 @@ export function validateBoard(input: unknown): Board {
       throw new Error('Invalid messages.');
     if (new Set(n.data.messages.map((m) => m.id)).size !== n.data.messages.length)
       throw new Error('Duplicate message IDs.');
+    if (
+      n.data.messages.some(
+        (m) =>
+          m.generation !== undefined && (m.role !== 'assistant' || !readGeneration(m.generation)),
+      )
+    )
+      throw new Error('Invalid generation usage.');
     if (n.data.autoSize !== undefined && typeof n.data.autoSize !== 'boolean')
       throw new Error('Invalid automatic sizing preference.');
     const ports = n.data.portPositions;
@@ -183,7 +193,12 @@ export function validateBoard(input: unknown): Board {
         color: n.data.color,
         note: n.data.note,
         ...(n.data.provider ? { provider: n.data.provider, model: n.data.model } : {}),
-        messages: n.data.messages.map((m) => ({ id: m.id, role: m.role, content: m.content })),
+        messages: n.data.messages.map((m) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          ...(m.generation ? { generation: readGeneration(m.generation) } : {}),
+        })),
         collapsed: Boolean(n.data.collapsed),
         autoSize: Boolean(n.data.autoSize),
         expandedHeight:
@@ -1665,6 +1680,9 @@ export const useStore = create<State>((set, get) => {
         messages: [...messages, { id: assistantId, role: 'assistant', content: '' }],
       }));
       set((s) => ({ streaming: { ...s.streaming, [id]: true } }));
+      let usage: TokenUsage | null = null;
+      let output = '';
+      let completed = false;
       try {
         const response = await fetch('/api/chat', {
           method: 'POST',
@@ -1681,15 +1699,25 @@ export const useStore = create<State>((set, get) => {
         for await (const raw of sseData(response.body)) {
           const event = JSON.parse(raw);
           if (event.error) throw new Error(event.error);
-          if (typeof event.token === 'string')
+          if (event.usage)
+            usage =
+              reportedUsage(
+                event.usage.inputTokens,
+                event.usage.outputTokens,
+                event.usage.totalTokens,
+              ) ?? usage;
+          if (typeof event.token === 'string') {
+            output += event.token;
             update((data) => ({
               ...data,
               messages: data.messages.map((m) =>
                 m.id === assistantId ? { ...m, content: m.content + event.token } : m,
               ),
             }));
+          }
           if (event.done) {
             done = true;
+            completed = true;
             break;
           }
         }
@@ -1702,6 +1730,26 @@ export const useStore = create<State>((set, get) => {
             error: error instanceof Error ? error.message : 'Unable to contact AI provider.',
           }));
       } finally {
+        update((data) => ({
+          ...data,
+          messages: data.messages.map((m) =>
+            m.id === assistantId
+              ? {
+                  ...m,
+                  generation: {
+                    provider,
+                    model,
+                    usage: usage ?? estimatedUsage(estimatedTokens, output),
+                    status: completed
+                      ? 'completed'
+                      : controller.signal.aborted
+                        ? 'cancelled'
+                        : 'failed',
+                  },
+                }
+              : m,
+          ),
+        }));
         controllers.delete(id);
         set((s) => ({ streaming: { ...s.streaming, [id]: false } }));
       }

@@ -1,7 +1,17 @@
 import type { Edge, Node, Viewport } from '@xyflow/react';
 import type { ProviderId } from './providers';
 
-export type Message = { id: string; role: 'user' | 'assistant' | 'system'; content: string };
+export type Message = {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  generation?: {
+    provider: ProviderId;
+    model: string;
+    usage: TokenUsage;
+    status: 'completed' | 'cancelled' | 'failed';
+  };
+};
 export type AttachmentKind = 'image' | 'pdf' | 'audio' | 'video' | 'text' | 'document' | 'code';
 export type AttachmentExtraction = {
   status: 'pending' | 'ready' | 'unsupported' | 'error';

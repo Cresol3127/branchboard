@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import {
   boundsEqual,
   canSnap,
-  clampDockWidth,
   clampWindowBounds,
   defaultFloatingBounds,
   deskWindowRect,
@@ -130,12 +129,7 @@ function persistEntry(entry: PanelEntry) {
     mode: entry.mode,
     ...(entry.bounds ? { bounds: entry.bounds } : {}),
   };
-  writeStoredLayout(stored.panels, useWorkspacePanels.getState().dockWidth);
-}
-
-function persistDockWidth(dockWidth: number) {
-  const stored = readStoredLayout();
-  writeStoredLayout(stored.panels, dockWidth);
+  writeStoredLayout(stored.panels, stored.dockWidth);
 }
 
 function topEntry(entries: Record<string, PanelEntry>, exclude?: string) {
@@ -198,7 +192,7 @@ export const useWorkspacePanels = create<{
       return;
     }
     const metrics = state.metrics;
-    const stored = readStoredLayout()[entry.kind];
+    const stored = readStoredLayout().panels[entry.kind];
     const openEntries = Object.values(state.entries).filter((item) => !item.closing);
     const dockOccupied = Boolean(
       state.dockedId && state.entries[state.dockedId] && !state.entries[state.dockedId].closing,

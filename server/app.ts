@@ -257,7 +257,9 @@ export function createApp(options: ProviderOptions & { catalog?: CatalogOptions 
         }
         res.write(`data: ${JSON.stringify(data)}\n\n`);
       };
-      for await (const token of streamChat(provider, config, model, messages, controller.signal))
+      for await (const token of streamChat(provider, config, model, messages, controller.signal, {
+        onUsage: (usage) => emit({ usage }),
+      }))
         emit({ token });
       emit({ done: true });
       res.end();

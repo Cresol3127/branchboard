@@ -1213,7 +1213,7 @@ describe('conversation state', () => {
           start(c) {
             c.enqueue(
               new TextEncoder().encode(
-                'data: {"token":"Hello"}\n\ndata: {"token":" there"}\n\ndata: {"done":true}\n\n',
+                'data: {"token":"Hello"}\n\ndata: {"token":" there"}\n\ndata: {"usage":{"inputTokens":100,"outputTokens":3,"totalTokens":103}}\n\ndata: {"done":true}\n\n',
               ),
             );
             c.close();
@@ -1230,6 +1230,18 @@ describe('conversation state', () => {
       .boards.find((b) => b.id === originalId)!
       .nodes.find((n) => n.id === child)!;
     expect(n.data.messages.map((m) => m.content)).toEqual(['Hi', 'Hello there']);
+    expect(n.data.messages.at(-1)?.generation).toMatchObject({
+      provider: 'openai',
+      status: 'completed',
+      usage: { inputTokens: 100, outputTokens: 3, totalTokens: 103, source: 'provider' },
+    });
+    const original = store.useStore.getState().boards.find((b) => b.id === originalId)!;
+    expect(
+      store
+        .validateBoard(original)
+        .nodes.find((node) => node.id === child)
+        ?.data.messages.at(-1)?.generation,
+    ).toEqual(n.data.messages.at(-1)?.generation);
     expect(captured!.messages[0].content).toContain('Be concise');
     expect(board().nodes).toHaveLength(0);
     expect(store.useStore.getState().streaming[child]).toBe(false);
@@ -1290,6 +1302,10 @@ describe('conversation state', () => {
       s.stop(id);
       await generation;
       expect(board().nodes[0].data.messages.at(-1)?.content).toBe('Partial reply');
+      expect(board().nodes[0].data.messages.at(-1)?.generation).toMatchObject({
+        status: 'cancelled',
+        usage: { source: 'estimated', outputTokens: 4 },
+      });
       expect(board().nodes[0].data.error).toBeUndefined();
       expect(store.useStore.getState().streaming[id]).toBe(false);
     } finally {

@@ -45,6 +45,7 @@ import {
   Scan,
   Type,
   Unlink,
+  Link2,
 } from 'lucide-react';
 import { absolutePosition, canConnect } from './graph';
 import { edgeFamilyColors } from './families';
@@ -57,6 +58,7 @@ import { MessageHistory } from './components/MessageHistory';
 import { currentBoard, saveWorkspace, useStore, workspaceBackup } from './store';
 import { CanvasNode } from './components/Nodes';
 import { MessageBar } from './components/MessageBar';
+import { TokenComparison } from './components/TokenComparison';
 import { useModelDiscovery } from './components/useModelDiscovery';
 import { Help, ModelsPanel, SettingsPanel } from './components/Settings';
 import { useCanvasLayout } from './components/useCanvasLayout';
@@ -189,6 +191,17 @@ function Workspace() {
     !generating &&
     selectedParents.length === 2 &&
     selectedParents.every((node) => node.type !== 'group');
+  const canConnectFirst =
+    !generating &&
+    selectedParents.length === 2 &&
+    selectedParents.every((n) => n.type !== 'group') &&
+    canConnect(selectedParents[0].id, selectedParents[1].id, board.edges);
+  const canConnectSecond =
+    !generating &&
+    selectedParents.length === 2 &&
+    selectedParents.every((n) => n.type !== 'group') &&
+    canConnect(selectedParents[1].id, selectedParents[0].id, board.edges);
+  const connectable = canConnectFirst || canConnectSecond;
   const mergeSelectedParents = () => {
     const id = state.mergeParents();
     if (!id) return;
@@ -462,6 +475,22 @@ function Workspace() {
       run: mergeSelectedParents,
       available: mergeable,
     },
+    ...(canConnectFirst
+      ? [
+          {
+            label: `Connect: “${nodeLabel(selectedParents[0])}” → “${nodeLabel(selectedParents[1])}”`,
+            run: () => state.connect(selectedParents[0].id, selectedParents[1].id),
+          },
+        ]
+      : []),
+    ...(canConnectSecond
+      ? [
+          {
+            label: `Connect: “${nodeLabel(selectedParents[1])}” → “${nodeLabel(selectedParents[0])}”`,
+            run: () => state.connect(selectedParents[1].id, selectedParents[0].id),
+          },
+        ]
+      : []),
     {
       label: 'Drawing & annotations',
       run: () => openPanel('layers', () => setAnnotationsOpen(true)),
@@ -868,6 +897,25 @@ function Workspace() {
                 <GitMerge size={18} />
               </IconButton>
             )}
+            {connectable && (
+              <IconButton
+                label={
+                  canConnectFirst
+                    ? `Connect: “${nodeLabel(selectedParents[0])}” → “${nodeLabel(selectedParents[1])}”`
+                    : `Connect: “${nodeLabel(selectedParents[1])}” → “${nodeLabel(selectedParents[0])}”`
+                }
+                title="Connect selected cards so context flows between them"
+                onClick={() => {
+                  if (canConnectFirst) {
+                    state.connect(selectedParents[0].id, selectedParents[1].id);
+                  } else if (canConnectSecond) {
+                    state.connect(selectedParents[1].id, selectedParents[0].id);
+                  }
+                }}
+              >
+                <Link2 size={18} />
+              </IconButton>
+            )}
             <IconButton
               label={toolsExpanded ? 'Collapse creation tools' : 'Expand creation tools'}
               className="creation-toggle"
@@ -1121,6 +1169,7 @@ function Workspace() {
               useStore.setState({ historyTarget: { boardId: board.id, nodeId: id, focus: false } })
             }
           />
+          <TokenComparison />
           {selectedEdge && (
             <div
               className="edge-preview nodrag nopan"

@@ -9,6 +9,8 @@ import {
   type AIConfig,
 } from '../src/providers';
 import { sseData, jsonLines } from './stream';
+import { reportedUsage } from '../src/tokenUsage';
+import type { TokenUsage } from '../src/types';
 
 export type ProviderConfig = { apiKey: string; baseURL: string; model: string; models: string[] };
 export type ProviderOptions = {
@@ -238,10 +240,12 @@ export async function* streamChat(
   model: string,
   messages: ChatMessage[],
   signal: AbortSignal,
-  options: { maxOutputTokens?: number } = {},
+  options: { maxOutputTokens?: number; onUsage?: (usage: TokenUsage) => void } = {},
 ) {
   let endpoint = '/chat/completions';
   let body: object = { model, messages, stream: true };
+  const usageTrailer = Boolean(options.onUsage && (id === 'openai' || id === 'openrouter'));
+  if (usageTrailer) body = { ...body, stream_options: { include_usage: true } };
   const system = messages
     .filter((m) => m.role === 'system')
     .map((m) => m.content)
@@ -291,6 +295,7 @@ export async function* streamChat(
     }),
   );
   let finished = false;
+  let anthropicInput: unknown;
   const chunks = isOllama(id) ? jsonLines(response.body!) : sseData(response.body!);
   for await (const raw of chunks) {
     if (raw === '[DONE]') {
@@ -305,11 +310,37 @@ export async function* streamChat(
           : chunk.error.message || 'Provider stream failed.',
       );
     let token: unknown;
+    let usage: TokenUsage | null = null;
     if (id === 'anthropic') {
+      if (chunk.type === 'message_start') {
+        const initial = chunk.message?.usage;
+        // Anthropic reports cached input separately from uncached input.
+        if (initial && Number.isSafeInteger(initial.input_tokens) && initial.input_tokens >= 0) {
+          const read = initial.cache_read_input_tokens ?? 0;
+          const write = initial.cache_creation_input_tokens ?? 0;
+          if (Number.isSafeInteger(read) && read >= 0 && Number.isSafeInteger(write) && write >= 0)
+            anthropicInput = initial.input_tokens + read + write;
+        }
+      }
+      if (chunk.type === 'message_delta')
+        usage = reportedUsage(anthropicInput, chunk.usage?.output_tokens);
       if (chunk.type === 'content_block_delta' && chunk.delta?.type === 'text_delta')
         token = chunk.delta.text;
       if (chunk.type === 'message_stop') finished = true;
     } else if (id === 'google') {
+      const counters = chunk.usageMetadata;
+      if (counters) {
+        const thoughts = counters.thoughtsTokenCount ?? 0;
+        usage = reportedUsage(
+          counters.promptTokenCount,
+          Number.isSafeInteger(thoughts) &&
+            thoughts >= 0 &&
+            Number.isSafeInteger(counters.candidatesTokenCount)
+            ? counters.candidatesTokenCount + thoughts
+            : undefined,
+          counters.totalTokenCount,
+        );
+      }
       const candidate = chunk.candidates?.[0];
       if (chunk.promptFeedback?.blockReason)
         throw new Error(`Google blocked the prompt: ${chunk.promptFeedback.blockReason}.`);
@@ -321,14 +352,23 @@ export async function* streamChat(
         .join('');
       if (candidate?.finishReason) finished = true;
     } else if (isOllama(id)) {
+      if (chunk.done) usage = reportedUsage(chunk.prompt_eval_count, chunk.eval_count);
       token = chunk.message?.content;
       if (chunk.done) finished = true;
     } else {
+      if (chunk.usage)
+        usage = reportedUsage(
+          chunk.usage.prompt_tokens,
+          chunk.usage.completion_tokens,
+          chunk.usage.total_tokens,
+        );
       token = chunk.choices?.[0]?.delta?.content;
       if (chunk.choices?.[0]?.finish_reason) finished = true;
     }
     if (typeof token === 'string' && token) yield token;
-    if (finished) break;
+    if (usage) options.onUsage?.(usage);
+    // OpenAI-compatible usage arrives after the finish_reason chunk, before [DONE].
+    if (finished && !usageTrailer) break;
   }
   if (!finished)
     throw new Error('The provider disconnected before finishing. You can retry this response.');

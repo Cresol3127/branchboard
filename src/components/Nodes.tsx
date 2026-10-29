@@ -15,6 +15,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { currentBoard, useStore } from '../store';
+import { canConnect } from '../graph';
 import { nodeLabel } from '../nodeLabel';
 import type { BoardNode } from '../types';
 import { IconButton, Menu } from './ui';
@@ -24,6 +25,7 @@ import { ModelSelector } from './ModelSelector';
 import { useWorkspacePanels } from '../workspacePanels';
 import { NoteContent } from './NoteContent';
 import { useCanvasTextSelection } from './useCanvasTextSelection';
+import { ConnectModal } from './ConnectModal';
 
 const MessageMarkdown = memo(function MessageMarkdown({ text }: { text: string }) {
   return (
@@ -71,6 +73,7 @@ export function CanvasNode({ id, data, selected, type }: NodeProps<BoardNode>) {
   const state = useStore(),
     board = currentBoard(state);
   const streaming = Boolean(state.streaming[id]);
+  const currentNode = board.nodes.find((n) => n.id === id);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const editHistory = (messageId: string, mode: 'edit' | 'delete') =>
     useWorkspacePanels.setState({
@@ -82,6 +85,17 @@ export function CanvasNode({ id, data, selected, type }: NodeProps<BoardNode>) {
     !historyBusy &&
     selectedNodes.length === 2 &&
     selectedNodes.every((node) => node.type !== 'group');
+  const canConnectFirstToSecond =
+    !historyBusy &&
+    selectedNodes.length === 2 &&
+    selectedNodes.every((n) => n.type !== 'group') &&
+    canConnect(selectedNodes[0].id, selectedNodes[1].id, board.edges);
+  const canConnectSecondToFirst =
+    !historyBusy &&
+    selectedNodes.length === 2 &&
+    selectedNodes.every((n) => n.type !== 'group') &&
+    canConnect(selectedNodes[1].id, selectedNodes[0].id, board.edges);
+  const [connectOpen, setConnectOpen] = useState(false);
   const mergeSelectedParents = () => {
     const id = state.mergeParents();
     if (id)
@@ -335,6 +349,39 @@ export function CanvasNode({ id, data, selected, type }: NodeProps<BoardNode>) {
                 Branch conversation
               </button>
             )}
+            {type !== 'group' && (
+              <button
+                role="menuitem"
+                onClick={() => {
+                  setMenu(null);
+                  setConnectOpen(true);
+                }}
+              >
+                Connect to another card…
+              </button>
+            )}
+            {canConnectFirstToSecond && (
+              <button
+                role="menuitem"
+                onClick={() => {
+                  state.connect(selectedNodes[0].id, selectedNodes[1].id);
+                  setMenu(null);
+                }}
+              >
+                Connect: “{nodeLabel(selectedNodes[0])}” → “{nodeLabel(selectedNodes[1])}”
+              </button>
+            )}
+            {canConnectSecondToFirst && (
+              <button
+                role="menuitem"
+                onClick={() => {
+                  state.connect(selectedNodes[1].id, selectedNodes[0].id);
+                  setMenu(null);
+                }}
+              >
+                Connect: “{nodeLabel(selectedNodes[1])}” → “{nodeLabel(selectedNodes[0])}”
+              </button>
+            )}
             {mergeable && (
               <button role="menuitem" onClick={mergeSelectedParents}>
                 Merge selected parents
@@ -400,6 +447,11 @@ export function CanvasNode({ id, data, selected, type }: NodeProps<BoardNode>) {
               Delete selection
             </button>
           </Menu>
+        )}
+      </Presence>
+      <Presence duration={motion.effects.default.duration}>
+        {connectOpen && currentNode && (
+          <ConnectModal sourceNode={currentNode} onClose={() => setConnectOpen(false)} />
         )}
       </Presence>
     </div>

@@ -43,6 +43,85 @@ const events = async (response: Response) =>
   (await Array.fromAsync(sseData(response.body!))).map((raw) => JSON.parse(raw));
 
 describe('multi-provider routing', () => {
+  it.each([
+    {
+      provider: 'openai',
+      chunks: [
+        { choices: [{ delta: { content: 'Reply' }, finish_reason: 'stop' }] },
+        { choices: [], usage: { prompt_tokens: 120, completion_tokens: 15, total_tokens: 135 } },
+      ],
+    },
+    {
+      provider: 'anthropic',
+      chunks: [
+        {
+          type: 'message_start',
+          message: {
+            usage: {
+              input_tokens: 20,
+              cache_read_input_tokens: 90,
+              cache_creation_input_tokens: 10,
+            },
+          },
+        },
+        { type: 'content_block_delta', delta: { type: 'text_delta', text: 'Reply' } },
+        { type: 'message_delta', usage: { output_tokens: 15 } },
+        { type: 'message_stop' },
+      ],
+    },
+    {
+      provider: 'google',
+      chunks: [
+        {
+          candidates: [{ content: { parts: [{ text: 'Reply' }] }, finishReason: 'STOP' }],
+          usageMetadata: {
+            promptTokenCount: 120,
+            candidatesTokenCount: 10,
+            thoughtsTokenCount: 5,
+            totalTokenCount: 135,
+          },
+        },
+      ],
+    },
+    {
+      provider: 'ollama',
+      chunks: [
+        { message: { content: 'Reply' }, done: true, prompt_eval_count: 120, eval_count: 15 },
+      ],
+    },
+  ])(
+    'relays $provider usage through HTTP before the final done event',
+    async ({ provider, chunks }) => {
+      const upstream = await listen(
+        createServer((_req, res) => {
+          if (provider === 'ollama')
+            res.end(chunks.map((chunk) => JSON.stringify(chunk)).join('\n') + '\n');
+          else
+            res.end(
+              chunks.map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`).join('') +
+                'data: [DONE]\n\n',
+            );
+        }),
+      );
+      const url = await listen(
+        createServer(
+          createApp({
+            providers: {
+              [provider]: { apiKey: 'test-only', baseURL: upstream },
+            },
+          }),
+        ),
+      );
+      const received = await events(
+        await post(`${url}/api/chat`, { provider, model: 'test', messages }),
+      );
+      expect(received).toEqual([
+        { token: 'Reply' },
+        { usage: { inputTokens: 120, outputTokens: 15, totalTokens: 135, source: 'provider' } },
+        { done: true },
+      ]);
+    },
+  );
   it.each<ProviderId>(['openai', 'openrouter', 'groq', 'custom'])(
     'routes %s using the chosen model and only its key',
     async (provider) => {
@@ -71,7 +150,14 @@ describe('multi-provider routing', () => {
       ).toEqual([{ token: 'Hello' }, { done: true }]);
       expect(requestPath).toBe('/chat/completions');
       expect(authorization).toBe('Bearer selected-secret');
-      expect(received).toEqual({ model: 'chosen-model', messages, stream: true });
+      expect(received).toEqual({
+        model: 'chosen-model',
+        messages,
+        stream: true,
+        ...(['openai', 'openrouter'].includes(provider)
+          ? { stream_options: { include_usage: true } }
+          : {}),
+      });
     },
   );
 

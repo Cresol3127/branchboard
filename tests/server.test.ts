@@ -89,7 +89,12 @@ describe('local AI API', () => {
       { token: 'world' },
       { done: true },
     ]);
-    expect(received).toEqual({ model: 'gpt-4o-mini', messages: chatBody.messages, stream: true });
+    expect(received).toEqual({
+      model: 'gpt-4o-mini',
+      messages: chatBody.messages,
+      stream: true,
+      stream_options: { include_usage: true },
+    });
     expect(authorization).toBe('Bearer sk-test');
   });
   it('shows provider errors instead of manufacturing responses', async () => {
