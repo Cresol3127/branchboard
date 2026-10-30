@@ -1,23 +1,23 @@
 # BranchBoard
 
-A local-first canvas for connected AI conversations, notes and ideas.
+**A local-first canvas for AI conversations, shared context, notes, and research.**
+
+BranchBoard lets you organize conversations visually, branch or merge their context, and
+work with multiple AI providers from one workspace. Your boards are stored in your browser.
 
 ## Features
 
-- Branching conversations with shared context and per-chat model selection.
-- Rich Markdown notes, drawings, shapes and annotation layers.
-- Projects, templates, favorites, search, undo/redo and manual snapshots.
-- JSON backups, conversation imports, and Markdown, PNG and PDF exports.
-- Independent Models and Settings windows that dock, float, resize, snap to any half,
-  maximize, restore their saved layout and reset from Settings.
-- Automatic family-colored connections with one hidden center origin per card, plus
-  one-step merging of two selected parents into a shared child; keyboard shortcuts and
-  customizable light/dark palettes; narrow workspaces use full-stage sheets over an
-  inert canvas.
-- Latest-generation model dropdowns, provider icons and saved exact-ID additions.
-- Window-centered search that adapts to sidebar changes and compact layouts.
+- Branch conversations or merge two selected parents into a shared child.
+- Compare selected conversations with provider-reported or estimated token counts.
+- Organize chats and notes on an infinite canvas with automatic family-colored connections.
+- Dock, resize, float, snap, and maximize workspace panels.
+- Use Markdown notes, annotations, projects, templates, search, and undo/redo.
+- Import conversations and export boards as JSON, Markdown, PNG, or PDF.
+- Choose per-conversation models and customize light and dark UI palettes.
 
 ## Screenshots
+
+Desktop views from v1.10.1.
 
 **Light & dark themes** — the same connected workspace, shown with a diagonal split.
 
@@ -25,84 +25,86 @@ A local-first canvas for connected AI conversations, notes and ideas.
 
 ## Quick start
 
-Requires **Node.js 22.12+** and npm.
+**Requirements:** Node.js 22.12 or later and npm.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Open **http://127.0.0.1:3000**. In **Models → Manage providers**, configure OpenAI,
-Anthropic, Gemini, OpenRouter, Groq, Ollama, Ollama Cloud or a custom OpenAI-compatible
-endpoint. Local Ollama requires an installed model but no API key.
+Open [http://127.0.0.1:3000](http://127.0.0.1:3000). The development API runs on port 3001.
 
-Keys stay server-side in the gitignored, unencrypted `branchboard.providers.json`
-or [`.env`](.env.example). Saved settings override environment defaults.
-Generation and explicit **Test model** requests may incur provider charges. Model
-tests send no canvas content; public model listings do not guarantee account access.
+## Configure a provider
 
-Right-click a canvas button to favorite it, move it to a project or delete it.
-Keyboard: **Shift+F10**; touch: **long-press**. Deletion requires confirmation.
+Open **Models → Manage providers** and configure OpenAI, Anthropic, Google Gemini,
+OpenRouter, Groq, Ollama, Ollama Cloud, or a custom OpenAI-compatible endpoint. Local
+Ollama requires an installed model and does not require an API key.
 
-### Appearance and models
+Credentials remain on the local server in the git-ignored, unencrypted
+`branchboard.providers.json` file or in [`.env`](.env.example). They are not included in
+workspace backups. Generating responses and explicitly testing a model may incur provider
+charges; model tests do not send board content.
 
-In **Settings → Workspace**, choose a UI palette independently of Light/Dark/System.
-Customize either variant, then save a named palette; edit, duplicate or delete your
-copies without changing built-ins or saved card colors. Unsaved edits are previews.
-Panels, menus and controls use Material 3 Expressive motion; geometry and opacity
-transition on their separate published spatial and effects tokens, and your system's
-reduced-motion preference disables them immediately.
+## Working with conversations
 
-Model dropdowns suggest the latest known generation per supported family. Existing
-and recent selections stay available separately; local Ollama lists installed models.
-Use **Add model by ID…** for a specific model. Added IDs are saved separately from
-the five recent choices and do not trigger an AI request. Palettes and added IDs are
-browser preferences, separate from workspace backups. [Palette sources](docs/palette-sources.md).
+- Select two or more conversations with **Ctrl/⌘-drag** to open the token comparison island.
+  It compares the latest reply for each conversation. Historical replies use estimates;
+  provider-reported usage is shown when available. Add your own per-model USD rates to see
+  cost estimates. These are not billing records.
+- Select exactly two non-group cards and choose **Merge selected parents** to create a blank
+  shared child. It inherits both histories as context; creation and both connections undo
+  together.
+- Connections are automatic. Branch a conversation or drop a card near another card's
+  right edge; paths begin at each card's hidden center origin.
+- The first Models or Settings panel docks. Drag its divider or focus it and use the arrow
+  keys to resize. Additional panels float; use the snap menu or drag a panel to a screen
+  edge to arrange it beside the canvas.
 
-### Windows and connections
+Right-click a canvas in the sidebar to favorite, move, or delete it. Keyboard users can press
+**Shift+F10**; touch users can long-press. Deletion requires confirmation.
 
-Models and Settings open independently. The first panel docks, additional panels
-float above the canvas, and any window can be dragged or resized. Use the snap menu
-or drag to an edge to fill half the workspace; the canvas moves to the opposite half.
-Arrow keys move a window, Shift+Arrow resizes, Alt+Arrow snaps and Enter maximizes or
-restores. Window layout is remembered per panel, while open panels, drafts and keys
-are never persisted; **Settings → Reset window layout** clears it. Connections use each
-conversation family's color and grow automatically from one hidden origin at the center
-of each card; there are no visible ports or freehand link gestures. Select exactly two
-non-group cards and choose **Merge selected parents** to create a blank shared child
-that inherits both histories as context in one undoable step.
-
-### Production
+## Production
 
 ```sh
 npm run build
 npm start
 ```
 
-Open **http://127.0.0.1:3001**. Export/import your workspace when switching ports or
-hostnames: browser storage is tied to the exact origin.
+Open [http://127.0.0.1:3001](http://127.0.0.1:3001). Browser storage is tied to the exact
+origin, so export a workspace backup before changing ports or hostnames.
+
+## Data and security
+
+Boards and preferences are stored in this browser, not synced to an account. Clearing site
+data can remove local work; export JSON backups for recovery. During generation, BranchBoard
+sends the selected conversation and its upstream context to the configured provider.
+
+BranchBoard is a single-user local application without authentication. Do not expose it
+publicly.
 
 ## Development
 
 ```sh
 npm test                         # Unit and HTTP tests
 npx playwright install chromium
-npm run test:e2e                 # Chromium interactions
-npm run screenshot              # Visual QA; dev server must be running
+npm run test:e2e                 # Browser interaction tests
+npm run screenshot              # Capture UI states (development server must be running)
 ```
-
-## Data and security
-
-Workspaces live in browser storage, not a synced account. Clearing site data removes
-local work; download JSON backups for recovery. Credentials are excluded from workspace
-backups. Only the selected conversation and its upstream context are sent on generation.
-
-This is a **single-user local application** without authentication. Do not expose it
-publicly. Attachments, automatic recovery timelines and billing analytics are not enabled.
 
 ## Documentation
 
 [Changelog](CHANGELOG.md) · [Releases and previews](releases/README.md) ·
 [Contributor guide](AGENTS.md) · [Visual QA](docs/visual-qa.md)
 
-**License:** not yet selected; no redistribution permission is granted.
+## Made by
+
+- [Cresol3127](https://github.com/Cresol3127) (me)
+- [clwr2007](https://github.com/clwr2007)
+- [ullash-naik](https://github.com/ullash-naik)
+- [Atharva1232](https://github.com/Atharva1232)
+
+Thanks for building this together.
+
+## LICENSE
+
+This project has been licensed under MIT. For more details, see [`LICENSE`](LICENSE.md).

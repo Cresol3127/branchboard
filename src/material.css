@@ -258,10 +258,16 @@ h3 {
   font-size: 14px;
   color: var(--text);
 }
+.provider-heading {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 16px 0 2px;
+  color: var(--text);
+}
 .provider-state {
   font-size: 13px;
   color: var(--muted);
-  margin: 12px 0 0;
+  margin: 2px 0 0;
 }
 .settings-details {
   border-top: 1px solid var(--line);

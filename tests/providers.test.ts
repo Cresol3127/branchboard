@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { createApp } from '../server/app';
 import { sseData } from '../server/stream';
 import type { ProviderId } from '../src/providers';
@@ -318,7 +320,7 @@ describe('multi-provider routing', () => {
 
 describe('provider settings and discovery', () => {
   it('persists edits/removals across restarts, keeps secrets private, and uses private permissions', async () => {
-    const directory = await mkdtemp('/tmp/opencode/branchboard-providers-');
+    const directory = await mkdtemp(join(tmpdir(), 'branchboard-providers-'));
     directories.push(directory);
     const configPath = `${directory}/settings.json`;
     const url = await listen(
@@ -333,7 +335,9 @@ describe('provider settings and discovery', () => {
     });
     expect(save.status).toBe(200);
     expect(await save.text()).not.toContain('custom-secret');
-    expect((await stat(configPath)).mode & 0o777).toBe(0o600);
+    if (process.platform !== 'win32') {
+      expect((await stat(configPath)).mode & 0o777).toBe(0o600);
+    }
     const restarted = await listen(createServer(createApp({ configPath })));
     let config = await (await fetch(`${restarted}/api/config`)).json();
     expect(config.providers.find((p: { id: string }) => p.id === 'custom')).toMatchObject({
@@ -357,7 +361,7 @@ describe('provider settings and discovery', () => {
   });
 
   it('does not overwrite invalid saved config or apply settings when saving fails', async () => {
-    const directory = await mkdtemp('/tmp/opencode/branchboard-providers-');
+    const directory = await mkdtemp(join(tmpdir(), 'branchboard-providers-'));
     directories.push(directory);
     const configPath = `${directory}/settings.json`;
     await writeFile(configPath, 'not valid JSON');

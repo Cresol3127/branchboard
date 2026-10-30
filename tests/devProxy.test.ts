@@ -3,6 +3,8 @@ import { createServer, type Server } from 'node:http';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createServer as createViteServer, type ViteDevServer } from 'vite';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { createApp } from '../server/app';
 import viteConfig from '../vite.config';
 
@@ -32,7 +34,7 @@ async function listen(server: Server) {
 }
 
 async function setup(options: Parameters<typeof createApp>[0] = {}) {
-  const directory = await mkdtemp('/tmp/opencode/branchboard-dev-proxy-');
+  const directory = await mkdtemp(join(tmpdir(), 'branchboard-dev-proxy-'));
   directories.push(directory);
   const configPath = `${directory}/providers.json`;
   const api = await listen(createServer(createApp({ ...options, configPath })));

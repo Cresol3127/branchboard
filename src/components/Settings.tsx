@@ -148,8 +148,18 @@ function ProviderSettings({ provider }: { provider: PublicProvider }) {
   }
   const local = provider.id === 'ollama';
   const custom = provider.id === 'custom';
-  const report = (err: unknown) =>
+  const report = (err: unknown) => {
+    if (
+      err instanceof TypeError &&
+      (err.message === 'Failed to fetch' || err.message.includes('fetch'))
+    ) {
+      setError(
+        'Cannot connect to local server. Make sure the Branchboard server is running (npm run dev).',
+      );
+      return;
+    }
     setError(err instanceof Error ? err.message : 'Unable to save settings.');
+  };
   const save = async (removeKey = false) => {
     setBusy(true);
     setError('');
@@ -206,6 +216,7 @@ function ProviderSettings({ provider }: { provider: PublicProvider }) {
         void save();
       }}
     >
+      <h3 className="provider-heading">{provider.name}</h3>
       <p className="provider-state">
         {provider.configured
           ? local

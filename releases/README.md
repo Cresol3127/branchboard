@@ -4,7 +4,8 @@
 
 | Version   | Purpose                                                              | Source                                         |
 | --------- | -------------------------------------------------------------------- | ---------------------------------------------- |
-| **1.10.1** | Center-origin automatic connections and shared-parent merging       | Maintained project root                        |
+| **1.11.0** | Documentation, provider updates, and token comparison               | Maintained project root                        |
+| 1.10.1    | Center-origin automatic connections and shared-parent merging       | Preserved source/runtime archives in `v1.10.1/` |
 | 1.10.0    | Windowed Models/Settings, four-way snapping and colored connections | Preserved source/runtime archives in `v1.10.0/` |
 | 1.9.0     | Fluid workspace, personal palettes and refined model/canvas controls | Preserved source/runtime archives in `v1.9.0/` |
 | 1.8.0     | Docked panels, quiet cards and bounded model testing                 | Preserved source/runtime archives in `v1.8.0/` |

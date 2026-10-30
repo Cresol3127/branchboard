@@ -4,6 +4,13 @@ Notable changes, newest first. See the [release catalog](releases/README.md) for
 artifacts, provenance and verification. Early entries were reconstructed from preserved
 sources; original v1.1–v1.5 release dates are unknown.
 
+## 1.11.0 — 2026-10-30
+
+- Added comprehensive Product Requirements Document (`PRD.md`) with algorithmic flowcharts.
+- Added token comparison stats island and node interconnection modal.
+- Updated AI provider configurations, error diagnostics for local server availability, and model choices.
+- Added dual light/dark desktop workspace preview screenshot to documentation.
+
 ## 1.10.1 — 2026-10-26
 
 - Replaced visible connection ports and freehand link drawing with one hidden source
